@@ -86,7 +86,7 @@ class Ui_Dialog(object):
         self.label_3.setText(_translate("Dialog", "prompt :"))
 
 class Settting_Dialog(QDialog):
-    set_values = pyqtSignal(str, str, str)
+    set_values = pyqtSignal(str, str, str) #시그널 슬롯 연결
 
 
     def __init__(self, parent = None):
@@ -116,7 +116,7 @@ class Settting_Dialog(QDialog):
         return self.ui.temp_val.currentText()
     
     def set_temperature(self, key):
-        self.ui.temp_val.setCurrentText()
+        self.ui.temp_val.setCurrentText(key)
 
     def get_prompt(self):
         return self.ui.prompt_text.toPlainText()

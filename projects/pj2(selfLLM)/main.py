@@ -10,6 +10,9 @@ from setting import Settting_Dialog
 
 from langchain_openai import OpenAI, ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
 
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -21,6 +24,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.m_api_key = None
         self.m_temperature = None
         self.m_prompt = None
+        self.chat_histroy = ChatMessageHistory() #챗히스토리 관리
 
     def connectSignalsSlots(self):
         self.ui.send_btn.clicked.connect(self.load_message)
@@ -47,19 +51,44 @@ class Window(QMainWindow, Ui_MainWindow):
             api_key=self.m_api_key,
             temperature=self.m_temperature,
         )
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    self.m_prompt
+                ),
+                ("placeholder", "{chat_history}"),
+                ("human", "{input}"),
+            ]
+        )
+        chain = prompt | chat_model
 
-        messages = [
-            SystemMessage(content=f"{self.m_prompt}"),
-            HumanMessage(content=f"{msg}")
-        ]
+        chain_history = RunnableWithMessageHistory(
+            chain,
+            lambda session_id: self.chat_histroy,
+            input_messages_key="input",
+            history_messages_key="chat_history",
+        )
+
+        #self.chat_histroy.add_user_message(msg)
+
         try:
-            response = chat_model.invoke(messages)
+            # response = chain.invoke(
+            #     {
+            #         "messages": self.chat_histroy.messages,
+            #     }
+            # )
+            response = chain_history.invoke(
+                {"input": msg},
+                {"configurable": {"session_id": "unused"}},
+            )
         except Exception as e:
             QMessageBox.critical(self, "API 오류", f"메시지 전송 중 오류 발생: {e}")
         
         if response:
             self.ui.output_text.append(f"Sended Message: {msg}")
             self.ui.output_text.append("")
+            #self.chat_histroy.add_ai_message(response)
             words = response.content.split(' ')
             self.ui.input_text.clear()
             self.ui.output_text.append("AI Message: ")
@@ -87,8 +116,8 @@ class Window(QMainWindow, Ui_MainWindow):
         setting_dialog = Settting_Dialog(self)
         setting_dialog.set_values.connect(self._apply_setting)
         setting_dialog.set_api_key(self.m_api_key)
-        setting_dialog.set_api_key(self.m_temperature)
-        setting_dialog.set_api_key(self.m_prompt)
+        setting_dialog.set_temperature(self.m_temperature)
+        setting_dialog.set_prompt(self.m_prompt)
         setting_dialog.exec()
            
     def _apply_setting(self, load_api_key, load_temp, load_prompt):
