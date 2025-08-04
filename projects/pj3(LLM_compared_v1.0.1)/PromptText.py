@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QTextEdit, QMessageBox
+from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtCore import pyqtSignal
 
 class MyTextEditor(QTextEdit):
@@ -8,5 +8,6 @@ class MyTextEditor(QTextEdit):
 
         self.text_change = None
     def focusOutEvent(self, e):
-        self.call_OutFocus.emit()
         super().focusOutEvent(e)
+        self.call_OutFocus.emit()
+        
