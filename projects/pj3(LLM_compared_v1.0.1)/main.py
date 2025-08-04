@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import (
     QApplication, QDialog, QMainWindow, QMessageBox, QWidget, QVBoxLayout, QPlainTextEdit, QPushButton, QMessageBox, QTextEdit, QTableWidget, QTableWidgetItem
 )
 from PyQt5.QtCore import Qt, QCoreApplication
+from PyQt5.QtGui import QDoubleValidator
 from PyQt5.uic import loadUi
 
 from mainwindow import Ui_MainWindow
@@ -17,7 +18,7 @@ class ChatRoom:
     def __init__(self, name = "Unnamed chat"):
         self.name = name
         self.m_api_key = None
-        self.m_temperature = "select temperature..."
+        self.m_temperature = "0.00"
         self.m_prompt = ""
 
         self.default_chat_log = ""
@@ -31,26 +32,55 @@ class Window(QMainWindow, Ui_MainWindow):
         super().__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.connectSignalsSlots()
+
+        validator = QDoubleValidator()
+        validator.setRange(0.00, 1.00)
+        validator.setDecimals(2)
+        validator.setNotation(QDoubleValidator.StandardNotation)
+        self.ui.temp_val.setValidator(validator)
 
         self.m_api_key = None
-        self.m_temperature = None
+        self.m_temperature = "0.00"
         self.m_prompt = None
         self.chat_histroy = ChatMessageHistory() #챗히스토리 관리
+
+        self.connectSignalsSlots()
 
         self.chat_rooms = []    #채팅방 관리
         self.current_chat_room = None
         self.add_new_chat_room(initial=True)
 
+    def slider_temp(self):        
+        self.temperature_apply(True)
+
+    def text_temp(self):
+        self.temperature_apply(False)
+
+    def temperature_apply(self, flag):
+        if flag:
+            float_val = self.ui.temp_slider.value() * 0.01
+            if float_val == float(self.m_temperature) or str(float_val) == self.ui.temp_val.text().strip():
+                return
+            self.ui.temp_val.setText(str(float_val))
+            QMessageBox.about(self, "입력 완료", "temperature 입력이 완료되었습니다")
+        else:
+            float_val = float(self.ui.temp_val.text().strip())
+            if float_val == self.m_temperature or float_val * 100 == self.ui.temp_slider.value():
+                return
+            self.ui.temp_slider.setValue(int(float_val * 100))
+            QMessageBox.about(self, "입력 완료", "temperature 입력이 완료되었습니다")
+
     def connectSignalsSlots(self):
         self.ui.send_btn.clicked.connect(self.load_message)
         self.ui.api_key_txt.editingFinished.connect(self.apply_api_key)
         self.ui.prompt_txt.call_OutFocus.connect(self.apply_prompt)
-        self.ui.temp_combo.currentTextChanged.connect(self.apply_temperature)
 
         self.ui.new_chat_btn.clicked.connect(self.add_new_chat_room)
         self.ui.del_chat_btn.clicked.connect(self.delete_selected_chat_room)
         self.ui.chat_room_table.itemSelectionChanged.connect(self.load_selected_chat_room)
+        self.ui.temp_slider.sliderReleased.connect(self.slider_temp)
+
+        self.ui.temp_val.editingFinished.connect(self.text_temp)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -118,7 +148,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.current_chat_room:
             self.current_chat_room.m_api_key = self.ui.api_key_txt.text().strip()
             self.current_chat_room.m_prompt = self.ui.prompt_txt.toPlainText().strip()
-            self.current_chat_room.m_temperature = self.ui.temp_combo.currentText().strip()
+            self.current_chat_room.m_temperature = self.ui.temp_val.text().strip()
             self.current_chat_room.default_chat_log = self.ui.non_history_txt.toPlainText().strip()
             self.current_chat_room.experiment_chat_log = self.ui.history_txt.toPlainText().strip()
             self.current_chat_room.user_in_txt = self.ui.input_text.toPlainText().strip()
@@ -143,11 +173,10 @@ class Window(QMainWindow, Ui_MainWindow):
         # Disconnect signals temporarily to prevent unwanted triggers
         self.ui.api_key_txt.editingFinished.disconnect(self.apply_api_key)
         self.ui.prompt_txt.call_OutFocus.disconnect(self.apply_prompt)
-        self.ui.temp_combo.currentTextChanged.disconnect(self.apply_temperature)
 
         self.ui.api_key_txt.setText(room.m_api_key if room.m_api_key else "")
         self.ui.prompt_txt.setText(room.m_prompt if room.m_prompt else "")
-        self.ui.temp_combo.setCurrentText(room.m_temperature)
+        self.ui.temp_val.setText(room.m_temperature)
         self.ui.non_history_txt.setText(room.default_chat_log)
         self.ui.history_txt.setText(room.experiment_chat_log)
         self.ui.input_text.setPlainText(room.user_in_txt)
@@ -155,12 +184,11 @@ class Window(QMainWindow, Ui_MainWindow):
         # Reconnect signals
         self.ui.api_key_txt.editingFinished.connect(self.apply_api_key)
         self.ui.prompt_txt.call_OutFocus.connect(self.apply_prompt)
-        self.ui.temp_combo.currentTextChanged.connect(self.apply_temperature)
     
     def clear_chat_ui(self):
         self.ui.api_key_txt.clear()
         self.ui.prompt_txt.clear()
-        self.ui.temp_combo.setCurrentText("0.7") # Reset to default
+        self.ui.temp_val.setText("0.00") # Reset to default
         self.ui.non_history_txt.clear()
         self.ui.history_txt.clear()
         self.ui.input_text.clear()
@@ -191,10 +219,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.m_prompt = self.ui.prompt_txt.toPlainText().strip()
             QMessageBox.about(self, "입력 완료", "prompt 입력이 완료되었습니다")
         
-    def apply_temperature(self):
-        self.m_temperature = self.ui.temp_combo.currentText()
-        QMessageBox.about(self, "입력 완료", "temperature 입력이 완료되었습니다")
-
+    
     def default_llm(self, msg):
         response = None
         chat_model = ChatOpenAI(
