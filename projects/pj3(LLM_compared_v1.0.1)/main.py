@@ -39,36 +39,32 @@ class Window(QMainWindow, Ui_MainWindow):
         validator.setNotation(QDoubleValidator.StandardNotation)
         self.ui.temp_val.setValidator(validator)
 
-        self.m_api_key = None
-        self.m_temperature = "0.00"
-        self.m_prompt = None
-        self.chat_histroy = ChatMessageHistory() #챗히스토리 관리
-
         self.connectSignalsSlots()
 
         self.chat_rooms = []    #채팅방 관리
         self.current_chat_room = None
         self.add_new_chat_room(initial=True)
 
-    def slider_temp(self):        
-        self.temperature_apply(True)
+    def slider_temp_value(self):
+        float_val = self.ui.temp_slider.value() / 100
+        if float_val == float(self.current_chat_room.m_temperature):
+            return
+        self.current_chat_room.m_temperature = str(float_val)
+        self.sync_temp_value()
 
-    def text_temp(self):
-        self.temperature_apply(False)
+    def text_temp_value(self):
+        float_val = self.ui.temp_val.text().strip()
+        if float_val == self.current_chat_room.m_temperature:
+            return
+        self.current_chat_room.m_temperature = float_val
+        self.sync_temp_value()
 
-    def temperature_apply(self, flag):
-        if flag:
-            float_val = self.ui.temp_slider.value() * 0.01
-            if float_val == float(self.m_temperature) or str(float_val) == self.ui.temp_val.text().strip():
-                return
-            self.ui.temp_val.setText(str(float_val))
-            QMessageBox.about(self, "입력 완료", "temperature 입력이 완료되었습니다")
-        else:
-            float_val = float(self.ui.temp_val.text().strip())
-            if float_val == self.m_temperature or float_val * 100 == self.ui.temp_slider.value():
-                return
-            self.ui.temp_slider.setValue(int(float_val * 100))
-            QMessageBox.about(self, "입력 완료", "temperature 입력이 완료되었습니다")
+    def sync_temp_value(self):
+        final_val = self.current_chat_room.m_temperature
+        if self.ui.temp_slider.value() * 0.01 != float(final_val):
+            self.ui.temp_slider.setValue(int(float(final_val) * 100))
+        if self.ui.temp_val.text().strip() != final_val:
+            self.ui.temp_val.setText(final_val)
 
     def connectSignalsSlots(self):
         self.ui.send_btn.clicked.connect(self.load_message)
@@ -78,9 +74,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.new_chat_btn.clicked.connect(self.add_new_chat_room)
         self.ui.del_chat_btn.clicked.connect(self.delete_selected_chat_room)
         self.ui.chat_room_table.itemSelectionChanged.connect(self.load_selected_chat_room)
-        self.ui.temp_slider.sliderReleased.connect(self.slider_temp)
-
-        self.ui.temp_val.editingFinished.connect(self.text_temp)
+        self.ui.temp_slider.valueChanged.connect(self.slider_temp_value)
+        self.ui.temp_val.textChanged.connect(self.text_temp_value)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -106,7 +101,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def add_new_chat_room(self, initial = False):
         if not initial:
             self.stored_ui_information()
-        new_room_name = f"Chat {len(self.chat_rooms) + 1}"
+        new_room_name = "Unnamed Chat"
         new_room = ChatRoom(name=new_room_name)
         self.chat_rooms.append(new_room)
         self.update_chat_room_list()
@@ -177,6 +172,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.api_key_txt.setText(room.m_api_key if room.m_api_key else "")
         self.ui.prompt_txt.setText(room.m_prompt if room.m_prompt else "")
         self.ui.temp_val.setText(room.m_temperature)
+        self.ui.temp_slider.setValue(int(float(room.m_temperature) * 100))
         self.ui.non_history_txt.setText(room.default_chat_log)
         self.ui.history_txt.setText(room.experiment_chat_log)
         self.ui.input_text.setPlainText(room.user_in_txt)
@@ -209,28 +205,30 @@ class Window(QMainWindow, Ui_MainWindow):
             )
     def apply_api_key(self):
         if self.ui.api_key_txt.text().strip():
-            self.m_api_key = self.ui.api_key_txt.text().strip()
+            self.current_chat_room.m_api_key = self.ui.api_key_txt.text().strip()
             QMessageBox.about(self, "입력 완료", "api key 입력이 완료되었습니다")
+            self.show_status_messages(f"api key is apply successful")
 
     def apply_prompt(self):
-        if self.m_prompt == self.ui.prompt_txt.toPlainText().strip():
+        if self.current_chat_room.m_prompt == self.ui.prompt_txt.toPlainText().strip():
             return
         elif self.ui.prompt_txt.toPlainText().strip():
-            self.m_prompt = self.ui.prompt_txt.toPlainText().strip()
+            self.current_chat_room.m_prompt = self.ui.prompt_txt.toPlainText().strip()
             QMessageBox.about(self, "입력 완료", "prompt 입력이 완료되었습니다")
+            self.show_status_messages(f"prompt is apply successful")
         
     
     def default_llm(self, msg):
         response = None
         chat_model = ChatOpenAI(
-            api_key=self.m_api_key,
-            temperature=self.m_temperature,
+            api_key=self.current_chat_room.m_api_key,
+            temperature=self.current_chat_room.m_temperature,
         )
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
-                    self.m_prompt
+                    self.current_chat_room.m_prompt
                 ),
                 ("human", "{input}"),
             ]
@@ -274,14 +272,14 @@ class Window(QMainWindow, Ui_MainWindow):
     def history_llm(self, msg):
         response = None
         chat_model = ChatOpenAI(
-            api_key=self.m_api_key,
-            temperature=self.m_temperature,
+            api_key=self.current_chat_room.m_api_key,
+            temperature=self.current_chat_room.m_temperature,
         )
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
-                    self.m_prompt
+                    self.current_chat_room.m_prompt
                 ),
                 ("placeholder", "{chat_history}"),
                 ("human", "{input}"),
@@ -291,7 +289,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         chain_history = RunnableWithMessageHistory(
             chain,
-            lambda session_id: self.chat_histroy,
+            lambda session_id: self.current_chat_room.chat_histroy,
             input_messages_key="input",
             history_messages_key="chat_history",
         )
@@ -330,7 +328,6 @@ class Window(QMainWindow, Ui_MainWindow):
                 time.sleep(0.05)
 
         self.ui.history_txt.append("")
-        self.current_chat_room.chat_histroy = self.chat_histroy
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
