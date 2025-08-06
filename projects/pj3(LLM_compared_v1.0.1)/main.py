@@ -1,15 +1,14 @@
 import sys, os, time
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QMainWindow, QMessageBox, QWidget, QVBoxLayout, QPlainTextEdit, QPushButton, QMessageBox, QTextEdit, QTableWidget, QTableWidgetItem
+    QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy
 )
-from PyQt5.QtCore import Qt, QCoreApplication
+from PyQt5.QtCore import Qt, QCoreApplication, QTimer, QObject
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.uic import loadUi
 
 from mainwindow import Ui_MainWindow
 
 from langchain_openai import OpenAI, ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
@@ -26,6 +25,16 @@ class ChatRoom:
         self.user_in_txt = ""
 
         self.chat_histroy = ChatMessageHistory() #챗히스토리 관리
+
+class Slider_Animation(QObject):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.animation_timer = QTimer(parent)
+        self.step = 0
+        self.total_steps = 20   #(0.5초)
+        self.stored_panel_size = 0
+        self.is_collapsed = False
 
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -44,6 +53,92 @@ class Window(QMainWindow, Ui_MainWindow):
         self.chat_rooms = []    #채팅방 관리
         self.current_chat_room = None
         self.add_new_chat_room(initial=True)
+
+        self.left_animation = Slider_Animation(self)
+        self.left_animation.animation_timer.timeout.connect(self.update_left_animation)
+
+        self.right_animation = Slider_Animation(self)
+        self.right_animation.animation_timer.timeout.connect(self.update_right_animation)
+
+        self.ui.splitter.setSizes([174, 758, 227])
+
+    def toggle_left_animation(self):
+        cur_sizes = self.ui.splitter.sizes()
+        left_panel = cur_sizes[0]
+        mid_panel = cur_sizes[1]
+        right_panel = cur_sizes[2]
+
+        if self.left_animation.animation_timer.isActive():
+            return
+        
+        if self.left_animation.is_collapsed:
+            self.start_sizes = [left_panel, mid_panel, right_panel]
+            self.end_sizes = [self.left_animation.stored_panel_size, mid_panel - self.left_animation.stored_panel_size, right_panel]
+            self.left_animation.stored_panel_size = 0
+            self.ui.left_split_btn.setText("l<")
+        else:
+            self.start_sizes = [left_panel, mid_panel, right_panel]
+            self.end_sizes = [self.left_animation.stored_panel_size, mid_panel + self.left_animation.stored_panel_size, right_panel]
+            self.left_animation.stored_panel_size = left_panel
+            self.ui.left_split_btn.setText(">l")
+
+        self.left_animation.step = 0
+        self.left_animation.animation_timer.start(10)
+
+    def update_left_animation(self):
+        self.left_animation.step += 1
+        if self.left_animation.step > self.left_animation.total_steps:
+            self.left_animation.animation_timer.stop()
+            self.left_animation.is_collapsed = not self.left_animation.is_collapsed
+            return
+    
+        progress = self.left_animation.step / self.left_animation.total_steps
+        current_sizes = [
+            int(self.start_sizes[0] + (self.end_sizes[0] - self.start_sizes[0]) * progress),
+            int(self.start_sizes[1] - (self.end_sizes[0] - self.start_sizes[0]) * progress),
+            int(self.start_sizes[2])
+        ]
+        
+        self.ui.splitter.setSizes(current_sizes)
+
+    def toggle_right_animation(self):
+        cur_sizes = self.ui.splitter.sizes()
+        left_panel = cur_sizes[0]
+        mid_panel = cur_sizes[1]
+        right_panel = cur_sizes[2]
+
+        if self.right_animation.animation_timer.isActive():
+            return
+        
+        if self.right_animation.is_collapsed:
+            self.start_sizes = [left_panel, mid_panel, right_panel]
+            self.end_sizes = [left_panel, mid_panel - self.right_animation.stored_panel_size, self.right_animation.stored_panel_size]
+            self.right_animation.stored_panel_size = 0
+            self.ui.right_split_btn.setText(">l")
+        else:
+            self.start_sizes = [left_panel, mid_panel, right_panel]
+            self.end_sizes = [left_panel, mid_panel + self.right_animation.stored_panel_size, self.right_animation.stored_panel_size]
+            self.right_animation.stored_panel_size = right_panel
+            self.ui.right_split_btn.setText("l<")
+
+        self.right_animation.step = 0
+        self.right_animation.animation_timer.start(10)
+
+    def update_right_animation(self):
+        self.right_animation.step += 1
+        if self.right_animation.step > self.right_animation.total_steps:
+            self.right_animation.animation_timer.stop()
+            self.right_animation.is_collapsed = not self.right_animation.is_collapsed
+            return
+    
+        progress = self.right_animation.step / self.right_animation.total_steps
+        current_sizes = [
+            int(self.start_sizes[0]),
+            int(self.start_sizes[1] - (self.end_sizes[2] - self.start_sizes[2]) * progress),
+            int(self.start_sizes[2] + (self.end_sizes[2] - self.start_sizes[2]) * progress)
+        ]
+        
+        self.ui.splitter.setSizes(current_sizes)
 
     def slider_temp_value(self):
         float_val = self.ui.temp_slider.value() / 100
@@ -76,6 +171,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.chat_room_table.itemSelectionChanged.connect(self.load_selected_chat_room)
         self.ui.temp_slider.valueChanged.connect(self.slider_temp_value)
         self.ui.temp_val.textChanged.connect(self.text_temp_value)
+        self.ui.left_split_btn.clicked.connect(self.toggle_left_animation)
+        self.ui.right_split_btn.clicked.connect(self.toggle_right_animation)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -328,6 +425,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 time.sleep(0.05)
 
         self.ui.history_txt.append("")
+        self.show_status_messages("Experiment chat is ")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
