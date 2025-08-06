@@ -1,8 +1,8 @@
-import sys, os, time
+import sys, os, time, copy
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy
+    QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy, QMenu, QAction
 )
-from PyQt5.QtCore import Qt, QCoreApplication, QTimer, QObject
+from PyQt5.QtCore import Qt, QCoreApplication, QTimer, QObject, QPoint
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.uic import loadUi
 
@@ -14,7 +14,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 
 class ChatRoom:
-    def __init__(self, name = "Unnamed chat"):
+    def __init__(self, name):
         self.name = name
         self.m_api_key = None
         self.m_temperature = "0.00"
@@ -54,13 +54,62 @@ class Window(QMainWindow, Ui_MainWindow):
         self.current_chat_room = None
         self.add_new_chat_room(initial=True)
 
+        # 오른쪽 클릭된 아이템을 저장할 멤버 변수
+        self.clicked_item = None
+
+        self.chat_room_update_flag = False
+
         self.left_animation = Slider_Animation(self)
         self.left_animation.animation_timer.timeout.connect(self.update_left_animation)
 
         self.right_animation = Slider_Animation(self)
         self.right_animation.animation_timer.timeout.connect(self.update_right_animation)
 
+        self.ui.chat_room_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.chat_room_table.customContextMenuRequested.connect(self.on_context_menu)
+
         self.ui.splitter.setSizes([174, 758, 227])
+
+    def on_context_menu(self, point: QPoint):
+        self.clicked_item = self.ui.chat_room_table.itemAt(point)
+
+        if self.clicked_item is None:
+            return
+        
+        menu = QMenu(self)
+
+        action_add = QAction("Add Chat", self)
+        action_rename = QAction("Rename Chat", self)
+        action_delete = QAction("Delete Chat", self)
+        action_duplicate = QAction("Duplicated Chat", self)
+        
+        action_add.triggered.connect(self.add_new_chat_room)
+        action_rename.triggered.connect(self.rename_chat)
+        action_duplicate.triggered.connect(self.duplicate_chat)
+        action_delete.triggered.connect(self.delete_selected_chat_room)
+
+        menu.addAction(action_add)
+        menu.addAction(action_rename)
+        menu.addAction(action_duplicate)
+        menu.addSeparator()
+        menu.addAction(action_delete)
+
+        menu.exec_(self.ui.chat_room_table.mapToGlobal(point))
+
+    def rename_chat(self):
+        if self.clicked_item:
+            self.ui.chat_room_table.editItem(self.clicked_item)
+
+    def duplicate_chat(self):
+        self.stored_ui_information()
+        selected_row = self.ui.chat_room_table.selectedItems()
+        if selected_row:
+            index = selected_row[0].row()
+            room = self.chat_rooms[index]
+            duplicate_room = copy.copy(room)
+            duplicate_room.name += "(copy)"
+            self.chat_rooms.append(duplicate_room)
+            self.update_chat_room_list()
 
     def toggle_left_animation(self):
         cur_sizes = self.ui.splitter.sizes()
@@ -163,12 +212,12 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def connectSignalsSlots(self):
         self.ui.send_btn.clicked.connect(self.load_message)
-        self.ui.api_key_txt.editingFinished.connect(self.apply_api_key)
-        self.ui.prompt_txt.call_OutFocus.connect(self.apply_prompt)
-
+        self.ui.api_key_txt.textChanged.connect(self.apply_api_key)
+        self.ui.prompt_txt.textChanged.connect(self.apply_prompt)
         self.ui.new_chat_btn.clicked.connect(self.add_new_chat_room)
         self.ui.del_chat_btn.clicked.connect(self.delete_selected_chat_room)
         self.ui.chat_room_table.itemSelectionChanged.connect(self.load_selected_chat_room)
+        self.ui.chat_room_table.itemChanged.connect(self.room_name_changed)
         self.ui.temp_slider.valueChanged.connect(self.slider_temp_value)
         self.ui.temp_val.textChanged.connect(self.text_temp_value)
         self.ui.left_split_btn.clicked.connect(self.toggle_left_animation)
@@ -182,6 +231,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.statusbar.showMessage(message, 3000) # Show for 3 seconds
 
     def update_chat_room_list(self):
+        self.chat_room_update_flag = True
+
         self.ui.chat_room_table.setRowCount(len(self.chat_rooms))
         for i, room in enumerate(self.chat_rooms):
             item = QTableWidgetItem(room.name)
@@ -194,6 +245,8 @@ class Window(QMainWindow, Ui_MainWindow):
             self.ui.chat_room_table.selectRow(index)
         elif self.chat_rooms:
             self.ui.chat_room_table.selectRow(0) # Select first if no current or current deleted
+
+        self.chat_room_update_flag = False
 
     def add_new_chat_room(self, initial = False):
         if not initial:
@@ -245,6 +298,18 @@ class Window(QMainWindow, Ui_MainWindow):
             self.current_chat_room.experiment_chat_log = self.ui.history_txt.toPlainText().strip()
             self.current_chat_room.user_in_txt = self.ui.input_text.toPlainText().strip()
 
+    def room_name_changed(self, item: QTableWidgetItem):
+        if self.chat_room_update_flag:
+            return
+        
+        row = item.row()        
+        load_room = self.chat_rooms[row]        
+        load_room.name = item.text().strip()
+        self.chat_rooms[row] = load_room
+
+        self.update_chat_room_list()
+
+        self.show_status_messages(f"Renamed the room: '{load_room.name}'")
 
     def load_selected_chat_room(self):
         self.stored_ui_information()
@@ -263,8 +328,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def load_chat_room_data_into_ui(self, room):
         # Disconnect signals temporarily to prevent unwanted triggers
-        self.ui.api_key_txt.editingFinished.disconnect(self.apply_api_key)
-        self.ui.prompt_txt.call_OutFocus.disconnect(self.apply_prompt)
+        self.ui.api_key_txt.textChanged.disconnect(self.apply_api_key)
+        self.ui.prompt_txt.textChanged.disconnect(self.apply_prompt)
 
         self.ui.api_key_txt.setText(room.m_api_key if room.m_api_key else "")
         self.ui.prompt_txt.setText(room.m_prompt if room.m_prompt else "")
@@ -275,8 +340,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.input_text.setPlainText(room.user_in_txt)
 
         # Reconnect signals
-        self.ui.api_key_txt.editingFinished.connect(self.apply_api_key)
-        self.ui.prompt_txt.call_OutFocus.connect(self.apply_prompt)
+        self.ui.api_key_txt.textChanged.connect(self.apply_api_key)
+        self.ui.prompt_txt.textChanged.connect(self.apply_prompt)
     
     def clear_chat_ui(self):
         self.ui.api_key_txt.clear()
@@ -303,7 +368,6 @@ class Window(QMainWindow, Ui_MainWindow):
     def apply_api_key(self):
         if self.ui.api_key_txt.text().strip():
             self.current_chat_room.m_api_key = self.ui.api_key_txt.text().strip()
-            QMessageBox.about(self, "입력 완료", "api key 입력이 완료되었습니다")
             self.show_status_messages(f"api key is apply successful")
 
     def apply_prompt(self):
@@ -311,7 +375,6 @@ class Window(QMainWindow, Ui_MainWindow):
             return
         elif self.ui.prompt_txt.toPlainText().strip():
             self.current_chat_room.m_prompt = self.ui.prompt_txt.toPlainText().strip()
-            QMessageBox.about(self, "입력 완료", "prompt 입력이 완료되었습니다")
             self.show_status_messages(f"prompt is apply successful")
         
     
@@ -428,6 +491,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.show_status_messages("Experiment chat is ")
 
 if __name__ == "__main__":
+
     app = QApplication(sys.argv)
     win = Window()
     win.show()

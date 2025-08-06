@@ -290,6 +290,10 @@ QTableWidget::item:selected{
 	background-color: rgb(0,70,0); /* 항목 선택 시 배경색 */
     border: 1px solid rgb(166, 217, 171); /* 드롭다운 목록 테두리 (선택 사항) */
 }
+/* QTableWidget 내에 생성되는 편집기 위젯(QLineEdit)의 스타일 */
+QTableWidget QLineEdit {
+    color: white;
+}
 QTableWidget:focus {	/*테이블 선택시 테두리 색깔*/
     border: 1px solid rgb(184, 247, 185);
 }</string>

@@ -10,8 +10,6 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from PromptText import MyTextEditor
-from PlainTextEdit import mPlainTextEdit
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -185,6 +183,10 @@ class Ui_MainWindow(object):
 "    background-color: rgb(0,70,0); /* 항목 선택 시 배경색 */\n"
 "    border: 1px solid rgb(166, 217, 171); /* 드롭다운 목록 테두리 (선택 사항) */\n"
 "}\n"
+"/* QTableWidget 내에 생성되는 편집기 위젯(QLineEdit)의 스타일 */\n"
+"QTableWidget QLineEdit {\n"
+"    color: white;\n"
+"}\n"
 "QTableWidget:focus {    /*테이블 선택시 테두리 색깔*/\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "}")
@@ -289,8 +291,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        # self.input_text = QtWidgets.QPlainTextEdit(self.widget1)/
-        self.input_text = mPlainTextEdit(self.widget1)
+        self.input_text = QtWidgets.QPlainTextEdit(self.widget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -405,8 +406,7 @@ class Ui_MainWindow(object):
 "}")
         self.label_4.setObjectName("label_4")
         self.verticalLayout_2.addWidget(self.label_4)
-        # self.prompt_txt = QtWidgets.QTextEdit(self.Setting)
-        self.prompt_txt = MyTextEditor(self.Setting)
+        self.prompt_txt = QtWidgets.QTextEdit(self.Setting)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -513,9 +513,6 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.input_text, self.non_history_txt)
         MainWindow.setTabOrder(self.non_history_txt, self.history_txt)
         MainWindow.setTabOrder(self.history_txt, self.tabWidget)
-
-        #추가되는 코드
-        self.input_text.set_send_button(self.send_btn)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
