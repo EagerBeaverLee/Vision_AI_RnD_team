@@ -1,0 +1,1030 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>4 Building a research summarization engine</title><style>
+/* cspell:disable-file */
+/* webkit printing magic: print all background colors */
+html {
+	-webkit-print-color-adjust: exact;
+}
+* {
+	box-sizing: border-box;
+	-webkit-print-color-adjust: exact;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+@media only screen {
+	body {
+		margin: 2em auto;
+		max-width: 900px;
+		color: rgb(55, 53, 47);
+	}
+}
+
+body {
+	line-height: 1.5;
+	white-space: pre-wrap;
+}
+
+a,
+a.visited {
+	color: inherit;
+	text-decoration: underline;
+}
+
+.pdf-relative-link-path {
+	font-size: 80%;
+	color: #444;
+}
+
+h1,
+h2,
+h3 {
+	letter-spacing: -0.01em;
+	line-height: 1.2;
+	font-weight: 600;
+	margin-bottom: 0;
+}
+
+.page-title {
+	font-size: 2.5rem;
+	font-weight: 700;
+	margin-top: 0;
+	margin-bottom: 0.75em;
+}
+
+h1 {
+	font-size: 1.875rem;
+	margin-top: 1.875rem;
+}
+
+h2 {
+	font-size: 1.5rem;
+	margin-top: 1.5rem;
+}
+
+h3 {
+	font-size: 1.25rem;
+	margin-top: 1.25rem;
+}
+
+.source {
+	border: 1px solid #ddd;
+	border-radius: 3px;
+	padding: 1.5em;
+	word-break: break-all;
+}
+
+.callout {
+	border-radius: 3px;
+	padding: 1rem;
+}
+
+figure {
+	margin: 1.25em 0;
+	page-break-inside: avoid;
+}
+
+figcaption {
+	opacity: 0.5;
+	font-size: 85%;
+	margin-top: 0.5em;
+}
+
+mark {
+	background-color: transparent;
+}
+
+.indented {
+	padding-left: 1.5em;
+}
+
+hr {
+	background: transparent;
+	display: block;
+	width: 100%;
+	height: 1px;
+	visibility: visible;
+	border: none;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+img {
+	max-width: 100%;
+}
+
+@media only print {
+	img {
+		max-height: 100vh;
+		object-fit: contain;
+	}
+}
+
+@page {
+	margin: 1in;
+}
+
+.collection-content {
+	font-size: 0.875rem;
+}
+
+.column-list {
+	display: flex;
+	justify-content: space-between;
+}
+
+.column {
+	padding: 0 1em;
+}
+
+.column:first-child {
+	padding-left: 0;
+}
+
+.column:last-child {
+	padding-right: 0;
+}
+
+.table_of_contents-item {
+	display: block;
+	font-size: 0.875rem;
+	line-height: 1.3;
+	padding: 0.125rem;
+}
+
+.table_of_contents-indent-1 {
+	margin-left: 1.5rem;
+}
+
+.table_of_contents-indent-2 {
+	margin-left: 3rem;
+}
+
+.table_of_contents-indent-3 {
+	margin-left: 4.5rem;
+}
+
+.table_of_contents-link {
+	text-decoration: none;
+	opacity: 0.7;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.18);
+}
+
+table,
+th,
+td {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+	border-collapse: collapse;
+}
+
+table {
+	border-left: none;
+	border-right: none;
+}
+
+th,
+td {
+	font-weight: normal;
+	padding: 0.25em 0.5em;
+	line-height: 1.5;
+	min-height: 1.5em;
+	text-align: left;
+}
+
+th {
+	color: rgba(55, 53, 47, 0.6);
+}
+
+ol,
+ul {
+	margin: 0;
+	margin-block-start: 0.6em;
+	margin-block-end: 0.6em;
+}
+
+li > ol:first-child,
+li > ul:first-child {
+	margin-block-start: 0.6em;
+}
+
+ul > li {
+	list-style: disc;
+}
+
+ul.to-do-list {
+	padding-inline-start: 0;
+}
+
+ul.to-do-list > li {
+	list-style: none;
+}
+
+.to-do-children-checked {
+	text-decoration: line-through;
+	opacity: 0.375;
+}
+
+ul.toggle > li {
+	list-style: none;
+}
+
+ul {
+	padding-inline-start: 1.7em;
+}
+
+ul > li {
+	padding-left: 0.1em;
+}
+
+ol {
+	padding-inline-start: 1.6em;
+}
+
+ol > li {
+	padding-left: 0.2em;
+}
+
+.mono ol {
+	padding-inline-start: 2em;
+}
+
+.mono ol > li {
+	text-indent: -0.4em;
+}
+
+.toggle {
+	padding-inline-start: 0em;
+	list-style-type: none;
+}
+
+/* Indent toggle children */
+.toggle > li > details {
+	padding-left: 1.7em;
+}
+
+.toggle > li > details > summary {
+	margin-left: -1.1em;
+}
+
+.selected-value {
+	display: inline-block;
+	padding: 0 0.5em;
+	background: rgba(206, 205, 202, 0.5);
+	border-radius: 3px;
+	margin-right: 0.5em;
+	margin-top: 0.3em;
+	margin-bottom: 0.3em;
+	white-space: nowrap;
+}
+
+.collection-title {
+	display: inline-block;
+	margin-right: 1em;
+}
+
+.page-description {
+	margin-bottom: 2em;
+}
+
+.simple-table {
+	margin-top: 1em;
+	font-size: 0.875rem;
+	empty-cells: show;
+}
+.simple-table td {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table th {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table-header-color {
+	background: rgb(247, 246, 243);
+	color: black;
+}
+.simple-table-header {
+	font-weight: 500;
+}
+
+time {
+	opacity: 0.5;
+}
+
+.icon {
+	display: inline-block;
+	max-width: 1.2em;
+	max-height: 1.2em;
+	text-decoration: none;
+	vertical-align: text-bottom;
+	margin-right: 0.5em;
+}
+
+img.icon {
+	border-radius: 3px;
+}
+
+.user-icon {
+	width: 1.5em;
+	height: 1.5em;
+	border-radius: 100%;
+	margin-right: 0.5rem;
+}
+
+.user-icon-inner {
+	font-size: 0.8em;
+}
+
+.text-icon {
+	border: 1px solid #000;
+	text-align: center;
+}
+
+.page-cover-image {
+	display: block;
+	object-fit: cover;
+	width: 100%;
+	max-height: 30vh;
+}
+
+.page-header-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.page-header-icon-with-cover {
+	margin-top: -0.72em;
+	margin-left: 0.07em;
+}
+
+.page-header-icon img {
+	border-radius: 3px;
+}
+
+.link-to-page {
+	margin: 1em 0;
+	padding: 0;
+	border: none;
+	font-weight: 500;
+}
+
+p > .user {
+	opacity: 0.5;
+}
+
+td > .user,
+td > time {
+	white-space: nowrap;
+}
+
+input[type="checkbox"] {
+	transform: scale(1.5);
+	margin-right: 0.6em;
+	vertical-align: middle;
+}
+
+p {
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.image {
+	border: none;
+	margin: 1.5em 0;
+	padding: 0;
+	border-radius: 0;
+	text-align: center;
+}
+
+.code,
+code {
+	background: rgba(135, 131, 120, 0.15);
+	border-radius: 3px;
+	padding: 0.2em 0.4em;
+	border-radius: 3px;
+	font-size: 85%;
+	tab-size: 2;
+}
+
+code {
+	color: #eb5757;
+}
+
+.code {
+	padding: 1.5em 1em;
+}
+
+.code-wrap {
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.code > code {
+	background: none;
+	padding: 0;
+	font-size: 100%;
+	color: inherit;
+}
+
+blockquote {
+	font-size: 1.25em;
+	margin: 1em 0;
+	padding-left: 1em;
+	border-left: 3px solid rgb(55, 53, 47);
+}
+
+.bookmark {
+	text-decoration: none;
+	max-height: 8em;
+	padding: 0;
+	display: flex;
+	width: 100%;
+	align-items: stretch;
+}
+
+.bookmark-title {
+	font-size: 0.85em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: 1.75em;
+	white-space: nowrap;
+}
+
+.bookmark-text {
+	display: flex;
+	flex-direction: column;
+}
+
+.bookmark-info {
+	flex: 4 1 180px;
+	padding: 12px 14px 14px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.bookmark-image {
+	width: 33%;
+	flex: 1 1 180px;
+	display: block;
+	position: relative;
+	object-fit: cover;
+	border-radius: 1px;
+}
+
+.bookmark-description {
+	color: rgba(55, 53, 47, 0.6);
+	font-size: 0.75em;
+	overflow: hidden;
+	max-height: 4.5em;
+	word-break: break-word;
+}
+
+.bookmark-href {
+	font-size: 0.75em;
+	margin-top: 0.25em;
+}
+
+.sans { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"; }
+.code { font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; }
+.serif { font-family: Lyon-Text, Georgia, ui-serif, serif; }
+.mono { font-family: iawriter-mono, Nitti, Menlo, Courier, monospace; }
+.pdf .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK JP'; }
+.pdf:lang(zh-CN) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK SC'; }
+.pdf:lang(zh-TW) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK TC'; }
+.pdf:lang(ko-KR) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK KR'; }
+.pdf .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.pdf .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK JP'; }
+.pdf:lang(zh-CN) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK SC'; }
+.pdf:lang(zh-TW) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK TC'; }
+.pdf:lang(ko-KR) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK KR'; }
+.pdf .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.highlight-default {
+	color: rgba(50, 48, 44, 1);
+}
+.highlight-gray {
+	color: rgba(115, 114, 110, 1);
+	fill: rgba(115, 114, 110, 1);
+}
+.highlight-brown {
+	color: rgba(159, 107, 83, 1);
+	fill: rgba(159, 107, 83, 1);
+}
+.highlight-orange {
+	color: rgba(217, 115, 13, 1);
+	fill: rgba(217, 115, 13, 1);
+}
+.highlight-yellow {
+	color: rgba(203, 145, 47, 1);
+	fill: rgba(203, 145, 47, 1);
+}
+.highlight-teal {
+	color: rgba(68, 131, 97, 1);
+	fill: rgba(68, 131, 97, 1);
+}
+.highlight-blue {
+	color: rgba(51, 126, 169, 1);
+	fill: rgba(51, 126, 169, 1);
+}
+.highlight-purple {
+	color: rgba(144, 101, 176, 1);
+	fill: rgba(144, 101, 176, 1);
+}
+.highlight-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.highlight-red {
+	color: rgba(205, 60, 58, 1);
+	fill: rgba(205, 60, 58, 1);
+}
+.highlight-default_background {
+	color: rgba(50, 48, 44, 1);
+}
+.highlight-gray_background {
+	background: rgba(248, 248, 247, 1);
+}
+.highlight-brown_background {
+	background: rgba(244, 238, 238, 1);
+}
+.highlight-orange_background {
+	background: rgba(251, 236, 221, 1);
+}
+.highlight-yellow_background {
+	background: rgba(251, 243, 219, 1);
+}
+.highlight-teal_background {
+	background: rgba(237, 243, 236, 1);
+}
+.highlight-blue_background {
+	background: rgba(231, 243, 248, 1);
+}
+.highlight-purple_background {
+	background: rgba(248, 243, 252, 1);
+}
+.highlight-pink_background {
+	background: rgba(252, 241, 246, 1);
+}
+.highlight-red_background {
+	background: rgba(253, 235, 236, 1);
+}
+.block-color-default {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray {
+	color: rgba(115, 114, 110, 1);
+	fill: rgba(115, 114, 110, 1);
+}
+.block-color-brown {
+	color: rgba(159, 107, 83, 1);
+	fill: rgba(159, 107, 83, 1);
+}
+.block-color-orange {
+	color: rgba(217, 115, 13, 1);
+	fill: rgba(217, 115, 13, 1);
+}
+.block-color-yellow {
+	color: rgba(203, 145, 47, 1);
+	fill: rgba(203, 145, 47, 1);
+}
+.block-color-teal {
+	color: rgba(68, 131, 97, 1);
+	fill: rgba(68, 131, 97, 1);
+}
+.block-color-blue {
+	color: rgba(51, 126, 169, 1);
+	fill: rgba(51, 126, 169, 1);
+}
+.block-color-purple {
+	color: rgba(144, 101, 176, 1);
+	fill: rgba(144, 101, 176, 1);
+}
+.block-color-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.block-color-red {
+	color: rgba(205, 60, 58, 1);
+	fill: rgba(205, 60, 58, 1);
+}
+.block-color-default_background {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray_background {
+	background: rgba(248, 248, 247, 1);
+}
+.block-color-brown_background {
+	background: rgba(244, 238, 238, 1);
+}
+.block-color-orange_background {
+	background: rgba(251, 236, 221, 1);
+}
+.block-color-yellow_background {
+	background: rgba(251, 243, 219, 1);
+}
+.block-color-teal_background {
+	background: rgba(237, 243, 236, 1);
+}
+.block-color-blue_background {
+	background: rgba(231, 243, 248, 1);
+}
+.block-color-purple_background {
+	background: rgba(248, 243, 252, 1);
+}
+.block-color-pink_background {
+	background: rgba(252, 241, 246, 1);
+}
+.block-color-red_background {
+	background: rgba(253, 235, 236, 1);
+}
+.select-value-color-default { background-color: rgba(84, 72, 49, 0.08); }
+.select-value-color-gray { background-color: rgba(84, 72, 49, 0.15); }
+.select-value-color-brown { background-color: rgba(210, 162, 141, 0.35); }
+.select-value-color-orange { background-color: rgba(224, 124, 57, 0.27); }
+.select-value-color-yellow { background-color: rgba(236, 191, 66, 0.39); }
+.select-value-color-green { background-color: rgba(123, 183, 129, 0.27); }
+.select-value-color-blue { background-color: rgba(93, 165, 206, 0.27); }
+.select-value-color-purple { background-color: rgba(168, 129, 197, 0.27); }
+.select-value-color-pink { background-color: rgba(225, 136, 179, 0.27); }
+.select-value-color-red { background-color: rgba(244, 171, 159, 0.4); }
+
+.checkbox {
+	display: inline-flex;
+	vertical-align: text-bottom;
+	width: 16;
+	height: 16;
+	background-size: 16px;
+	margin-left: 2px;
+	margin-right: 5px;
+}
+
+.checkbox-on {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%2358A9D7%22%2F%3E%0A%3Cpath%20d%3D%22M6.71429%2012.2852L14%204.9995L12.7143%203.71436L6.71429%209.71378L3.28571%206.2831L2%207.57092L6.71429%2012.2852Z%22%20fill%3D%22white%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+
+.checkbox-off {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20x%3D%220.75%22%20y%3D%220.75%22%20width%3D%2214.5%22%20height%3D%2214.5%22%20fill%3D%22white%22%20stroke%3D%22%2336352F%22%20stroke-width%3D%221.5%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+	
+</style></head><body><article id="2308004c-e856-8041-80f3-df07f5d15b88" class="page sans"><header><h1 class="page-title">4 Building a research summarization engine</h1><p class="page-description"></p></header><div class="page-body"><h2 id="2308004c-e856-81d7-b59e-fa3a2e57459c" class="">Lesson 4 Research summarization engine</h2><ul id="2308004c-e856-81da-b10a-e12035629080" class="bulleted-list"><li style="list-style-type:disc">연구 요약 엔진(Automated Research Summarization Engine)이란 무엇인가?</li></ul><ul id="2308004c-e856-8195-b829-f24ff30c6b0c" class="bulleted-list"><li style="list-style-type:disc">웹 검색(web search), 웹 스크래이핑(web scraping) 기능 이해 및 구현</li></ul><ul id="2338004c-e856-80a2-bf5f-fedb08f91925" class="bulleted-list"><li style="list-style-type:disc">웹 검색 생성과 결과 요약을 위한 Prompt Engineering 디자인 및 구현</li></ul><ul id="2338004c-e856-805c-9a60-d3ba609f39d2" class="bulleted-list"><li style="list-style-type:disc">전체 과정을 개별 LangChain 체인으로 구조화하기 </li></ul><ul id="2338004c-e856-80d2-b57c-d60777fea935" class="bulleted-list"><li style="list-style-type:disc">다양한 하위 체인을 하나의 종합적인 메인 체인으로 통합하기</li></ul><ul id="2338004c-e856-80ef-ac08-c927c2472709" class="bulleted-list"><li style="list-style-type:disc">병렬 처리를 위한 고급 LCEL(LangChain Expression Language)기능 적용하기 </li></ul><hr id="2308004c-e856-81a3-8b7d-c87238d4c9a8"/><h2 id="2308004c-e856-8118-a5b9-df8d23817fe3" class="">1. 자동화된 연구 요약 엔진(Automated Research Summarization Engine)이란 무엇인가?</h2><p id="2308004c-e856-8117-a6b7-e69bc9d2415d" class="">지금까지 내용에 기반하여 본 챕터에서는 연구 요약 엔진(Research Summarization Engine)을 개발하는 방법론에 대하여 소개하고자 한다. 여기서 개발하고자 하는 요약엔진의 기본적인 구조는 아래 그림과 같다.</p><figure id="2338004c-e856-80ef-a5b4-cc43d9440b4f" class="image"><a href="image.png"><img style="width:709.9661865234375px" src="image.png"/></a></figure><p id="2308004c-e856-819a-a87d-f3cb3643263e" class=""> </p><p id="2338004c-e856-80c2-94fb-f1bf0d766588" class="">위 그림에서 소개된 요약 엔진의 전반적인 작동원리는 다음과 같다.</p><ul id="2338004c-e856-80c3-8eba-fecd83c610d9" class="bulleted-list"><li style="list-style-type:disc">사용자 리서치 요청(1. research request)</li></ul><ul id="2338004c-e856-8090-be7e-d80c4f364146" class="bulleted-list"><li style="list-style-type:disc">Search Engine API를 활용한 웹검색(2. web search)</li></ul><ul id="2338004c-e856-8029-8086-efc94d479edf" class="bulleted-list"><li style="list-style-type:disc">웹 검색 결과(search results)를 요약 엔진으로 전달(3. search results)</li></ul><ul id="2338004c-e856-80da-85e8-f44bf1646a23" class="bulleted-list"><li style="list-style-type:disc">LLM을 이용한 각 검색 결과 요약(4. summarize search results; 5. summries)</li></ul><ul id="2338004c-e856-806e-ae15-f7c50e902493" class="bulleted-list"><li style="list-style-type:disc">LLM을 이용한 요약 자료 통합 및 최종 리포트 생성(6. compile research report; 7. research report)</li></ul><ul id="2338004c-e856-8051-82c6-eb87df160c65" class="bulleted-list"><li style="list-style-type:disc">최종 리포트 사용자에 전달(8. research report)     </li></ul><h2 id="2338004c-e856-808d-b606-c6a4014b160b" class="">2. 핵심 기능 구현</h2><p id="2338004c-e856-801a-8b14-d5c0006db45a" class="">아래 소개하게 될 모든 소스코드는 Visual Studio Code를 기반으로 작성되었으며, 가장 먼저 작업 폴더 생성, Virtual Environment 설정, 관련 라이브러리 인스톨이 필요하다. </p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-8059-ad05-d5d21302f317" class="code"><code class="language-Python">C:\Github\building-llm-applications&gt;md ch04
+C:\Github\building-llm-applications\ch04&gt;python -m venv env_ch04 #가상환경 생성
+C:\Github\building-llm-applications\ch04&gt;.\env_ch04\Scripts\activate #가상환경 활성화
+(env_ch04)C:\Github\building-llm-applications\ch04&gt;pip install langchain langchain_openai
+langchain_community requests bs4 duckduckgo-search</code></pre><h3 id="2338004c-e856-808d-9358-ec636817483b" class="">2-1. 리서치 요약 엔진에 필요한 핵심 기능</h3><p id="2338004c-e856-80b3-8eee-f33b08442065" class="">리서치 요약 엔진 개발을 위하여 구현해야 할 핵심 기능은 다음과 같다. </p><ul id="2338004c-e856-801e-8d1e-e0cf4bca1727" class="bulleted-list"><li style="list-style-type:disc">웹 검색 기능 (web_searching.py)</li></ul><ul id="2338004c-e856-801b-b4ad-d2137930bb2d" class="bulleted-list"><li style="list-style-type:disc">웹 컨텐츠 스크래이핑 기능 (web_scraping.py)</li></ul><ul id="2338004c-e856-8043-832a-ea21ee186d09" class="bulleted-list"><li style="list-style-type:disc">LLM 클라이언트(llm_models.py)</li></ul><ul id="2338004c-e856-80f4-b2ed-de27168661dc" class="bulleted-list"><li style="list-style-type:disc">JSON to Python object 컨버터(utilities.py)</li></ul><ul id="2338004c-e856-808c-93e0-f052e2390e48" class="bulleted-list"><li style="list-style-type:disc">Prompt Engineering(prompts.py)</li></ul><ul id="2338004c-e856-80c3-9dd4-ef19564a32bc" class="bulleted-list"><li style="list-style-type:disc">쿼리 재작성(re-writing)을 통한 아키텍처 고도화 방안?</li></ul><p id="2338004c-e856-8072-a244-e3ecf111cfe4" class="">이 섹션에서는 각 기능과 소스코드를 간략히 소개하고 이해하는데 중점을 두겠다. 폴더 내 파일 구성은 다음과 같다. </p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-80f2-9e00-d39d071b2492" class="code"><code class="language-Python">ch04
+ |-- web_searching.py #웹서치기능 
+ |-- web_searching_try.py #웹서치기능 테스트
+ |-- web_scraping.py #웹스크래이핑기능
+ |-- web_scraping_try.py #웹스크래이핑기능 테스트
+ |-- llm_models.py #언어모델
+ |-- utilities.py #Json to Python 컨버터
+ |-- prompts.py #프롬프트 엔지니어링
+ |-- research_engine_seq.py #전체기능 통합 및 실행</code></pre><h3 id="2338004c-e856-801f-8962-f5f1b10510a3" class="">2-2. 웹 검색 기능 구현(web_searching.py)</h3><p id="2338004c-e856-8040-979f-e9c6ab7c6fbd" class="">웹 검색을 수행하기 위해 DuckDuckGo 검색 엔진용 LangChain 래퍼를 사용할 것이다. 이 래퍼의 “result” 기능은 각 결과의 URL을 “link”라는 속성에 담은 객체들의 리스트를 반환한다.  web_searching.py 소스코드는 다음과 같다.</p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-80bb-bd42-fc1966391a67" class="code"><code class="language-Python">from langch_community.utilities import DuckDuckGoSearchAPIWrapper
+from typing import List
+
+def web_search(web_query: str, num_results: int) -&gt; List[str]:
+    return[r[&quot;link&quot;] for r in DuckDuckGoSearchWrapper().results(web_query, num_results)]</code></pre><p id="2338004c-e856-8076-8810-fa9f09c6abb1" class="">위 기능이 정상적으로 작동하는지 테스트해보길 원한다면 프로젝트에 web_searching_try.py 생성하고 아래와 같이 테스트할 수 있다.</p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-804d-968b-ff564a5603c8" class="code"><code class="language-Python">from web_searching import web_search
+
+result = web_search(web_query=&quot;How many titles did Michael Jordan win?&quot;, num_results=5)
+print(result)</code></pre><p id="2338004c-e856-80b0-90da-f198d34e69d3" class="">코드 실행 시 다음과 같은 결과를 볼 수 있으면 기능이 정상적으로 작동하는 것이다. </p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-80be-88f3-c7f770cf7da1" class="code"><code class="language-Python">[&#x27;https://en.wikipedia.org/wiki/List_of_career_achievements_by_Michael_Jordan&#x27;,
+&#x27;https://sportsbrief.com/nba/40447-michael-jordans-achievements-awards-a-list-mjsaccomplishments/&#x27;,
+&#x27;https://www.rookieroad.com/basketball/how-many-championships-doesmichael-
+jordan-have-5263621/&#x27;, &#x27;https://www.hoopsaddict.com/michael-jordan-awards/&#x27;,
+&#x27;https://www.wsn.com/nba/michael-jordan-championship-rings/&#x27;]</code></pre><p id="2338004c-e856-8077-b135-c8e910d8871f" class="">&lt;참고&gt;LangChain에서 제공하는 다른 웹 검색 엔진 래퍼로는 TavilySearchResults와 GoogleSearchAPIWrapper가 있으며, 이 둘은 API 키를 필요로 한다.  </p><h3 id="2338004c-e856-80cd-be2f-fbedd540ef80" class="">2-3. 웹 스크래이핑 기능 구현(web_scraping.py)</h3><p id="2338004c-e856-801c-aa6e-d3db9121a4d6" class="">이전 단계에서 출력된 결과 목록에 있는 웹페이지들은 웹 스크래이핑 라이브러리인 Beautiful Soup을 사용해 스크래이핑 할 수 있으며 소스코드는 다음과 같다.</p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-803a-8283-d641800f257a" class="code"><code class="language-Python">import requests
+from bs4 import BeautifulSoup
+
+def web_scrape(url: str) -&gt; str:
+    try:
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, &quot;html.parser&quot;)
+        page_text = soup.get_text(separator=&quot; &quot;, strip=True)
+        
+        return page_text
+    else:
+        return f&quot;Could not retrieve the webpage: Status code {response.status_code}&quot;
+    except Exception as e:
+        print(e)
+        return f&quot;Could not retrieve the webpage: {e}&quot;</code></pre><p id="2338004c-e856-80c9-8522-f8256685704c" class="">웹스크래이핑 기능 테스트:</p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-804b-9387-d42532021e11" class="code"><code class="language-Python">from web_scraping import web_scrape
+result =
+web_scrape(&#x27;https://en.wikipedia.org/wiki/List_of_career_achievements_by_Michael_Jordan&#x27;)
+print(result)</code></pre><p id="2338004c-e856-808e-86ea-dc64fe52136e" class="">출력 결과는 다음과 같다.</p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-80d3-9159-cd5160392196" class="code"><code class="language-Python">List of career achievements by Michael Jordan - Wikipedia Jump to content Main menu Main
+menu move to sidebar hide Navigation Main page Contents Current events Random article
+About Wikipedia Contact us Donate Contribute Help Learn to edit Community portal Recent
+changes Upload file Languages Language links are at the top of the page across from the
+title. Search Search Create account Log in Personal tools [SHORTENED…]</code></pre><h3 id="2338004c-e856-80b6-9b46-f36d12ed5a8a" class="">2-4. LLM Client 시작하기(llm_models.py)</h3><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-800c-93d2-e560abebcb6a" class="code"><code class="language-Python">from langchain_openai import ChatOpenAI
+openai_api_key = &#x27;YOUR_OPENAI_API_KEY&#x27;
+def get_llm():
+    return ChatOpenAI(openai_api_key=openai_api_key,
+    model_name=&quot;gpt-4o-mini&quot;)</code></pre><h3 id="2338004c-e856-8015-9e24-e8bd4f4c80b6" class="">2-5. JSON to Python 컨버터(utilities.py)</h3><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-808e-8f1b-fa40f17cd247" class="code"><code class="language-Python">import json
+def to_obj(s):
+    try:
+        return json.loads(s)
+    except Exception:
+        return{}</code></pre><h3 id="2338004c-e856-8056-bd72-c86a37e97574" class="">2-6. 프롬프트 엔지니어링(prompts.py)</h3><p id="2338004c-e856-80ea-9929-ee697a077b16" class="">사용자가 &quot;애플 주식에 투자해야 할까?&quot;와 같은 금융 관련 질문을 한다고 가정해보자. 이 질문을 바탕으로 LLM이 웹 검색 쿼리를 생성하도록 유도할 때, 쿼리를 어떤 관점에서 구성할지  Persona(역할, 성격)를 명확히 설정하는 것운  LLM답변 생성에 도움을 줄 수 있다.</p><p id="2338004c-e856-8033-b267-ed1d180e1432" class="">예를 들어, 주식 관련 쿼리의 경우 다음과 같은 프롬프트를 정의할 수 있다.  </p><blockquote id="2338004c-e856-808e-a406-fe27390a789c" class="">&quot;당신은 숙련된 금융 분석가 AI 어시스턴트입니다. 당신의 목표는 제공된 데이터와 트렌드를 기반으로 상세하고 통찰력 있으며, 편향되지 않고 구조적인 금융 리포트를 작성하는 것입니다.&quot;</blockquote><p id="2338004c-e856-80f2-b846-fae4a11f4db5" class="">이러한 지침을 <strong>연구 질문에 따라 동적으로 생성</strong>하려면 예상되는 질문별 전용 프롬프트 디자인이 필요하다. 먼저 LLM으로 하여금 사용자 질문에 적합한 리서치 어시스턴트를 선택하도록 하고, 그에 맞는 지침을 제공할 수 있는 프롬프트를 설계해보도록 하자.</p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-8011-b909-ed4047452b3d" class="code"><code class="language-Python">from langchain.prompts import PromptTemplate
+
+#어시스턴스 선택에 사용할 프롬프트
+ASSISTANT_SELECTION_INSTRUCTIONS = &quot;&quot;&quot;
+You are skilled at assigning a research question to the correct research assistant. 
+There are various research assistants available, each specialized in an area of expertise. 
+Each assistant is identified by a specific type. Each assistant has specific instructions to undertake the research.
+
+How to select the correct assistant: you must select the relevant assistant depending on the topic of the question, which should match the area of expertise of the assistant.
+
+Only return the result in a correct json format without any extra text or explnations
+------
+Here are some examples on how to return the correct assistant information, depending on the question asked.
+
+Examples:
+Question: &quot;Should I invest in Apple stocks?&quot;
+Response: 
+{{
+    &quot;assistant_type&quot;: &quot;Financial analyst assistant&quot;,
+    &quot;assistant_instructions&quot;: &quot;You are a seasoned finance analyst AI assistant. Your primary goal is to compose comprehensive, astute, impartial, and methodically arranged financial reports based on provided data and trends.&quot;,
+    &quot;user_question&quot;: {user_question}
+}}
+Question: &quot;what are the most interesting sites in Tel Aviv?&quot;
+Response: 
+{{
+    &quot;assistant_type&quot;: &quot;Tour guide assistant&quot;,
+    &quot;assistant_instructions&quot;: &quot;You are a world-travelled AI tour guide assistant. Your main purpose is to draft engaging, insightful, unbiased, and well-structured travel reports on given locations, including history, attractions, and cultural insights.&quot;,
+    &quot;user_question&quot;: &quot;{user_question}&quot;
+}}
+
+Question: &quot;Is Messi a good soccer player?&quot;
+Response: 
+{{
+    &quot;assistant_type&quot;: &quot;Sport expert assistant&quot;,
+    &quot;assistant_instructions&quot;: &quot;You are an experienced AI sport assistant. Your main purpose is to draft engaging, insightful, unbiased, and well-structured sport reports on given sport personalities, or sport events, including factual details, statistics and insights.&quot;,
+    &quot;user_question&quot;: &quot;{user_question}&quot;
+}}
+
+------
+Now that you have understood all the above, select the correct reserach assistant for the following question.
+Question: {user_question}
+Response:
+
+&quot;&quot;&quot; 
+
+#프롬프트 템플릿화
+ASSISTANT_SELECTION_PROMPT_TEMPLATE = PromptTemplate.from_template( 
+    template=ASSISTANT_SELECTION_INSTRUCTIONS
+)</code></pre><p id="2338004c-e856-80c3-bbb7-e4d02d1b5ae7" class="">위 프롬프트 템플릿에는 눈여겨 봐야 할 몇 가지 핵심 요소가 있다. 첫째, 프롬프트가 세 가지 예시가 포함된 few-shot 프롬프트로 구성되어 있으며, 이는 LLM이 사용자의 구체적인 요구 사항을 더 잘 이해하도록 돕는다. 둘째, 위 프롬프트는 LLM이 JSON형식으로 결과를 반환하도록 유도하기 때문에, 출력 결과를 Python 딕셔너리로 변환하여 후속 처리하기가 간편하다. </p><p id="2338004c-e856-8042-95c8-f8a068d014e5" class="">다음 단계는 사용자의 질문을 기반으로 <strong>웹 검색 쿼리를 생성하는 프롬프트</strong>이다.</p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-8013-874f-e9e6c3d16ba6" class="code"><code class="language-Python">WEB_SEARCH_INSTRUCTIONS = &quot;&quot;&quot;
+{assistant_instructions}
+Write {num_search_queries} web search queries to gather as much information as possible
+on the following question: {user_question}. Your objective is to write a report based on
+the information you find.
+You must respond with a list of queries such as query1, query2, query3 in the following
+format:
+[
+{{&quot;search_query&quot;: &quot;query1&quot;, &quot;user_question&quot;: &quot;{user_question}&quot; }},
+{{&quot;search_query&quot;: &quot;query2&quot;, &quot;user_question&quot;: &quot;{user_question}&quot; }},
+{{&quot;search_query&quot;: &quot;query3&quot;, &quot;user_question&quot;: &quot;{user_question}&quot; }}
+]
+&quot;&quot;&quot;
+WEB_SEARCH_PROMPT_TEMPLATE = PromptTemplate.from_template(
+template=WEB_SEARCH_INSTRUCTIONS
+)</code></pre><p id="2338004c-e856-8032-9b52-eb64e801c52b" class="">{assistant_instruction}플레이스홀더는 앞서 봤던 어시스턴트 선택 프롬프트에서 생성된 “assistant_instruction”출력값으로 채워진다. 이 프롬프트 역시 결과를 JSON 형식으로 반환하기 때문에, 출력을 Python 딕셔너리 리스트로 변환하여 후속 처리가 편하다. 또한 사용자 질문은 출력 결과에 포함되기 때문에 , 전체 과정에서 문맥의 연속성을 유지할 수 있으며, 특히 이후의 체인 기반 코드에서 필요에 따라 이를 입력값으로 활용할 수 있다. 이제 웹 검색용 프롬프트 구성이 완료되었으니, 다음으로는 요약 프롬프트이다.  </p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-8098-9e8c-c70df16c3f2e" class="code"><code class="language-Python">SUMMARY_INSTRUCTIONS = &quot;&quot;&quot;
+Read the following text:
+Text: {search_result_text}
+-----------
+Using the above text, answer in short the following question.
+Question: {search_query}
+If you cannot answer the question above using the text provided above, then just
+summarize the text.
+Include all factual information, numbers, stats etc if available.
+&quot;&quot;&quot;
+SUMMARY_PROMPT_TEMPLATE = PromptTemplate.from_template(
+template=SUMMARY_INSTRUCTIONS
+)</code></pre><p id="2338004c-e856-8012-9cad-fee60f063240" class="">다음은 최종 결과 출력에 이용할 Research Report 프롬프트이다.</p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-809f-9792-c2a9544e026c" class="code"><code class="language-Python"># Research Report prompts adapted from https://github.com/assafelovic/gptresearcher/
+blob/master/gpt_researcher/master/prompts.py
+RESEARCH_REPORT_INSTRUCTIONS = &quot;&quot;&quot;
+You are an AI critical thinker research assistant. Your sole purpose is to write well
+written, critically acclaimed, objective and structured reports on given text.
+Information:
+--------
+{research_summary}
+--------
+Using the above information, answer the following question or topic: &quot;{user_question}&quot;
+in a detailed report -- \
+The report should focus on the answer to the question, should be well structured,
+informative, \
+in depth, with facts and numbers if available and a minimum of 1,200 words.
+You should strive to write the report as long as you can using all relevant and
+necessary information provided.
+You must write the report with markdown syntax.
+You MUST determine your own concrete and valid opinion based on the given information.
+Do NOT infer general and meaningless conclusions.
+Write all used source urls at the end of the report, and make sure to not add duplicated
+sources, but only one reference for each.
+You must write the report in apa format.
+Please do your best, this is very important to my career.&quot;&quot;&quot;
+RESEARCH_REPORT_PROMPT_TEMPLATE = PromptTemplate.from_template(
+template=RESEARCH_REPORT_INSTRUCTIONS
+)</code></pre><h3 id="2338004c-e856-80c8-8fcb-ca0cbfb30c42" class="">2-7. 쿼리 재작성(re-writing)을 통한 아키텍처 고도화 방안?</h3><figure id="2338004c-e856-8093-9e50-f9e05ef62ea7" class="image"><a href="image%201.png"><img style="width:709.9802856445312px" src="image%201.png"/></a></figure><p id="2338004c-e856-80d0-bfec-cf0b448078e9" class="">위 그림에 묘사된 아키텍처 다이어그램은 이전 버전과 비교하여 한 가지 개선점을 강조한다. 기존에는 사용자의 <strong>리서치 요청</strong>을 바로 웹 검색 엔진에 전달했지만, 새로운 모델은 <strong>LLM을 활용해 기존 사용자의 질문과 관련된 여러 개의 검색 쿼리를 먼저 생성</strong>하도록 유도한다. 이 기법은 <strong>&quot;쿼리 리라이팅(query rewriting)&quot;</strong> 또는 &quot;다중 쿼리 생성(multiple query generation)&quot;기법이라 불리며, 나중에 다룰 <strong>RAG 검색 성능 향상 기법</strong>과 유사한 방법이다. </p><p id="2338004c-e856-802c-9318-e57521f913fd" class="">이렇게 원래 질문을 여러 개의 쿼리로 재작성하면 다양한 이점이 있을 수 있다. 이 기법은 모호하거나 불명확한 질문을 명확하게 다듬을 수 있고, 검색 엔진이 혼동할 수 있는 문법 오류나 문장 구조도 수정할 수 있다. 또한 짧은 질문에 문맥을 보강해 더 나은 검색 결과를 얻을 수 있다. 질문이 복잡할 경우, 이를 단순한 쿼리로 나나누어 더 좋은 답변을 이끌어내도록 할 수도 있다.</p><p id="2338004c-e856-8050-8ad4-c6c1a8cd9d63" class="">이러한 이유로, 하나의 질문을 여러 개의 타깃 쿼리로 나누는 것이 중요하다.</p><p id="2338004c-e856-80e0-aeae-e7a126e31a34" class="">예를 들어,</p><p id="2338004c-e856-8030-a18e-d1a546effe26" class="">검색 엔진에 단순히 &quot;Michael Jordan은 몇 개의 타이틀을 획득했는가?&quot;라고 입력하는 대신,</p><p id="2338004c-e856-80c7-a2a2-e77b8d3ea0ad" class="">ChatGPT에 다음과 같은 프롬프트를 줄 수 있다:</p><blockquote id="2338004c-e856-806b-966b-f55b9c73787b" class="">다음 주제에 대해 종합적인 리포트를 작성할 수 있도록, 웹 검색 쿼리 3개를 생성하라:<p id="2338004c-e856-80c5-83e4-e8f1adb8db94" class="">&quot;How many titles did Michael Jordan win?&quot;</p></blockquote><p id="2338004c-e856-800d-9fcd-c13f3a57e4cb" class="">그 결과, 다음과 같은 쿼리를 생성할 수 있다:</p><ol type="1" id="2338004c-e856-8041-80a2-c4b582a3fb46" class="numbered-list" start="1"><li>&quot;Michael Jordan NBA championships total&quot;</li></ol><ol type="1" id="2338004c-e856-805b-b56c-e223d9d58ccb" class="numbered-list" start="2"><li>&quot;List of NBA titles won by Michael Jordan&quot;</li></ol><ol type="1" id="2338004c-e856-803e-bf81-d9bab137593c" class="numbered-list" start="3"><li>&quot;Michael Jordan basketball career championships count&quot;</li></ol><p id="2338004c-e856-8075-8f05-d4329160ccfc" class="">이제 이 세 가지 검색 쿼리를 기반으로 각각의 웹 검색을 수행하고, 그 결과를 수집하여 리서치를 진행하게 되면 더 향상된 답변을 기대할 수 있다. 쿼리 재작성 기능의 경우 병렬처리 과정이 요구됨으로 나중에 LCEL(LangChain Expression Language)를 적용한 요약엔진 소스코드를 설명할 때 더 자세히 설명하도록 하겠다. </p><h3 id="2338004c-e856-8015-b2d7-d00cc64bd5fc" class="">2-8 리서치 요약 엔진 핵심기능 통합 및 실행 (research_engine_seq.py)</h3><p id="2338004c-e856-8041-a7a6-f24333b276cf" class="">다음은 현재까지 설명한 모든 핵심 기능을 통합하여 실제 검색을 수행할 수 있는 “자동화된 리서치 요약 엔진” 초기 버전 소스코드이다. 아래 코드를 순차적으로 수행하면 최종적으로 요약된 리포트를 생성할 수 있다. </p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-8003-b547-e6e4c1e32e9c" class="code"><code class="language-Python">from web_searching import web_search
+from web_scraping import web_scrape
+from llm_models import get_llm
+from utilities import to_obj
+from  prompts import(
+    ASSISTANT_SELECTION_PROMPT_TEMPLATE,
+    WEB_SEARCH_PROMPT_TEMPLATE,
+    SUMMARY_PROMPT_TEMPLATE,
+    RESEARCH_REPORT_PROMPT_TEMPLATE
+)
+
+# 상수 및 입력변수 설정
+NUM_SEARCH_QUERIES = 3
+NUM_SEARCH_RESULTS_PER_QUERY = 3
+RESULT_TEXT_MAX_CHARACTERS = 10000
+
+# 사용자 질문
+question = &#x27;What can I see and do in Jeju Island located in South Korea?&#x27;
+
+# Instantiating the LLM client
+llm = get_llm()
+
+# 웹 검색을 생성하고 결과를 수집하기
+# 첫 번째 단계는 사용자의 리서치 질문을 바탕으로
+# 적절한 리서치 어시스턴트와 관련 지침을 결정하기 위해 LLM 프롬프트를 실행하는 것이다.
+
+assistant_selection_prompt = ASSISTANT_SELECTION_PROMPT_TEMPLATE.format(
+user_question=question)
+
+assistant_instructions = llm.invoke(assistant_selection_prompt)
+
+print(assistant_instructions.content)
+
+assistant_instructions_dict = to_obj(assistant_instructions.content)
+print(assistant_instructions_dict)
+
+web_search_prompt = WEB_SEARCH_PROMPT_TEMPLATE.format(
+    assistant_instructions=assistant_instructions_dict[&#x27;assistant_instructions&#x27;],
+    num_search_queries=NUM_SEARCH_QUERIES,
+    user_question=assistant_instructions_dict[&#x27;user_question&#x27;])
+
+web_search_queries = llm.invoke(web_search_prompt)
+print(web_search_queries.content)
+
+web_search_queries_list = to_obj(web_search_queries.content.replace(&#x27;\n&#x27;,&#x27;&#x27;))
+print(web_search_queries_list) 
+
+# 아래는 web_search()함수를 사용하여 웹 검색을 수행하는 방법이다
+searches_and_result_urls = [{&#x27;result_urls&#x27;: web_search(web_query=wq[&#x27;search_query&#x27;], 
+                                     num_results=NUM_SEARCH_RESULTS_PER_QUERY), 
+                           &#x27;search_query&#x27;: wq[&#x27;search_query&#x27;]} 
+                           for wq in web_search_queries_list]
+
+print(searches_and_result_urls)
+
+#결과를 평탄화하여, 각 딕셔너리가 하나의 검색 쿼리와 하나의 결과 URL만 포함하도록 만들기
+search_query_and_result_url_list = []
+for qr in searches_and_result_urls:
+    search_query_and_result_url_list.extend([{&#x27;search_query&#x27;: qr[&#x27;search_query&#x27;],
+                                              &#x27;result_url&#x27;: r
+                                              } for r in qr[&#x27;result_urls&#x27;]])
+
+print(search_query_and_result_url_list)
+
+# 웹 검색 쿼리와 관련된 모든 결과 URL이 준비되었으므로,
+# 다음 단계는 이 URL들이 연결된 웹페이지를 스크래핑하는 것이다.
+result_text_list = 
+    [ {&#x27;result_text&#x27;: web_scrape(url=re[&#x27;result_url&#x27;])[:RESULT_TEXT_MAX_CHARACTERS],
+       &#x27;result_url&#x27;: re[&#x27;result_url&#x27;], 
+       &#x27;search_query&#x27;: re[&#x27;search_query&#x27;]}
+    for re in search_query_and_result_url_list]
+
+print(result_text_list) # Wow! This is pretty powerful!!
+
+# 4.6.6 웹 결과 요약하기
+# 다음 단계는 각 웹페이지에서 수집한 정보를 요약하는 것이다.
+# 관련 웹페이지에서 스크래핑한 텍스트를 요약하기 위해 SUMMARY_PROMPT_TEMPLATE을 사용
+# 이 요약에는 이후에 필요할 원래 검색 쿼리와 URL도 함께 포함된다.
+
+result_text_summary_list = []
+for rt in result_text_list:
+    summary_prompt = SUMMARY_PROMPT_TEMPLATE.format(
+        search_result_text = rt[&#x27;result_text&#x27;],
+        search_query=rt[&#x27;search_query&#x27;]
+    )
+
+    text_summary = llm.invoke(summary_prompt)
+
+    result_text_summary_list.append({&#x27;text_summary&#x27;: text_summary,
+                                     &#x27;result_url&#x27;: rt[&#x27;result_url&#x27;],
+                                     &#x27;search_query&#x27;: rt[&#x27;search_query&#x27;]})
+    
+# 프롬프트 템플릿이 기대하는 형식에 맞춰 요약 내용과 URL을 결합하여 최종 리포트를 준비
+# 먼저, 각 딕셔너리를 요약한 내용과 해당 출처 URL이 포함된 문자열로 변환
+stringified_summary_list = [f&#x27;Source URL: {sr[&quot;result_url&quot;]}\nSummary:{sr[&quot;text_summary&quot;]}&#x27;
+                           for sr in result_text_summary_list]
+
+# 모든 요약 결과 통합:
+appended_result_summaries = &#x27;\n&#x27;.join(stringified_summary_list)
+
+# 이제 이 내용을 RESEARCH_REPORT_INSTRUCTIONS 프롬프트 템플릿과 함께 사용하여 
+# 최종 리서치 리포트를 생성한다.
+research_report_prompt = RESEARCH_REPORT_PROMPT_TEMPLATE.format(
+    research_summary=appended_result_summaries,
+    user_question=question
+)
+
+research_report = llm.invoke(research_report_prompt)
+
+#최종결과출력
+print(f&#x27;stringified_summary_list={stringified_summary_list}&#x27;)
+print(f&#x27;merged_result_summaries={appended_result_summaries}&#x27;)
+print(f&#x27;research_report={research_report.content}&#x27;)</code></pre><h2 id="2338004c-e856-8023-8704-d09813fadcef" class="">3. LCEL(LangChain Expression Language)를 활용한 Research Summary Engine 구현</h2><p id="2338004c-e856-8019-9b31-d62ae557e178" class="">다음은 지금까지의 내용을 LangChain을 활용하여 구현하는 방법에 대하여 논의해보고자 한다. LCEL은 웹 검색, 페이지 스크래핑, 요약 등과 같은 LLM 애플리케이션의 핵심 구성 요소들을 효율적인 체인 또는 파이프라인 형태로 구성할 수 있도록 도와주는 구조화된 접근 방식을 제공한다. LangChain 프레임워크는 단순한 요소들을 조합해 복잡한 워크플로우를 쉽게 만들 수 있을 뿐만 아니라, 스트리밍(streaming), 병렬 실행(parallel execution), 로깅(logging)과 같은 고급 기능을 통해 이를 더욱 향상시킬 수 있다.</p><p id="2338004c-e856-80ef-8b10-edbd2d381603" class="">LCEL은 통합 인터페이스인 <strong>Runnable 프로토콜</strong>, 구성 도구, 그리고 프로세스를 손쉽게 병렬화 할 수 있는 기능을 제공함으로써 복잡한 체인 구성을 단순화해준다. 아래 그림에 제시된 체인 구현 전략은, 앞서 살펴본 각 처리 단계를 미니 체인으로 구성하고 이를 하나의 <strong>마스터 웹 리서치 체인</strong>으로 통합하는 방식이다.</p><figure id="2338004c-e856-804e-90c3-f4f7c656a149" class="image"><a href="image%202.png"><img style="width:709.9661865234375px" src="image%202.png"/></a></figure><p id="2338004c-e856-80de-bbe1-d1883c13dd36" class="">이 <strong>마스터 웹 리서치 체인</strong>은 전체 과정을 연동하여 처리하며, 이 그림은 체인 기반 리서치 요약 엔진의 전체 아키텍처를 간략하게 보여준다.</p><p id="2338004c-e856-802e-855a-cb7b1cf11471" class="">각 처리 단계는 <strong>미니 체인</strong>으로 구현되어 있으며, 이들은 모두 마스터 웹 리서치 체인에 통합된다:</p><ul id="2338004c-e856-800e-ab17-dcb532c1e24e" class="bulleted-list"><li style="list-style-type:disc"><strong>Assistant Instructions 체인</strong>: 사용자의 질문에 가장 적합한 리서치 어시스턴트를 선택하고, 해당 어시스턴트의 역할과 목적을 정의하는 시스템 프롬프트를 생성한다.</li></ul><ul id="2338004c-e856-8033-a7d7-e188e67867db" class="bulleted-list"><li style="list-style-type:disc"><strong>Web Searches 체인</strong>: 사용자의 질문을 바탕으로 여러 개의 웹 검색 쿼리를 생성한다. 이 체인은 다양한 관점에서 문맥을 제공하거나 복잡한 질문을 더 단순한 형태로 분해할 수 있다.</li></ul><ul id="2338004c-e856-8010-82e6-cb0bc3138c97" class="bulleted-list"><li style="list-style-type:disc"><strong>Search and Summarization 체인</strong>: 웹 검색을 실행하고, 검색 결과에서 URL을 추출한 뒤, 해당 웹페이지를 스크래핑하고 각 페이지의 내용을 요약한다.</li></ul><ul id="2338004c-e856-805b-8b58-c6d8a254c84f" class="bulleted-list"><li style="list-style-type:disc"><strong>Research Report 체인</strong>: 마지막 단계로, 원래 질문과 앞 단계에서 생성된 요약들을 종합하여 최종 답변을 구성한다.</li></ul><p id="2338004c-e856-80b9-b35c-dbf4b93721d1" class="">위 아키텍처를 병렬처리를 포함한 좀 더 자세하게 묘사하면 다음과 같다. </p><figure id="2338004c-e856-80b9-8031-c79cd40f5b55" class="image"><a href="image%203.png"><img style="width:709.9661865234375px" src="image%203.png"/></a></figure><p id="2338004c-e856-803f-b302-d74b02428bb5" class="">다음은 위 아키텍처를 구현하기 위한 각 단계별 소스코드에 관련된 설명이며, 요약 엔진 실행을 위한 폴더의 전체적인 구성은 다음과 같다. </p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-804b-9718-cd886c89287a" class="code"><code class="language-Python">ch04
+ |-- chain_1_2.py # Assistant Instruction Chain 
+ |-- chain_2_1.py # Web Search Chain
+ |-- chain_3_1.py # Search and Summarization Chain
+ |-- chain_4_1.py # Search Result Text and Summary Chain
+ |-- chain_5_1.py # Assembling the Search and Summarization Chain 
+ |-- llm_models.py #언어모델
+ |-- utilities.py #Json to Python 컨버터
+ |-- prompts.py #프롬프트 엔지니어링
+ |-- web_searching.py # 웹서치 함수
+ |-- web_scraping.py # 웹스크래이핑 함수</code></pre><h3 id="2338004c-e856-80cb-883c-ccc5aa026d75" class="">3-1. Assistant Instruction Chain(chain_1_2.py)</h3><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-80c9-9bdd-cb0af89d1b18" class="code"><code class="language-Python">from llm_models import get_llm
+from utilities import to_obj
+from prompts import ASSISTANT_SELECTION_PROMPT_TEMPLATE
+from langchain.schema.runnable import RunnablePassthrough
+from langchain.schema.output_parser import StrOutputParser
+
+assistant_instructions_chain = (
+    {&#x27;user_question&#x27;: RunnablePassthrough()}
+    | ASSISTANT_SELECTION_PROMPT_TEMPLATE | get_llm() | StrOutputParser() | to_obj)</code></pre><p id="2338004c-e856-80d3-b14c-fad291b09413" class="">이 업데이트된 버전에는 다음과 같은 여러 가지 향상된 기능이 도입되었다.</p><ul id="2338004c-e856-8089-b137-fb256a371575" class="bulleted-list"><li style="list-style-type:disc"><code>ASSISTANT_SELECTION_PROMPT_TEMPLATE</code>는 입력된 질문 텍스트를 자동으로 <code>{user_question}</code> 필드에 매핑하지만, 보다 안전한 방법은 <code>RunnablePassthrough()</code> 함수를 사용해 <strong>입력 질문을 명시적으로 </strong><code><strong>user_question</strong></code><strong> 속성에 매핑</strong>하는 것이다. 이렇게 하면 <code>user_question</code>이 체인에 직접 전달되며, 이후 단계에서도 중요한 정보로 활용되므로 유용하다</li></ul><ul id="2338004c-e856-809f-96ce-c1fce50b2a15" class="bulleted-list"><li style="list-style-type:disc"><code>StrOutputParser()</code> 블록은 LLM의 <code>content</code> 속성에서 <strong>텍스트만 추출</strong>하여 출력 처리 과정을 단순화해준다.</li></ul><ul id="2338004c-e856-80a7-b995-d70bfc09bc67" class="bulleted-list"><li style="list-style-type:disc">출력된 결과는 <code>to_obj()</code> 함수를 통해 <strong>Python 딕셔너리로 변환</strong>되며, 체인 내에서 다루기 쉬운 형태로 변환된다.</li></ul><h3 id="2338004c-e856-809b-96bb-d27cd51f20d6" class="">3-2. Web Searches Chain(chain_2_1.py)</h3><p id="2338004c-e856-8075-a4e5-cd1dbb1ad874" class="">LLM이 적절한 리서치 어시스턴트를 선택하고 역할을 정한 후에는, 사용자의 질문과 관련된 웹 검색 쿼리를 생성하도록 LLM에 요청할 수 있다. </p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-8095-950a-c3011ce0c090" class="code"><code class="language-Python">from llm_models import get_llm
+from utilities import to_obj
+from prompts import WEB_SEARCH_PROMPT_TEMPLATE
+from langchain.schema.output_parser import StrOutputParser
+from langchain.schema.runnable import RunnableLambda
+
+NUM_SEARCH_QUERIES = 2
+
+web_searches_chain = (
+    RunnableLambda(lambda x:
+        {
+            &#x27;assistant_instructions&#x27;: x[&#x27;assistant_instructions&#x27;],
+            &#x27;num_search_queries&#x27;: NUM_SEARCH_QUERIES,
+            &#x27;user_question&#x27;: x[&#x27;user_question&#x27;]
+        }
+    )
+    | WEB_SEARCH_PROMPT_TEMPLATE | get_llm() | StrOutputParser() | to_obj 
+)</code></pre><h3 id="2338004c-e856-80a7-bc56-d0c86118cf87" class="">3-3. Search and Summarization Chain(chain_3_1.py)</h3><p id="2338004c-e856-8015-b893-d3c2b944efd5" class="">이 서브 체인은 웹 검색을 수행하고, 검색 결과에서 지정된 개수만큼의 URL을 추출한다.</p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-80ea-bbd1-c34b5f24efb6" class="code"><code class="language-Python">from web_searching import web_search
+from langchain.schema.runnable import RunnableLambda
+
+NUM_SEARCH_RESULTS_PER_QUERY = 3
+
+search_result_urls_chain = (
+    RunnableLambda(lambda x: 
+        [
+            {
+                &#x27;result_url&#x27;: url, 
+                &#x27;search_query&#x27;: x[&#x27;search_query&#x27;],
+                &#x27;user_question&#x27;: x[&#x27;user_question&#x27;]
+            }
+            for url in web_search(web_query=x[&#x27;search_query&#x27;], 
+                                  num_results=NUM_SEARCH_RESULTS_PER_QUERY)
+        ]
+    )
+)</code></pre><p id="2338004c-e856-809f-af5f-e36f00cb7156" class="">중요한 점 두 가지를 짚자면:</p><ul id="2338004c-e856-80c7-8d61-d1f16a7c2ffc" class="bulleted-list"><li style="list-style-type:disc"><code>web_search()</code> 함수에 <code>web_query</code> 파라미터를 전달하기 위해 람다 함수가 사용된다.</li></ul><ul id="2338004c-e856-8094-9df9-df2b817d96c3" class="bulleted-list"><li style="list-style-type:disc">이 람다 함수는 출력값을 딕셔너리 리스트 형태로 포맷하는데, 각 딕셔너리는 결과 URL과 함께 이전 체인에서 온 데이터(검색 쿼리, 원래 사용자 질문 등)를 포함한다. 이는 이후 단계에서 유용하게 쓰인다.</li></ul><p id="2338004c-e856-8076-8818-e84ac06e9805" class="">이 람다 함수는 입력으로 이전 체인, 특히 <strong>Web Searches 체인</strong>의 출력을 받는다.</p><h3 id="2338004c-e856-8081-91ac-c168b024f5cb" class="">3-4. Search Result Text and Summary Chain(chain_4_1.py)</h3><p id="2338004c-e856-8083-a736-dcd9119c1395" class="">Search Result Text and Summary 서브체인은 이전 서브체인에서 전달받은 URL을 다음과 같이 처리한다:</p><ul id="2338004c-e856-80c6-a044-f58b5802f954" class="bulleted-list"><li style="list-style-type:disc">해당 URL의 웹페이지 텍스트를 스크래핑한다.</li></ul><ul id="2338004c-e856-8052-894e-d8ffcbe3fcb3" class="bulleted-list"><li style="list-style-type:disc">스크랩한 텍스트를 요약한다.</li></ul><ul id="2338004c-e856-8042-a3ff-fd999804c75c" class="bulleted-list"><li style="list-style-type:disc">요약문에 출처 URL을 포함시킨다.</li></ul><p id="2338004c-e856-80cc-ae61-cce8ab347893" class="">이 과정은 아래 코드에서 효과적으로 구현되어 있다.</p><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="2338004c-e856-80e8-950e-c63935fbb519" class="code"><code class="language-Python">from llm_models import get_llm
+from web_scraping import web_scrape
+from langchain.schema.output_parser import StrOutputParser
+from langchain.schema.runnable import RunnableLambda, RunnableParallel
+from prompts import SUMMARY_PROMPT_TEMPLATE
+
+RESULT_TEXT_MAX_CHARACTERS = 10000
+
+search_result_text_and_summary_chain = (
+    RunnableLambda(lambda x:
+        {
+            &#x27;search_result_text&#x27;: web_scrape(url=x[&#x27;result_url&#x27;])[:RESULT_TEXT_MAX_CHARACTERS],
+            &#x27;result_url&#x27;: x[&#x27;result_url&#x27;],
+            &#x27;search_query&#x27;: x[&#x27;search_query&#x27;],
+            &#x27;user_question&#x27;: x[&#x27;user_question&#x27;]
+        }                  
+    )
+    | RunnableParallel(
+        {
+            &#x27;text_summary&#x27;: SUMMARY_PROMPT_TEMPLATE | get_llm() | StrOutputParser(),
+            &#x27;result_url&#x27;: lambda x: x[&#x27;result_url&#x27;],
+            &#x27;user_question&#x27;: lambda x: x[&#x27;user_question&#x27;] 
+        }
+    )
+    | RunnableLambda(lambda x:
+         {
+             &#x27;summary&#x27;: f&quot;Source Url: {x[&#x27;result_url&#x27;]}\nSummary: {x[&#x27;text_summary&#x27;]}&quot;,
+             &#x27;user_question&#x27;: x[&#x27;user_question&#x27;]
+         }                    
+    )
+)</code></pre><p id="2338004c-e856-8041-a0f0-c4de6c9023d3" class="">
+</p></div></article><span class="sans" style="font-size:14px;padding-top:2em"></span></body></html>
