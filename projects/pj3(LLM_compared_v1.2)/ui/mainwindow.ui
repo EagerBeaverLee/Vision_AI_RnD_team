@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>956</width>
+    <height>634</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>732</width>
+    <height>475</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true">QWidget {
+    background-color: rgb(20, 20, 20); /* 원하는 색상으로 변경 */
+}</string>
+   </property>
+   <widget class="QPlainTextEdit" name="input_text">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>350</y>
+      <width>461</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPlainTextEdit {
+	color: white;
+    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}
+QPlainTextEdit:focus {
+    border: 1px solid rgb(184, 247, 185);
+    outline: none;           /* 기본 포커스 아웃라인 제거 */
+}</string>
+    </property>
+    <property name="plainText">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="send_btn">
+    <property name="geometry">
+     <rect>
+      <x>480</x>
+      <y>350</y>
+      <width>81</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+	color: rgb(184, 247, 185);
+    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
+    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
+}
+QPushButton:hover {
+	color: rgb(184, 247, 185);
+    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}
+
+QPushButton:pressed {
+	color: rgb(184, 247, 185);
+    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}</string>
+    </property>
+    <property name="text">
+     <string>send</string>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="history_txt">
+    <property name="geometry">
+     <rect>
+      <x>310</x>
+      <y>40</y>
+      <width>291</width>
+      <height>301</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QTextEdit {
+	color: white;
+    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}
+QTextEdit:focus {
+    border: 1px solid rgb(184, 247, 185);
+    outline: none;           /* 기본 포커스 아웃라인 제거 */
+}</string>
+    </property>
+    <property name="inputMethodHints">
+     <set>Qt::ImhMultiLine</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>20</y>
+      <width>50</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+    color: rgb(166, 217, 171);
+}</string>
+    </property>
+    <property name="text">
+     <string>Default</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>20</y>
+      <width>70</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+    color: rgb(166, 217, 171);
+}</string>
+    </property>
+    <property name="text">
+     <string>Experiment</string>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="non_history_txt">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>40</y>
+      <width>291</width>
+      <height>301</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QTextEdit {
+	color: white;
+    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}
+QTextEdit:focus {
+    border: 1px solid rgb(184, 247, 185);
+    outline: none;           /* 기본 포커스 아웃라인 제거 */
+}</string>
+    </property>
+    <property name="inputMethodHints">
+     <set>Qt::ImhMultiLine</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="apply_btn">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>450</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+	color: rgb(184, 247, 185);
+    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
+    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
+}
+QPushButton:hover {
+	color: rgb(184, 247, 185);
+    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}
+
+QPushButton:pressed {
+	color: rgb(184, 247, 185);
+    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}</string>
+    </property>
+    <property name="text">
+     <string>apply</string>
+    </property>
+   </widget>
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>680</x>
+      <y>20</y>
+      <width>271</width>
+      <height>381</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>1</number>
+    </property>
+    <widget class="QWidget" name="context">
+     <attribute name="title">
+      <string>Context</string>
+     </attribute>
+     <widget class="QLabel" name="label_4">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>56</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel {
+    color: rgb(166, 217, 171);
+}</string>
+      </property>
+      <property name="text">
+       <string>Prompt</string>
+      </property>
+     </widget>
+     <widget class="QTextEdit" name="prompt_txt">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>30</y>
+        <width>241</width>
+        <height>181</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QTextEdit {
+	color: white;
+    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}
+QTextEdit:focus {
+    border: 1px solid rgb(184, 247, 185);
+    outline: none;           /* 기본 포커스 아웃라인 제거 */
+}</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="setting">
+     <attribute name="title">
+      <string>Setting</string>
+     </attribute>
+     <widget class="QTextEdit" name="api_key_txt">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>30</y>
+        <width>241</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QTextEdit {
+	color: white;
+    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}
+QTextEdit:focus {
+    border: 1px solid rgb(184, 247, 185);
+    outline: none;           /* 기본 포커스 아웃라인 제거 */
+}</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_5">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>80</y>
+        <width>81</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel {
+    color: rgb(166, 217, 171);
+}</string>
+      </property>
+      <property name="text">
+       <string>Temperature</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_3">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>56</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel {
+    color: rgb(166, 217, 171);
+}</string>
+      </property>
+      <property name="text">
+       <string>Api-key</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="temp_combo">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>100</y>
+        <width>241</width>
+        <height>22</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QComboBox {
+	color: white;
+	background-color: rgb(40,40,40);
+    border: 1px solid white; /* 2px 두께의 흰색 실선 테두리 */
+    border-radius: 3px;      /* (선택 사항) 모서리를 둥글게 */
+    padding: 1px 18px 1px 3px; /* 텍스트와 드롭다운 버튼을 위한 패딩 */
+    min-width: 6em;          /* (선택 사항) 최소 너비 설정 */
+}
+QComboBox QAbstractItemView {
+    color: white; /* 항목 텍스트 색상을 흰색으로 설정 */
+    background-color: #333333; /* 드롭다운 목록 배경색 (잘 보이도록 어둡게) */
+    selection-background-color: #558855; /* 항목 선택 시 배경색 */
+    selection-color: white; /* 선택된 항목의 글씨색 (흰색으로 유지) */
+    border: 1px solid white; /* 드롭다운 목록 테두리 (선택 사항) */
+}</string>
+      </property>
+      <item>
+       <property name="text">
+        <string>0.1</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>0.2</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>0.3</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>0.4</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>0.5</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>0.6</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>0.7</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>0.8</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>0.9</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>1.0</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QSlider" name="horizontalSlider">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>140</y>
+        <width>160</width>
+        <height>22</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="lineEdit">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>190</y>
+        <width>113</width>
+        <height>20</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>956</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_Setting">
+    <property name="title">
+     <string>&amp;Setting</string>
+    </property>
+   </widget>
+   <addaction name="menu_Setting"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <tabstops>
+  <tabstop>input_text</tabstop>
+  <tabstop>send_btn</tabstop>
+  <tabstop>history_txt</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>send_btn</sender>
+   <signal>clicked()</signal>
+   <receiver>input_text</receiver>
+   <slot>setFocus()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>479</x>
+     <y>434</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>367</x>
+     <y>438</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
