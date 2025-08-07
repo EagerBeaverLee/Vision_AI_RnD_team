@@ -37,36 +37,6 @@ class LLMStreamThread(QThread):
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self._stream_text_history())
         
-
-    async def _stream_text(self):
-        try:
-            chat_model = ChatOpenAI(
-                api_key=self.m_apikey,
-                temperature=self.m_temperature,
-            )
-            prompt = ChatPromptTemplate.from_messages(
-                [
-                    (
-                        "system",
-                        self.m_prompt
-                    ),
-                    ("human", "{input}"),
-                ]
-            )
-            chain = prompt | chat_model
-
-            async for chunk in chain.astream({"input": self.input_msg}):
-                if not self._running:
-                    break
-                self.text_chunk_received.emit(chunk)
-                await asyncio.sleep(0.05)
-            
-        except Exception as e:
-            print(f"스트리밍 중 오류 발생: {e}")
-            self.stream_error.emit(f"스트리밍 오류: {e}")
-        finally:
-            self.stream_finished.emit()
-
     async def _stream_text_history(self):
         try:
             chat_model = ChatOpenAI(
