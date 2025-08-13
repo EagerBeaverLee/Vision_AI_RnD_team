@@ -10,6 +10,8 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from PlainTextEdit import mPlainTextEdit
+from PromptText import MyTextEditor
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -291,7 +293,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.input_text = QtWidgets.QPlainTextEdit(self.widget1)
+        # self.input_text = QtWidgets.QPlainTextEdit(self.widget1)
+        self.input_text = mPlainTextEdit(self.widget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -406,7 +409,8 @@ class Ui_MainWindow(object):
 "}")
         self.label_4.setObjectName("label_4")
         self.verticalLayout_2.addWidget(self.label_4)
-        self.prompt_txt = QtWidgets.QTextEdit(self.Setting)
+        # self.prompt_txt = QtWidgets.QTextEdit(self.Setting)
+        self.prompt_txt = MyTextEditor(self.Setting)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -513,6 +517,8 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.input_text, self.non_history_txt)
         MainWindow.setTabOrder(self.non_history_txt, self.history_txt)
         MainWindow.setTabOrder(self.history_txt, self.tabWidget)
+
+        self.input_text.set_send_button(self.send_btn)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate

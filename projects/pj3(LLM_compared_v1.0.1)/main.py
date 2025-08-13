@@ -355,6 +355,13 @@ class Window(QMainWindow, Ui_MainWindow):
         message = self.ui.input_text.toPlainText()
 
         if message.strip():
+            if not self.current_chat_room.m_api_key:
+                QMessageBox.about(
+                self,
+                "Error",
+                "<p>Please enter your api key</p>",
+                )
+                return
             self.ui.input_text.clear()
             self.default_llm(message)
             self.history_llm(message)
