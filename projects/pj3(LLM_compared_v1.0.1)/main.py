@@ -32,7 +32,7 @@ class Slider_Animation(QObject):
 
         self.animation_timer = QTimer(parent)
         self.step = 0
-        self.total_steps = 20   #(0.5초)
+        self.total_steps = 10   #(0.1초)
         self.stored_panel_size = 0
         self.is_collapsed = False
 
