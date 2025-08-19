@@ -175,6 +175,62 @@ class Ui_MainWindow(object):
         self.api_key_txt.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
         self.api_key_txt.setObjectName("api_key_txt")
         self.verticalLayout_2.addWidget(self.api_key_txt)
+        self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_8.setObjectName("horizontalLayout_8")
+        self.label_8 = QtWidgets.QLabel(self.Setting)
+        self.label_8.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.label_8.setObjectName("label_8")
+        self.horizontalLayout_8.addWidget(self.label_8)
+        self.line_3 = QtWidgets.QFrame(self.Setting)
+        self.line_3.setFrameShape(QtWidgets.QFrame.HLine)
+        self.line_3.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line_3.setObjectName("line_3")
+        self.horizontalLayout_8.addWidget(self.line_3)
+        self.temp_val = QtWidgets.QLineEdit(self.Setting)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.temp_val.sizePolicy().hasHeightForWidth())
+        self.temp_val.setSizePolicy(sizePolicy)
+        self.temp_val.setMinimumSize(QtCore.QSize(0, 0))
+        self.temp_val.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.temp_val.setStyleSheet("QLineEdit {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"    border: 1px solid rgb(255,255,255);\n"
+"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
+"}\n"
+"QLineEdit:focus {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
+"}")
+        self.temp_val.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.temp_val.setObjectName("temp_val")
+        self.horizontalLayout_8.addWidget(self.temp_val)
+        self.horizontalLayout_8.setStretch(0, 1)
+        self.horizontalLayout_8.setStretch(1, 3)
+        self.horizontalLayout_8.setStretch(2, 1)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_8)
+        self.temp_slider = QtWidgets.QSlider(self.Setting)
+        self.temp_slider.setStyleSheet("QSlider::handle:horizontal{\n"
+"    background: rgb(166, 217, 171);\n"
+"    width: 20px;\n"
+"    margin: -5px 0;\n"
+"    border-radius: 10px;\n"
+"}\n"
+"QSlider::handle:horizontal:hover{\n"
+"    background: rgb(100,170,100);\n"
+"}\n"
+"QSlider::handle:horizontal:pressed{\n"
+"    background: rgb(50,120,50);\n"
+"}")
+        self.temp_slider.setMaximum(100)
+        self.temp_slider.setPageStep(10)
+        self.temp_slider.setOrientation(QtCore.Qt.Horizontal)
+        self.temp_slider.setObjectName("temp_slider")
+        self.verticalLayout_2.addWidget(self.temp_slider)
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.label_5 = QtWidgets.QLabel(self.Setting)
@@ -189,7 +245,13 @@ class Ui_MainWindow(object):
         self.line.setObjectName("line")
         self.horizontalLayout_4.addWidget(self.line)
         self.query_val = QtWidgets.QLineEdit(self.Setting)
-        self.query_val.setMinimumSize(QtCore.QSize(30, 0))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.query_val.sizePolicy().hasHeightForWidth())
+        self.query_val.setSizePolicy(sizePolicy)
+        self.query_val.setMinimumSize(QtCore.QSize(0, 0))
+        self.query_val.setMaximumSize(QtCore.QSize(40, 16777215))
         self.query_val.setStyleSheet("QLineEdit {\n"
 "    color: rgb(184, 247, 185);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -246,7 +308,13 @@ class Ui_MainWindow(object):
         self.line_2.setObjectName("line_2")
         self.horizontalLayout_5.addWidget(self.line_2)
         self.url_val = QtWidgets.QLineEdit(self.Setting)
-        self.url_val.setMinimumSize(QtCore.QSize(30, 0))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.url_val.sizePolicy().hasHeightForWidth())
+        self.url_val.setSizePolicy(sizePolicy)
+        self.url_val.setMinimumSize(QtCore.QSize(0, 0))
+        self.url_val.setMaximumSize(QtCore.QSize(40, 16777215))
         self.url_val.setStyleSheet("QLineEdit {\n"
 "    color: rgb(184, 247, 185);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -260,6 +328,7 @@ class Ui_MainWindow(object):
         self.url_val.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.url_val.setObjectName("url_val")
         self.horizontalLayout_5.addWidget(self.url_val)
+        self.horizontalLayout_5.setStretch(0, 1)
         self.horizontalLayout_5.setStretch(1, 3)
         self.horizontalLayout_5.setStretch(2, 1)
         self.verticalLayout_2.addLayout(self.horizontalLayout_5)
@@ -357,6 +426,8 @@ class Ui_MainWindow(object):
         self.send_btn.setText(_translate("MainWindow", "send"))
         self.label_3.setText(_translate("MainWindow", "Api-key"))
         self.api_key_txt.setPlaceholderText(_translate("MainWindow", "Enter your api key..."))
+        self.label_8.setText(_translate("MainWindow", "temperature(0~1)"))
+        self.temp_val.setText(_translate("MainWindow", "0"))
         self.label_5.setText(_translate("MainWindow", "Query number(1~100)"))
         self.query_val.setText(_translate("MainWindow", "0"))
         self.label_6.setText(_translate("MainWindow", "url number(1~100)"))

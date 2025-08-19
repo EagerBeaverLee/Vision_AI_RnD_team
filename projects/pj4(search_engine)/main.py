@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QRadioButton
+    QApplication, QMainWindow, QRadioButton, QMessageBox
 )
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QDoubleValidator
@@ -11,6 +11,7 @@ from langchain.schema.runnable import RunnableLambda, RunnableParallel
 
 from langchain_openai import ChatOpenAI
 from mainwindow import Ui_MainWindow
+from prompts import AI_ASSISTANT_PROMPT_TEMPLATE
 from prompts import ASSISTANT_SELECTION_PROMPT_TEMPLATE
 from prompts import WEB_SEARCH_PROMPT_TEMPLATE
 from prompts import SUMMARY_PROMPT_TEMPLATE
@@ -27,16 +28,24 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.setupUi(self)
 
         validator = QDoubleValidator()
-        validator.setRange(1, 100)
+        validator.setRange(0.00, 1.00)
+        validator.setDecimals(2)
         validator.setNotation(QDoubleValidator.StandardNotation)
-        self.ui.query_val.setValidator(validator)
+        self.ui.temp_val.setValidator(validator)
+
+        validator2 = QDoubleValidator()
+        validator2.setRange(1, 100)
+        validator2.setNotation(QDoubleValidator.StandardNotation)
+        self.ui.query_val.setValidator(validator2)
 
         self.llm = llm_model()
         self.connectionSlots()
         self.current_eng = ""
+        self.temp_num = "0"
         self.query_num = ""
         self.url_num = ""
 
+        self.ui.temp_val.setText("0")
         self.ui.query_val.setText("1")
         self.ui.url_val.setText("1")
 
@@ -47,12 +56,23 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.api_key_txt.textChanged.connect(self.apply_api_key)
         self.ui.google_btn.toggled.connect(self.apply_search_engine)
         self.ui.naver_btn.toggled.connect(self.apply_search_engine)
+
+        self.ui.temp_slider.valueChanged.connect(self.slider_temp)
+        self.ui.temp_val.textChanged.connect(self.text_temp)
         self.ui.query_num_slider.valueChanged.connect(self.slider_query_num)
         self.ui.query_val.textChanged.connect(self.text_query_num)
         self.ui.url_num_slider.valueChanged.connect(self.slider_url_num)
         self.ui.url_val.textChanged.connect(self.text_url_num)
     
     def apply(self):
+        if not self.llm.api_key:
+            QMessageBox.about(
+            self,
+            "Error",
+            "<p>Please enter your api key</p>",
+            )
+            return
+        self.llm.set_temp(self.temp_num)
         self.build_chain()
         msg = self.ui.input_txt.toPlainText().strip()
         chain =(
@@ -67,7 +87,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def build_chain(self):
         self.assistant_instruction_chain = (
             {'user_question': RunnablePassthrough()}
-            | ASSISTANT_SELECTION_PROMPT_TEMPLATE | self.llm.get_llm() | StrOutputParser() | to_obj
+            | AI_ASSISTANT_PROMPT_TEMPLATE | self.llm.get_llm() | StrOutputParser() | to_obj
         )
 
         self.web_searches_chain = (
@@ -79,10 +99,41 @@ class Window(QMainWindow, Ui_MainWindow):
             )
             | WEB_SEARCH_PROMPT_TEMPLATE | self.llm.get_llm() | StrOutputParser() | to_obj
         )
+
+        # self.search_result_urls_chain = (
+        #     RunnableLambda(lambda x:
+        #         [
+        #             {
+        #                 'result_url': url,
+        #             }
+        #         ]
+        #     )
+        # )
     
     def apply_api_key(self):
         if(self.ui.api_key_txt.text().strip()):
             self.llm.set_llm(self.ui.api_key_txt.text().strip())
+
+    def slider_temp(self):
+        val = self.ui.temp_slider.value() / 100
+        if val == float(self.temp_num):
+            return
+        self.temp_num = str(val)
+        self.apply_temp()
+
+    def text_temp(self):
+        val = self.ui.temp_val.text().strip()
+        if val == self.temp_num or val == "":
+            return
+        self.temp_num = val
+        self.apply_temp()
+        
+    def apply_temp(self):
+        val = self.temp_num
+        if self.ui.temp_slider.value() * 0.01 != float(val):
+            self.ui.temp_slider.setValue(int(float(val) * 100))
+        if self.ui.temp_val.text().strip() != val:
+            self.ui.temp_val.setText(val)
 
     def slider_query_num(self):
         val = self.ui.query_num_slider.value()
@@ -131,7 +182,6 @@ class Window(QMainWindow, Ui_MainWindow):
         if radio_btn.isChecked():
             self.current_eng = radio_btn.text()
             self.ui.selected_engine.setText(f'{radio_btn.text()}')
-
 
 
 if __name__ == "__main__":
