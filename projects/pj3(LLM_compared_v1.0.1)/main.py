@@ -198,7 +198,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def text_temp_value(self):
         float_val = self.ui.temp_val.text().strip()
-        if float_val == self.current_chat_room.m_temperature:
+        if float_val == self.current_chat_room.m_temperature or float_val == "":
             return
         self.current_chat_room.m_temperature = float_val
         self.sync_temp_value()
