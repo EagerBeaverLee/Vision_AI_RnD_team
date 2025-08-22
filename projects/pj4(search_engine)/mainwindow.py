@@ -287,10 +287,10 @@ class Ui_MainWindow(object):
 "QSlider::handle:horizontal:pressed{\n"
 "    background: rgb(50,120,50);\n"
 "}")
-        self.query_num_slider.setMinimum(1)
-        self.query_num_slider.setMaximum(100)
+        self.query_num_slider.setMinimum(2)
+        self.query_num_slider.setMaximum(10)
         self.query_num_slider.setSingleStep(1)
-        self.query_num_slider.setProperty("value", 1)
+        self.query_num_slider.setProperty("value", 2)
         self.query_num_slider.setOrientation(QtCore.Qt.Horizontal)
         self.query_num_slider.setObjectName("query_num_slider")
         self.verticalLayout_2.addWidget(self.query_num_slider)
@@ -351,7 +351,7 @@ class Ui_MainWindow(object):
 "    background: rgb(50,120,50);\n"
 "}")
         self.url_num_slider.setMinimum(1)
-        self.url_num_slider.setMaximum(100)
+        self.url_num_slider.setMaximum(10)
         self.url_num_slider.setSingleStep(1)
         self.url_num_slider.setProperty("value", 1)
         self.url_num_slider.setOrientation(QtCore.Qt.Horizontal)
@@ -373,18 +373,30 @@ class Ui_MainWindow(object):
         self.selected_engine.setObjectName("selected_engine")
         self.horizontalLayout_3.addWidget(self.selected_engine)
         self.verticalLayout_2.addLayout(self.horizontalLayout_3)
-        self.google_btn = QtWidgets.QRadioButton(self.Setting)
-        self.google_btn.setStyleSheet("QRadioButton{\n"
+        self.duckduckgo_eng = QtWidgets.QRadioButton(self.Setting)
+        self.duckduckgo_eng.setStyleSheet("QRadioButton{\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
-        self.google_btn.setObjectName("google_btn")
-        self.verticalLayout_2.addWidget(self.google_btn)
-        self.naver_btn = QtWidgets.QRadioButton(self.Setting)
-        self.naver_btn.setStyleSheet("QRadioButton{\n"
+        self.duckduckgo_eng.setObjectName("duckduckgo_eng")
+        self.verticalLayout_2.addWidget(self.duckduckgo_eng)
+        self.serper_eng = QtWidgets.QRadioButton(self.Setting)
+        self.serper_eng.setStyleSheet("QRadioButton{\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
-        self.naver_btn.setObjectName("naver_btn")
-        self.verticalLayout_2.addWidget(self.naver_btn)
+        self.serper_eng.setObjectName("serper_eng")
+        self.verticalLayout_2.addWidget(self.serper_eng)
+        self.tavily_eng = QtWidgets.QRadioButton(self.Setting)
+        self.tavily_eng.setStyleSheet("QRadioButton{\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.tavily_eng.setObjectName("tavily_eng")
+        self.verticalLayout_2.addWidget(self.tavily_eng)
+        self.serp_eng = QtWidgets.QRadioButton(self.Setting)
+        self.serp_eng.setStyleSheet("QRadioButton{\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.serp_eng.setObjectName("serp_eng")
+        self.verticalLayout_2.addWidget(self.serp_eng)
         spacerItem4 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_2.addItem(spacerItem4)
         self.verticalLayout_4.addLayout(self.verticalLayout_2)
@@ -428,14 +440,16 @@ class Ui_MainWindow(object):
         self.api_key_txt.setPlaceholderText(_translate("MainWindow", "Enter your api key..."))
         self.label_8.setText(_translate("MainWindow", "temperature(0~1)"))
         self.temp_val.setText(_translate("MainWindow", "0"))
-        self.label_5.setText(_translate("MainWindow", "Query number(1~100)"))
+        self.label_5.setText(_translate("MainWindow", "Query number(2~10)"))
         self.query_val.setText(_translate("MainWindow", "0"))
-        self.label_6.setText(_translate("MainWindow", "url number(1~100)"))
+        self.label_6.setText(_translate("MainWindow", "url number(1~10)"))
         self.url_val.setText(_translate("MainWindow", "0"))
         self.label_7.setText(_translate("MainWindow", "Search Engine"))
         self.selected_engine.setText(_translate("MainWindow", "apply_Engine"))
-        self.google_btn.setText(_translate("MainWindow", "Google"))
-        self.naver_btn.setText(_translate("MainWindow", "Naver"))
+        self.duckduckgo_eng.setText(_translate("MainWindow", "duckduckgo"))
+        self.serper_eng.setText(_translate("MainWindow", "serper"))
+        self.tavily_eng.setText(_translate("MainWindow", "tavily"))
+        self.serp_eng.setText(_translate("MainWindow", "serp"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.Setting), _translate("MainWindow", "setting"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Tab 2"))
         self.menu_Setting.setTitle(_translate("MainWindow", "&Setting"))

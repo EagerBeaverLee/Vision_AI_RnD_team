@@ -390,7 +390,7 @@ QSlider::handle:horizontal:pressed{
 }</string>
                 </property>
                 <property name="text">
-                 <string>Query number(1~100)</string>
+                 <string>Query number(2~10)</string>
                 </property>
                </widget>
               </item>
@@ -466,16 +466,16 @@ QSlider::handle:horizontal:pressed{
 }</string>
               </property>
               <property name="minimum">
-               <number>1</number>
+               <number>2</number>
               </property>
               <property name="maximum">
-               <number>100</number>
+               <number>10</number>
               </property>
               <property name="singleStep">
                <number>1</number>
               </property>
               <property name="value">
-               <number>1</number>
+               <number>2</number>
               </property>
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
@@ -492,7 +492,7 @@ QSlider::handle:horizontal:pressed{
 }</string>
                 </property>
                 <property name="text">
-                 <string>url number(1~100)</string>
+                 <string>url number(1~10)</string>
                 </property>
                </widget>
               </item>
@@ -571,7 +571,7 @@ QSlider::handle:horizontal:pressed{
                <number>1</number>
               </property>
               <property name="maximum">
-               <number>100</number>
+               <number>10</number>
               </property>
               <property name="singleStep">
                <number>1</number>
@@ -616,26 +616,50 @@ QSlider::handle:horizontal:pressed{
              </layout>
             </item>
             <item>
-             <widget class="QRadioButton" name="google_btn">
+             <widget class="QRadioButton" name="duckduckgo_eng">
               <property name="styleSheet">
                <string notr="true">QRadioButton{
 	color: rgb(166, 217, 171);
 }</string>
               </property>
               <property name="text">
-               <string>Google</string>
+               <string>duckduckgo</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QRadioButton" name="naver_btn">
+             <widget class="QRadioButton" name="serper_eng">
               <property name="styleSheet">
                <string notr="true">QRadioButton{
 	color: rgb(166, 217, 171);
 }</string>
               </property>
               <property name="text">
-               <string>Naver</string>
+               <string>serper</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="tavily_eng">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton{
+	color: rgb(166, 217, 171);
+}</string>
+              </property>
+              <property name="text">
+               <string>tavily</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="serp_eng">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton{
+	color: rgb(166, 217, 171);
+}</string>
+              </property>
+              <property name="text">
+               <string>serp</string>
               </property>
              </widget>
             </item>

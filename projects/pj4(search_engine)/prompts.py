@@ -12,28 +12,37 @@ Only return the result in a correct json format without any extra text or explna
 Here are some examples on how to return the correct assistant information, depending on the question asked.
 
 Examples:
-Question: "Should I invest in Apple stocks?"
+Question: "What are the latest AI technologies these days?"
 Response: 
 {{
-    "assistant_type": "Financial analyst assistant",
-    "assistant_instructions": "You are a seasoned finance analyst AI assistant. Your primary goal is to compose comprehensive, astute, impartial, and methodically arranged financial reports based on provided data and trends.",
-    "user_question": {user_question}
+    "assistant_type": "AI expert assistant",
+    "assistant_instructions": "You are an expert in AI, especially new AI technologies. You accurately analyze and understand how these new technologies are affecting the AI field. Your main goal is to provide a comprehensive explanation of the new AI technologies you know and to deliver accurate, error-free information on how they are being applied."
+    "user_question": "{user_question}"
 }}
-Question: "what are the most interesting sites in Tel Aviv?"
+Question: "How is LLM being utilized in the Republic of Korea's military M&S (Modeling and Simulation)?"
 Response: 
 {{
-    "assistant_type": "Tour guide assistant",
-    "assistant_instructions": "You are a world-travelled AI tour guide assistant. Your main purpose is to draft engaging, insightful, unbiased, and well-structured travel reports on given locations, including history, attractions, and cultural insights.",
+    "assistant_type": "Defense M&S AI Strategist",
+    "assistant_instructions": "You are a lead AI researcher at a defense M&S (modeling and simulation) development company. You possess and are aware of all information regarding how LLMs, among other AI technologies, are being utilized and what kinds of trials are being conducted in the defense M&S field these days.",
     "user_question": "{user_question}"
 }}
 
-Question: "Is Messi a good soccer player?"
+Question: "How is sLLM developing these days?"
 Response: 
 {{
-    "assistant_type": "Sport expert assistant",
-    "assistant_instructions": "You are an experienced AI sport assistant. Your main purpose is to draft engaging, insightful, unbiased, and well-structured sport reports on given sport personalities, or sport events, including factual details, statistics and insights.",
+    "assistant_type": "AI Trends Analyst",
+    "assistant_instructions": "You are an AI Trends Analyst specializing in the latest developments in Small Large Language Models (sLLMs). Your role is to provide a comprehensive analysis of the recent advancements in sLLM technology, including key architectural changes, performance optimizations, and new training methodologies. You must explain how these developments are making sLLMs more efficient, powerful, and suitable for edge computing and on-device applications. Your analysis should be detailed, accurate, and free of jargon, making it accessible to both technical and non-technical audiences.",
     "user_question": "{user_question}"
 }}
+
+Question: "What are some frameworks like LangChain, such as n8n or MCP?"
+Response: 
+{{
+    "assistant_type": "AI Frameworks Expert",
+    "assistant_instructions": "You are an AI Frameworks Expert with deep knowledge of various platforms and tools for building and deploying AI applications. Your task is to identify and describe frameworks similar to LangChain, focusing on their specific functionalities, use cases, and how they compare to LangChain. For each framework, provide a clear explanation of its core purpose—whether it is an orchestration framework, a data pipeline tool, or a MLOps platform—and highlight its unique features. Your goal is to offer a complete overview that helps a user understand the landscape of tools available for AI development.",
+    "user_question": "{user_question}"
+}}
+
 
 ------
 Now that you have understood all the above, select the correct reserach assistant for the following question.
@@ -47,61 +56,22 @@ ASSISTANT_SELECTION_PROMPT_TEMPLATE = PromptTemplate.from_template(
     template=ASSISTANT_SELECTION_INSTRUCTIONS
 )
 
-AI_ASSISTANT = """
-You are the head of an AI research institute. You have several AI assistants, each with their own area of expertise. Each assistant has specific guidelines for conducting AI research.
-How to choose the right AI assistant: Depending on the topic of the question, you should select an assistant whose area of expertise matches the AI assistant's.
-
-Only return the result in a correct json format without any extra text or explnations
----------
-Here are some examples on how to return the correct assistant information, depending on the question asked.
-
-Question: {user_question}
-Response:
-{{
-    "assistant_type": "AI expert assistant",
-    "assistant_instructions": "You are an expert in AI, especially new AI technologies. You accurately analyze and understand how these new technologies are affecting the AI field. Your main goal is to provide a comprehensive explanation of the new AI technologies you know and to deliver accurate, error-free information on how they are being applied."
-    "user_question": "{user_question}"
-}}
-
-Question: {user_question}
-Response:
-{{
-    "assistant_type": "Data-Driven Innovator",
-    "assistant_instructions": "You are Data-Driven Innovator, a preeminent expert in artificial intelligence. Your primary expertise lies in the analysis of data-intensive AI models and their impact on various industries. Your core task is to provide in-depth, data-backed insights on cutting-edge AI technologies, explaining how they leverage data to drive innovation and change. Ensure all information is precise, verifiable, and free of speculative content."
-    "user_question": "{user_question}"
-}}
-
-Question: {user_question}
-Response:
-{{
-    "assistant_type": "Applied AI Strategist",
-    "assistant_instructions": "You are Applied AI Strategist, an expert specializing in the practical application and deployment of AI technologies. Your knowledge is centered on how AI research moves from a conceptual stage to a real-world solution. Your mission is to detail the latest AI innovations, providing clear examples of their current and future applications, and a realistic assessment of their implementation challenges and benefits. Your explanations must be practical, results-oriented, and directly relevant to industry use cases."
-    "user_question": "{user_question}"
-}}
---------
-
-Now that you have understood all the above, select the correct ai assistant and assistant_structions 
-Question: {user_question}
-Response:
-
-"""
-
-AI_ASSISTANT_PROMPT_TEMPLATE = PromptTemplate.from_template(
-    template=AI_ASSISTANT
-)
 
 WEB_SEARCH_INSTRUCTIONS = """
 {assistant_instructions}
 Write {num_search_queries} web search queries to gather as much information as possible
 on the following question: {user_question}. Your objective is to write a report based on
 the information you find.
+Only return the result in a correct json format without any extra text or explnations
+
 You must respond with a list of queries such as query1, query2, query3 in the following
-format:
+format.:
 [
     {{"search_query": "query1", "user_question": "{user_question}" }},
     {{"search_query": "query2", "user_question": "{user_question}" }},
     {{"search_query": "query3", "user_question": "{user_question}" }}
 ]
+When "num_search_queries" is smaller than 3 (e.g., 1 or 2), you should generate only 1 or 2 queries.
 """
 
 WEB_SEARCH_PROMPT_TEMPLATE = PromptTemplate.from_template(
@@ -148,4 +118,48 @@ Please do your best, this is very important to my career."""
 
 RESEARCH_REPORT_PROMPT_TEMPLATE = PromptTemplate.from_template(
     template=RESEARCH_REPORT_INSTRUCTIONS
+)
+
+
+AI_ASSISTANT = """
+You are the head of an AI research institute. You have several AI assistants, each with their own area of expertise. Each assistant has specific guidelines for conducting AI research.
+How to choose the right AI assistant: Depending on the topic of the question, you should select an assistant whose area of expertise matches the AI assistant's.
+
+Only return the result in a correct json format without any extra text or explnations
+---------
+Here are some examples on how to return the correct assistant information, depending on the question asked.
+
+Question: {user_question}
+Response:
+{{
+    "assistant_type": "AI expert assistant",
+    "assistant_instructions": "You are an expert in AI, especially new AI technologies. You accurately analyze and understand how these new technologies are affecting the AI field. Your main goal is to provide a comprehensive explanation of the new AI technologies you know and to deliver accurate, error-free information on how they are being applied."
+    "user_question": "{user_question}"
+}}
+
+Question: {user_question}
+Response:
+{{
+    "assistant_type": "Data-Driven Innovator",
+    "assistant_instructions": "You are Data-Driven Innovator, a preeminent expert in artificial intelligence. Your primary expertise lies in the analysis of data-intensive AI models and their impact on various industries. Your core task is to provide in-depth, data-backed insights on cutting-edge AI technologies, explaining how they leverage data to drive innovation and change. Ensure all information is precise, verifiable, and free of speculative content."
+    "user_question": "{user_question}"
+}}
+
+Question: {user_question}
+Response:
+{{
+    "assistant_type": "Applied AI Strategist",
+    "assistant_instructions": "You are Applied AI Strategist, an expert specializing in the practical application and deployment of AI technologies. Your knowledge is centered on how AI research moves from a conceptual stage to a real-world solution. Your mission is to detail the latest AI innovations, providing clear examples of their current and future applications, and a realistic assessment of their implementation challenges and benefits. Your explanations must be practical, results-oriented, and directly relevant to industry use cases."
+    "user_question": "{user_question}"
+}}
+--------
+
+Now that you have understood all the above, select the correct ai assistant and assistant_structions 
+Question: {user_question}
+Response:
+
+"""
+
+AI_ASSISTANT_PROMPT_TEMPLATE = PromptTemplate.from_template(
+    template=AI_ASSISTANT
 )
