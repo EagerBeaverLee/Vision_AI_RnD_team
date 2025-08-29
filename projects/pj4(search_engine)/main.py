@@ -1,4 +1,4 @@
-import sys, configparser
+import sys, markdown
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QRadioButton, QMessageBox
 )
@@ -11,7 +11,7 @@ from langchain.schema.runnable import RunnableLambda, RunnableParallel
 
 from langchain_openai import ChatOpenAI
 from mainwindow import Ui_MainWindow
-from prompts import AI_ASSISTANT_PROMPT_TEMPLATE
+from prompts import TRANSLATE_ASSISTANT_PROMPT_TEMPLATE
 from prompts import ASSISTANT_SELECTION_PROMPT_TEMPLATE
 from prompts import WEB_SEARCH_PROMPT_TEMPLATE
 from prompts import SUMMARY_PROMPT_TEMPLATE
@@ -20,18 +20,7 @@ from utilities import to_obj
 from llm_models import llm_model
 from web_searching import search_engine
 from web_scraping import web_scrape
-
-class IniConfigure:
-    def __init__(self):
-        self.config = configparser.ConfigParser()
-        self.api_key
-        self.temp_val
-        self.query_val
-        self.url_val
-        self.search_eng_name
-    def load_iniconfig(self):
-        self.config.read('setting.ini')
-
+from config import IniConfigure
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -62,12 +51,15 @@ class Window(QMainWindow, Ui_MainWindow):
         self.temp_num = "0"
         self.query_num = 0
         self.url_num = 0
+        self.appending_res = ""         # 최종research 결과를 추가할 str변수
 
         self.ui.temp_val.setText("0")
         self.ui.query_val.setText("2")
         self.ui.url_val.setText("1")
 
         self.ui.duckduckgo_eng.setChecked(True)
+
+        self.config = IniConfigure()
 
     def connectionSlots(self):
         self.ui.send_btn.clicked.connect(self.apply)
@@ -96,8 +88,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.build_chain()
         msg = self.ui.input_txt.toPlainText().strip()
         self.ui.input_txt.clear()
-
-        
+                
         #search_engine develop==============
         # print(self.query_num)
         # chain2 = (
@@ -148,9 +139,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
         llm_res =  self.web_research_chain.invoke(msg)
         print(llm_res)
-        self.ui.research_txt.append(str(llm_res))
-        self.ui.research_txt.append("")
-        
+        self.appending_res += "\n\n\n"
+        self.appending_res += llm_res
+        html_out = markdown.markdown(self.appending_res)
+        self.ui.research_txt.setHtml(html_out)        
 
     def build_chain(self):
         self.assistant_instruction_chain = (
@@ -181,9 +173,6 @@ class Window(QMainWindow, Ui_MainWindow):
                         'search_query': x['search_query'],
                         'user_question': x['user_question']
                     }
-                    # for url in search_engine.duckduckgo_web_search(web_query=x['search_query'], max_results=self.url_num)
-                    # for url in search_engine.tavily_web_search(query=x['search_query'], max_results=self.url_num)
-                    # for url in search_engine.serper_web_search(query=x['search_query'], max_results=self.url_num)
                     for url in engine_dict[self.search_eng_name](query=x['search_query'], max_results=self.url_num)
                 ]
             )
@@ -241,8 +230,10 @@ class Window(QMainWindow, Ui_MainWindow):
         )
     
     def apply_api_key(self):
-        if(self.ui.api_key_txt.text().strip()):
-            self.llm.set_llm(self.ui.api_key_txt.text().strip())
+        key = self.ui.api_key_txt.text().strip()
+        if(key):
+            self.llm.set_llm(key)
+            self.config.set_api(key)
 
     def slider_temp(self):
         val = self.ui.temp_slider.value() / 100
@@ -256,6 +247,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if val == self.temp_num or val == "":
             return
         self.temp_num = val
+        self.config.set_temp
         self.apply_temp()
         
     def apply_temp(self):
