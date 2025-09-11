@@ -1,0 +1,151 @@
+ 
+Glossary 
+ 
+SECTION I ? ACRONYMS AND ABBREVIATIONS 
+ 
+AGM Attack guidance matrix C2 command and control CCIRs commander¡¯s critical information requirements CO cyberspace operations COA course of action CP command post D3A decide, detect, deliver, and assess EEFI essential elements of friendly information EW electronic warfare FRAGORD fragmentary order G-1 assistant chief of staff, personnel G-2 assistant chief of staff, intelligence G-3 assistant chief of staff, operations G-4 assistant chief of staff, logistics G-5 assistant chief of staff, plans G-6 assistant chief of staff, signal G-9 assistant chief of staff, civil affairs operations HPT high-payoff target HVT high-value target IPB intelligence preparation of the battlefield IO information operations IR information requirement IRC information-related capability MDMP military decisionmaking process MISO military information support operations OPLAN operation plan OPORD operation order OPSEC operations security PSYOP psychological operations WARNORD warning order 
+ 
+SECTION II ? TERMS 
+ 
+combat power 
+ 
+(Army) The total means of destructive, constructive, and information capabilities that a military unit or formation can apply at a given time. (ADRP 3-0) 
+ 
+6 December 2016 FM 3-13 Glossary-1 
+ 
+Glossary 
+ 
+commander¡¯s communication synchronization 
+ 
+A process to coordinate and synchronize narratives, themes, messages, images, operations, and actions to ensure their integrity and consistency to the lowest tactical level across all relevant communication activities. Also called CCS. (JP 3-61) 
+ 
+commander¡¯s critical information requirement 
+ 
+An information requirement identified by the commander as being critical to facilitating timely decision making. Also called CCIR. (JP 3-0) 
+ 
+commander¡¯s intent 
+ 
+A clear and concise expression of the purpose of the operation and the desired military end state that supports mission command, provides focus to the staff, and helps subordinate and supporting commanders act to achieve the commander¡¯s desired results without further orders, even when the operation does not unfold as planned. (JP 3-0) 
+ 
+concept of operations 
+ 
+(Army) A statement that directs the manner in which subordinate units cooperate to accomplish that mission and establish the sequence of actions the force will use to achieve the end state. (ADRP 5-0) 
+ 
+cyberspace 
+ 
+A global domain within the information environment consisting of the interdependent networks of information technology infrastructures and resident data, including the Internet, telecommunications networks, computer systems, and embedded processors and controllers. (JP 3-12) 
+ 
+cyberspace operations 
+ 
+The employment of cyberspace capabilities where the primary purpose is to achieve objectives in or through cyberspace. Also called CO. (JP 3-0) 
+ 
+decisive action 
+ 
+The continuous, simultaneous combinations of offensive, defensive, and stability or defense support of civil authorities tasks. (ADRP 3-0) 
+ 
+end state 
+ 
+The set of required conditions that defines achievement of the commander¡¯s objectives. (JP 3-0) 
+ 
+essential element of friendly information 
+ 
+(Army) A critical aspect of a friendly operation that, if known by the enemy, would subsequently compromise, lead to failure, or limit success of the operation and therefore should be protected from enemy detection. Also called EEFI. (ADRP 5-0) 
+ 
+indicator 
+ 
+(Army) In the context of assessment, an item of information that provides insight into a measure of effectiveness or measure of performance. (ADRP 5-0) 
+ 
+information environment 
+ 
+The aggregate of individuals, organizations, and systems that collect, process, dissseminate, or act on information. (JP 3-13) 
+ 
+*information fratricide 
+ 
+Adverse effects on the information environment resulting from a failure to effectively synchronize the employment of multiple information-related capabilities which may impede the conduct of friendly operations or adversely affect friendly forces. 
+ 
+information operations 
+ 
+The integrated employment, during military operations, of information-related capabilities in concert with other lines of operation to influence, disrupt, corrupt, or usurp the decision-making of adversaries and potential adversaries while protecting our own. Also called IO. (JP 3-13) 
+ 
+Glossary-2 FM 3-13 6 December 2016 
+ 
+Glossary 
+ 
+information-related capability 
+ 
+A tool, technique, or activity employed within a dimension of the information environment that can be used to create effects and operationally desirable conditions. Also called IRC. (JP 3-13). 
+ 
+line of effort 
+ 
+(Army) A line that links multiple tasks using the logic of purpose rather than geographical reference to focus efforts toward establishing operational and strategic conditions. Also called LOE. (ADRP 3-0) 
+ 
+line of operations 
+ 
+(Army) A line that defines the directional orientation of a force in time and space in relation to the enemy and links the force with its base of operations and objectives. (ADRP 3-0) 
+ 
+measure of effectiveness 
+ 
+(DOD) A criterion used to assess changes in system behavior, capability, or operational environment that is tied to measuring the attainment of an end state, achievement of an objective, or creation of an effect. Also called MOE. (JP 3-0) 
+ 
+measure of performance 
+ 
+(DOD) A criterion used to assess friendly actions that is tied to measuring task accomplishment. Also called MOP. (JP 3-0) 
+ 
+message 
+ 
+A narrowly focused communication directed at a specific audience to support a specific theme. Also called MSG. (JP 3-61) 
+ 
+military deception 
+ 
+Actions executed to deliberately mislead adversary military, paramilitary, or violent extremist organization decision makers, thereby causing the adversary to take specific actions (or inactions) that will contribute to the accomplishment of the friendly mission. (JP 3-13.4) 
+ 
+mission command 
+ 
+(Army) The exercise of authority and direction by the commander using mission orders to enable 
+ 
+disciplined initiative within the commander¡¯s intent to empower agile and adaptive leaders in the 
+ 
+conduct of unified land operations. (ADP 6-0) 
+ 
+narrative 
+ 
+Overarching expression of context and desired results. (JDN 2-13) 
+ 
+operational environment 
+ 
+A composite of the conditions, circumstances, and influences that affect the employment of capabilities and bear on the decisions of the commander. Also called OE. (JP 3-0) 
+ 
+planning 
+ 
+The art and science of understanding a situation, envisioning a desired future, and laying out effective ways of bringing that future about. (ADP 5-0) 
+ 
+running estimate 
+ 
+The continuous assessment of the current situation used to determine if the current operation is 
+ 
+proceeding according to the commander¡¯s intent and if planned future operations are supportable. 
+ 
+(ADP 5-0) 
+ 
+*Soldier and leader engagement 
+ 
+Interpersonal Service-member interactions with audiences in an area of operations. Also called SLE. 
+ 
+targeting 
+ 
+(DOD) The process of selecting and prioritizing targets and matching the appropriate response to them, considering operational requirements and capabilities. (JP 3-0) 
+ 
+6 December 2016 FM 3-13 Glossary-3 
+ 
+Glossary 
+ 
+terrain management 
+ 
+The process of allocating terrain by establishing areas of operation, designating assembly areas, and specifying locations for units and activities to deconflict activities that might interfere with each other.
+(ADRP 5-0) 
+ 
+theme 
+ 
+Unifying idea or intention that supports the narrative and is designed for broad application to achieve specific objectives. (JDN 2-13) 
+ 
+Glossary-4 FM 3-13 6 December 2016 

@@ -1,0 +1,387 @@
+ 
+Glossary 
+ 
+The glossary lists acronyms and terms with Army or joint definitions. Where Army and joint definitions differ, (Army) or (DOD) precedes the definition. The proponent publication is listed in parentheses after the definition. Acronyms appearing in ATP 7-100.2 that are not Army or joint are marked with an asterisk (*). 
+ 
+SECTION I ? ACRONYMS AND ABBREVIATIONS 
+ 
+AAA antiaircraft artillery *AAAD all-arms air defense ADP Army doctrine publication AFL affiliated AO area of operations APC armored personnel carrier AR Army regulation AT antitank ATP Army techniques publication ATTP Army tactics, techniques, and procedures C2 command and control *C3D camouflage, concealment, cover, and deception *CBP complex battle position CBRN chemical, biological, radiological, and [or] nuclear CJCSM Chairman of the Joint Chiefs of Staff manual cm centimeter COA course of action CP command post DA Department of the Army DMZ demilitarized zone DOD Department of Defense *DPRK Democratic People¡¯s Republic of Korea *EIW electronic intelligence warfare EW electronic warfare FM field manual *HARTS hardened artillery site *IFS integrated fires system *IFV infantry fighting vehicle *ISIS Islamic State of Iraq and Syria JP joint publication kg kilogram 
+ 
+24 July 2020 ATP 7-100.2 Glossary-1 
+ 
+Glossary 
+ 
+km kilometer *KPA Korean People¡¯s Army *KPAAF Korean People¡¯s Army Air Force *KPAGF Korean People¡¯s Army Ground Forces *KPAN Korean People¡¯s Army Navy kph kilometers per hour *m meter MANPADS man-portable air defense system *MDL military demarcation line *mps meters per second *mm millimeter ODIN Operational Environmant Data Integration Network OE operational environment OP observation post *RGB Reconnaissance General Bureau *RISTA reconnaissance, intelligence, surveillance, and target acquisition ROK Republic of Korea *ROKS Republic of Korea Ship RPG rocket-propelled grenade *RSD Rear Service Department SAM surface-to-air missile *SBP simple battle position SIGINT signals intelligence SOF special operations forces UA unmanned aircraft UAS unmanned aircraft system UN United Nations *USS United States Ship *ZORR zone of reconnaissance responsibility 
+ 
+SECTION II ? TERMS 
+ 
+adversary 
+ 
+A party acknowledged as potentially hostile to a friendly party and against which the use of force may be envisaged. (JP 3-0) 
+ 
+air assault operation 
+ 
+An operation in which assault forces, using the mobility of rotary-wing or tiltrotor aircraft and the total integration of available fires, maneuver under the control of a ground or air maneuver commander to engage enemy forces or to seize and hold key terrain. (JP 3-18) 
+ 
+ambush 
+ 
+An attack by fire or other destructive means from concealed positions on a moving or temporarily halted enemy. (FM 3-90-1) 
+ 
+Glossary-2 ATP 7-100.2 24 July 2020 
+ 
+Glossary 
+ 
+antiaccess 
+ 
+Action, activity, or capability, usually long-range, designed to prevent an advancing enemy force from entering an operational area. (JP 3-0) 
+ 
+area defense 
+ 
+A type of defensive operation that concentrates on denying enemy forces access to designated terrain for a specific time rather than destroying the enemy outright. (ADP 3-90) 
+ 
+area denial 
+ 
+Action, activity, or capability, usually short-range, designed to limit an enemy force¡¯s freedom of action within an operational area. (JP 3-0) 
+ 
+area security 
+ 
+A type of security operation conducted to protect friendly forces, lines of communications, and activities within a specific area. (ADP 3-90) 
+ 
+assault 
+ 
+To make a short, violent, but well-ordered attack against a local objective, such as a gun emplacement, a fort, or a machine gun nest. (JP 3-18) 
+ 
+attack 
+ 
+A type of offensive operation that destroys or defeats enemy forces, seizes and secures terrain, or both.
+(ADP 3-90) 
+ 
+battle position 
+ 
+A defensive location oriented on a likely enemy avenue of approach. (ADP 3-90) 
+ 
+block 
+ 
+A tactical mission task that denies the enemy access to an area or prevents the enemy¡¯s advance in a direction or along an avenue of approach. Block is also an obstacle effect that integrates fire planning and obstacle efforts to stop an attacker along a specific avenue of approach or prevent the attacking force from passing through an engagement area. (FM 3-90-1) 
+ 
+breach 
+ 
+A tactical mission task in which the unit employs all available means to break through or establish a passage through an enemy defense, obstacle, minefield, or fortification. (FM 3-90-1) 
+ 
+bypass 
+ 
+A tactical mission task in which the commander directs the unit to maneuver around an obstacle, position, or enemy force to maintain the momentum of the operation while deliberately avoiding combat with an enemy force. (FM 3-90-1) 
+ 
+canalize 
+ 
+(Army) A tactical mission task in which the commander restricts enemy movement to a narrow zone by exploiting terrain coupled with the use of obstacles, fires, or friendly maneuver. (FM 3-90-1) 
+ 
+clear 
+ 
+A tactical mission task that requires the commander to remove all enemy forces and eliminate organized resistance within an assigned area. (FM 3-90-1) 
+ 
+clearing 
+ 
+A mobility task that involves the elimination or neutralization of an obstacle that is usually performed by follow-on engineers and is not done under fire. (ATP 3-90.4) 
+ 
+combat service support 
+ 
+The essential capabilities, functions, activities, and tasks necessary to sustain all elements of all operating forces in theater at all levels of warfare. (JP 4-0) 
+ 
+combat support 
+ 
+Fire support and operational assistance provided to combat elements. (JP 4-0) 
+ 
+24 July 2020 ATP 7-100.2 Glossary-3 
+ 
+Glossary 
+ 
+complex terrain 
+ 
+A geographical area consisting of an urban center larger than a village and/or of two or more types of restrictive terrain or environmental conditions occupying the same space. (ATP 3-34.80) 
+ 
+concealment 
+ 
+Protection from observation or surveillance. (FM 3-96) 
+ 
+contain 
+ 
+A tactical mission task that requires the commander to stop, hold, or surround enemy forces or to cause them to center their activity on a given front and prevent them from withdrawing any part of their forces for use elsewhere. (FM 3-90-1) 
+ 
+control measure 
+ 
+A means of regulating forces or warfighting functions. (ADP 6-0) 
+ 
+counterattack 
+ 
+Attack by part or all of a defending force against an enemy attacking force, for such specific purposes as regaining ground lost, or cutting off or destroying enemy advance units, and with the general objective of denying to the enemy the attainment of the enemy¡¯s purpose in attacking. In sustained defensive operations, it is undertaken to restore the battle position and is directed at limited objectives.
+(FM 1-02.1) 
+ 
+counterreconnaissance 
+ 
+A tactical mission task that encompasses all measures taken by a commander to counter enemy reconnaissance and surveillance efforts. Counterreconnaissance is not a distinct mission, but a component of all forms of security operations. (FM 3-90-1) 
+ 
+cover 
+ 
+(Army) 1. A type of security operation done independent of the main body to protect them by fighting to gain time while preventing enemy ground observation of and direct fire against the main body.
+(ADP 3-90) 2. Protection from the effects of fires. (FM 3-96) 
+ 
+defeat 
+ 
+To render a force incapable of achieving its objectives. (ADP 3-0) 
+ 
+delay 
+ 
+When a force under pressure trades space for time by slowing down the enemy¡¯s momentum and inflicting maximum damage on enemy forces without becoming decisively engaged. (ADP 3-90) 
+ 
+destroy 
+ 
+A tactical mission task that physically renders an enemy force combat-ineffective until it is reconstituted. Alternatively, to destroy a combat system is to damage it so badly that it cannot perform any function or be restored to a usable condition without being entirely rebuilt. (FM 3-90-1) 
+ 
+disrupt 
+ 
+A tactical mission task in which a commander integrates direct and indirect fires, terrain, and obstacles to upset an enemy¡¯s formation or tempo, interrupt the enemy¡¯s timetable, or cause enemy forces to commit prematurely or attack in a piecemeal fashion. (FM 3-90-1) 
+ 
+electronic warfare 
+ 
+Military action involving the use of electromagnetic and directed energy to control the electromagnetic spectrum or to attack the enemy. (JP 3-13.1) 
+ 
+enemy 
+ 
+A party identified as hostile against which the use of force is authorized. (ADP 3-0) 
+ 
+engage 
+ 
+To bring the enemy under fire. (JP 3-09.3) 
+ 
+Glossary-4 ATP 7-100.2 24 July 2020 
+ 
+Glossary 
+ 
+exploitation 
+ 
+(DOD) Taking full advantage of success in military operations, following up initial gains, and making permanent the temporary effects already created. (JP 2-01.3) (Army) A type of offensive operation that usually follows a successful attack and is designed to disorganize the enemy in depth. (ADP 3-90) 
+ 
+fire plan 
+ 
+A tactical plan for using the weapons of a unit or formation so that their fire will be coordinated. (FM 3-09) 
+ 
+fix 
+ 
+A tactical mission task where a commander prevents the enemy force from moving any part of that force from a specific location for a specific period. Fix is also an obstacle effect that focuses fire planning and obstacle effort to slow an attacker¡¯s movement within a specified area, normally an engagement area. (FM 3-90-1) 
+ 
+forward operating base 
+ 
+An airfield used to support tactical operations without establishing full support facilities. (JP 3-09.3) 
+ 
+forward operating site 
+ 
+A scalable location outside the United States and its territories intended for rotational use by operating forces. (JP 4-04) 
+ 
+friendly 
+ 
+A contact positively identified as a friend using identification, friend or foe and other techniques. (JP 3-01) 
+ 
+guard 
+ 
+A type of security operation done to protect the main body by fighting to gain time while preventing enemy ground observation of and direct fire against the main body. (ADP 3-90) 
+ 
+guerrilla force 
+ 
+A group of irregular, predominantly indigenous personnel organized along military lines to conduct military and paramilitary operations in enemy-held, hostile, or denied territory. (JP 3-05) 
+ 
+high-payoff target 
+ 
+A target whose loss to the enemy will significantly contribute to the success of the friendly course of action. (JP 3-60) 
+ 
+high-value target 
+ 
+A target the enemy commander requires for the successful completion of the mission. (JP 3-60) 
+ 
+hybrid threat 
+ 
+The diverse and dynamic combination of regular forces, irregular forces, terrorists, or criminal elements unified to achieve mutually benefitting effects. (ADP 3-0) 
+ 
+integration 
+ 
+(DOD) The arrangement of military forces and their actions to create a force that operates by engaging as a whole. (JP 1) 
+ 
+intelligence 
+ 
+1. The product resulting from the collection, processing, integration, evaluation, analysis, and interpretation of available information concerning foreign nations, hostile or potentially hostile forces or elements, or areas of actual or potential operations. 2. The activities that result in the product. 3. The organizations engaged in such activities. (JP 2-0) 
+ 
+interdict 
+ 
+A tactical mission task where the commander prevents, disrupts, or delays the enemy¡¯s use of an area or route. (FM 3-90-1) 
+ 
+24 July 2020 ATP 7-100.2 Glossary-5 
+ 
+Glossary 
+ 
+irregular warfare 
+ 
+A violent struggle among state and non-state actors for legitimacy and influence over the relevant population(s). (JP 1) 
+ 
+isolate 
+ 
+To separate a force from its sources of support in order to reduce its effectiveness and increase its vulnerability to defeat. (ADP 3-0) 
+ 
+joint 
+ 
+Connotes activities, operations, organizations, etc., in which elements of two or more Military Departments participate. (JP 1) 
+ 
+local security 
+ 
+The low-level security activities conducted near a unit to prevent surprise by the enemy. (ADP 3-90) 
+ 
+maneuver 
+ 
+(DOD) A movement to place ships, aircraft, or land forces in a position of advantage over the enemy.
+(JP 3-0) (Army) Movement in conjunction with fires. (ADP 3-0) 
+ 
+military deception 
+ 
+Actions executed to deliberately mislead adversary military, paramilitary, or violent extremist organization decision makers, thereby causing the adversary to take specific actions (or inactions) that will contribute to the accomplishment of the friendly mission. (JP 3-13.4) 
+ 
+mission 
+ 
+The task, together with the purpose, that clearly indicates the action to be taken and the reason therefore. (JP 3-0) 
+ 
+neutral 
+ 
+In combat and combat support operations, an identity applied to a track whose characteristics, behavior, origin, or nationality indicate that it is neither supporting nor opposing friendly forces. (JP 3-0) 
+ 
+neutralize 
+ 
+(Army) A tactical mission task that results in rendering enemy personnel or materiel incapable of interfering with a particular operation. (FM 3-90-1) 
+ 
+operational environment 
+ 
+A composite of the conditions, circumstances, and influences that affect the employment of capabilities and bear on the decisions of the commander. (JP 3-0) 
+ 
+operational level of warfare 
+ 
+The level of warfare at which campaigns and major operations are planned, conducted, and sustained to achieve strategic objectives within theaters or other operational areas. (JP 3-0) 
+ 
+opposing force 
+ 
+A plausible, flexible, and free-thinking mixture of regular forces, irregular forces, and/or criminal elements representing a composite of varying capabilities of actual worldwide forces and capabilities (doctrine, tactics, organization, and equipment). (AR 350-2) 
+ 
+patrol 
+ 
+A detachment sent out by a larger unit to conduct a specific mission that operates semi-independently and return to the main body upon completion of mission. (ATP 3-21.8) 
+ 
+protection 
+ 
+Preservation of the effectiveness and survivability of mission-related military and nonmilitary personnel, equipment, facilities, information, and infrastructure deployed or located within or outside the boundaries of a given operational area. (JP 3-0) 
+ 
+Glossary-6 ATP 7-100.2 24 July 2020 
+ 
+Glossary 
+ 
+raid 
+ 
+An operation to temporarily seize an area to secure information, confuse an enemy, capture personnel or equipment, or to destroy a capability culminating with a planned withdrawal. (JP 3-0) 
+ 
+reconnaissance 
+ 
+A mission undertaken to obtain, by visual observation or other detection methods, information about the activities and resources of an enemy or adversary, or to secure data concerning the meteorological, hydrographic, or geographic characteristics of a particular area. (JP 2-0) 
+ 
+screen 
+ 
+A type of security operation that primarily provides early warning to the protected force. (ADP 3-90) 
+ 
+security area 
+ 
+That area occupied by a unit¡¯s security elements and includes the areas of influence of those security elements. (ADP 3-90) 
+ 
+signals intelligence 
+ 
+1. A category of intelligence comprising either individually or in combination all communications intelligence, electronic intelligence, and foreign instrumentation signals intelligence, however transmitted. 2. Intelligence derived from communications, electronic, and foreign instrumentation signals. (JP 2-0) 
+ 
+spoiling attack 
+ 
+A tactical maneuver employed to seriously impair a hostile attack while the enemy is in the process of forming or assembling for an attack. (FM 3-90-1) 
+ 
+strategic level of warfare 
+ 
+The level of warfare at which a nation, often as a member of a group of nations, determines national or multinational (alliance or coalition) strategic security objectives and guidance, then develops and uses national resources to achieve those objectives. (JP 3-0) 
+ 
+support 
+ 
+1. The action of a force that aids, protects, complements, or sustains another force in accordance with a directive requiring such action. 2. A unit that helps another unit in battle. 3. An element of a command that assists, protects, or supplies other forces in combat. (JP 1) 
+ 
+suppress 
+ 
+A tactical mission task that results in the temporary degradation of the performance of a force or weapon system below the level needed to accomplish its mission. (FM 3-90-1) 
+ 
+surveillance 
+ 
+The systematic observation of aerospace, cyberspace, surface, or subsurface areas, places, persons, or things by visual, aural, electronic, photographic, or other means. (JP 3-0) 
+ 
+system 
+ 
+A functionally, physically, and/or behaviorally related group of regularly interacting or interdependent elements; that group of elements forming a unified whole. (JP 3-0) 
+ 
+tactical level of warfare 
+ 
+The level of warfare at which battles and engagements are planned and executed to achieve military objectives assigned to tactical units or task forces. (JP 3-0) 
+ 
+tactical mission task 
+ 
+The specific activity performed by a unit while executing a form of tactical operation or form of maneuver. It may be expressed in terms of either actions by a friendly force or effects on an enemy force. (FM 3-90-1) 
+ 
+tactics 
+ 
+(Army) The employment, ordered arrangement, and directed actions of forces in relation to each other.
+(ADP 3-90) 
+ 
+24 July 2020 ATP 7-100.2 Glossary-7 
+ 
+Glossary 
+ 
+target acquisition 
+ 
+The detection, identification, and location of a target in sufficient detail to permit the effective employment of capabilities that create the required effects. (JP 3-60) 
+ 
+task 
+ 
+A clearly defined action or activity specifically assigned to an individual or organization that must be done as it is imposed by an appropriate authority. (JP 1) 
+ 
+task organization 
+ 
+(Army) A temporary grouping of forces designed to accomplish a particular mission. (ADP 5-0) 
+ 
+task-organizing 
+ 
+The act of designing a force, support staff, or sustainment package of specific size and composition to meet a unique task or mission. (ADP 3-0) 
+ 
+techniques 
+ 
+Non-prescriptive ways or methods used to perform missions, functions, or tasks. (CJCSM 5120.01A) 
+ 
+terrorism 
+ 
+The unlawful use of violence or threat of violence, often motivated by religious, political, or other ideological beliefs, to instill fear and coerce governments or societies in pursuit of goals that are usually political. (JP 3-07.2) 
+ 
+threat 
+ 
+Any combination of actors, entities, or forces that have the capability and intent to harm United States forces, United States national interests, or the homeland. (ADP 3-0) 
+ 
+unconventional warfare 
+ 
+Activities conducted to enable a resistance movement or insurgency to coerce, disrupt, or overthrow a government or occupying power by operating through or with an underground, auxiliary, and guerrilla force in a denied area. (JP 3-05.1) 
+ 
+unmanned aircraft 
+ 
+An aircraft that does not carry a human operator and is capable of flight with or without human remote control. (JP 3-30) 
+ 
+unmanned aircraft system 
+ 
+That system whose components include the necessary equipment, network, and personnel to control an unmanned aircraft. (JP 3-30) 
+ 
+weapons of mass destruction 
+ 
+Chemical, biological, radiological, or nuclear weapons capable of a high order of destruction or causing mass casualties, and excluding the means of transporting or propelling the weapon where such means is a separable and divisible part from the weapon. (JP 3-40) 
+ 
+Glossary-8 ATP 7-100.2 24 July 2020 
