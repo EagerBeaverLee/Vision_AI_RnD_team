@@ -1,17 +1,104 @@
 import sys, os, time, copy
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy, QMenu, QAction
+    QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy, QMenu, QAction, QFileDialog
 )
-from PyQt5.QtCore import Qt, QCoreApplication, QTimer, QObject, QPoint
+from PyQt5.QtCore import Qt, QCoreApplication, QTimer, QObject, QPoint, pyqtSignal, QThread
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.uic import loadUi
 
 from mainwindow import Ui_MainWindow
 
-from langchain_openai import OpenAI, ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader, CSVLoader, JSONLoader, DirectoryLoader
+from langchain_teddynote.document_loaders import HWPLoader
+from langchain_community.vectorstores import FAISS
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+from langchain_core.output_parsers import StrOutputParser
+
+class EmbeddingWorder(QObject):
+    finished = pyqtSignal()
+    progresses = pyqtSignal(int)
+    error = pyqtSignal(str)
+
+    def __init__(self, folder_path, api_key, parent=None):
+        super().__init__(parent)
+        self.folder_path = folder_path
+        self.embedding_model = OpenAIEmbeddings(api_key=api_key)
+        self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
+        self.vector_db = None
+
+    def get_loader(self, filename):
+        loader_classes = {
+            'docx': Docx2txtLoader,
+            'pdf': PyPDFLoader,
+            'txt': TextLoader,
+            'csv': CSVLoader,
+            'json': JSONLoader,
+            'hwp': HWPLoader
+        }
+
+        _, file_extension = os.path.splitext(filename)
+        file_extension = file_extension.lstrip('.')
+
+        loader_class = loader_classes.get(file_extension)
+
+        if not loader_class:
+            raise ValueError(f"No loader available for file extension '{file_extension}'")
+        
+        # JSON 파일인 경우 jq_schema 인자를 추가하여 반환
+        if file_extension == 'json':
+            return loader_class(filename, jq_schema='.', text_content=False)
+        else:
+            # 그 외의 경우 일반적인 방식으로 로더 반환
+            return loader_class(filename)
+        
+    def run(self):
+        try:
+            files = os.listdir(self.folder_path)
+            total_files = len(files)
+            save_vector = "./faiss_index_kr"
+
+            if total_files == 0:
+                self.error.emit("선택한 폴더에 파일이 없습니다.")
+                self.finished.emit()
+                return
+            
+            progress_step = 100 / total_files
+
+            # all_chunks = []
+            for i, file_name in enumerate(files):
+                file_path = os.path.join(self.folder_path, file_name)
+                try:
+                    loader = self.get_loader(file_path)
+                    chunks = self.text_splitter.split_documents(loader.load())
+                    # all_chunks.extend(chunks)
+                    # if self.vector_db:
+                    #     self.vector_db.add_documents(chunks)
+                    # else:
+                    #     self.vector_db = FAISS.from_documents(chunks, self.embedding_model)
+                    
+                    curr_progress = (i + 1) * progress_step
+                    self.progresses.emit(int(curr_progress))
+                except Exception as e:
+                    self.error.emit(f"{file_name} 파일 임베딩 중 오류 발생: {e}")
+
+            # self.vector_db.save_local(save_vector)
+            # print("FAISS 벡터스토어 생성 및 저장 완료")
+
+            self.vector_db = FAISS.load_local(save_vector, self.embedding_model, allow_dangerous_deserialization=True)
+            print("FAISS 벡터스토어 로드 완료")
+
+            self.progresses.emit(100)
+            self.finished.emit()
+
+        except Exception as e:
+            self.error.emit(f"임베딩 작업 중 치명적인 오류 발생: {e}")
+            self.finished.emit()
 
 class ChatRoom:
     def __init__(self, name):
@@ -70,10 +157,46 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.ui.splitter.setSizes([174, 758, 227])
 
+        self.threading = None
+        self.text_splitter = None
+
+    def load_folder(self):
+        if not self.current_chat_room.m_api_key:
+            QMessageBox.critical(self, "오류", "api key를 입력해주세요")
+            return
+        
+        path = QFileDialog.getExistingDirectory(self, "폴더 선택")
+        
+        if path:
+            self.ui.path.setText(f"{path}")
+
+            self.ui.Loading_bar.setValue(0)
+            self.ui.Load_btn.setEnabled(False) #작업 중 버튼 비활성화
+
+            self.threading = QThread()
+            self.worker = EmbeddingWorder(
+                folder_path=path,
+                api_key=self.current_chat_room.m_api_key
+            )
+
+            self.worker.moveToThread(self.threading)
+
+            self.threading.started.connect(self.worker.run)
+            self.worker.progresses.connect(self.ui.Loading_bar.setValue)
+            self.worker.finished.connect(self.threading.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.worker.finished.connect(self.threading.deleteLater)
+
+            self.worker.finished.connect(lambda: self.ui.Load_btn.setEnabled(True))
+            self.worker.error.connect(lambda msg: QMessageBox.critical(self, "오류", msg))
+            self.worker.finished.connect(lambda: QMessageBox.information(self, "완료", "임베딩이 완료되었습니다"))
+
+            self.threading.start()
+
     def on_context_menu(self, point: QPoint):
         self.clicked_item = self.ui.chat_room_table.itemAt(point)
 
-        if self.clicked_item is None:
+        if self.clicked_item is None: 
             return
         
         menu = QMenu(self)
@@ -222,6 +345,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.temp_val.textChanged.connect(self.text_temp_value)
         self.ui.left_split_btn.clicked.connect(self.toggle_left_animation)
         self.ui.right_split_btn.clicked.connect(self.toggle_right_animation)
+        self.ui.Load_btn.clicked.connect(self.load_folder)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -363,8 +487,10 @@ class Window(QMainWindow, Ui_MainWindow):
                 )
                 return
             self.ui.input_text.clear()
-            self.default_llm(message)
-            self.history_llm(message)
+            self.rag_llm(message)
+
+            # self.default_llm(message)
+            # self.history_llm(message)
 
         else:
             QMessageBox.about(
@@ -376,6 +502,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.ui.api_key_txt.text().strip():
             self.current_chat_room.m_api_key = self.ui.api_key_txt.text().strip()
             self.show_status_messages(f"api key is apply successful")
+            # self.init_vector_db()
 
     def apply_prompt(self):
         if self.current_chat_room.m_prompt == self.ui.prompt_txt.toPlainText().strip():
@@ -496,6 +623,114 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.ui.history_txt.append("")
         self.show_status_messages("Experiment chat is ")
+
+    def rag_llm(self, msg):
+        retreiver = self.worker.vector_db.as_retriever(search_kwargs={"k": 2})
+
+        prompt_template = """
+            당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다.
+            문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요.
+            만약 문서에 질문에 대한 정보가 없다면, "제공된 문서에는 이 질문에 대한 정보가 없습니다."라고 답변하세요.
+            문서에 있는 내용만을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다.
+
+            질문: {question}
+
+            문서 내용:
+            {context}
+
+            답변:
+            """
+        prompt = ChatPromptTemplate.from_template(prompt_template)
+
+        llm = ChatOpenAI(
+            api_key="ai",
+            model="openai/gpt-oss-20b",
+            base_url="http://192.168.0.108:8000/v1",
+            temperature=0.2,
+            # max_tokens = 6000
+        )
+        # llm = ChatOpenAI(
+        #     api_key=self.current_chat_room.m_api_key
+        # )
+
+        rag_chain=(
+            {"context": retreiver, "question": RunnablePassthrough()}
+            | RunnableLambda(self.print_retrieved_document)
+            | prompt
+            | llm
+            | StrOutputParser()
+        )
+        
+
+        answer = rag_chain.invoke(msg)
+        if answer:
+            self.ui.history_txt.append(f"Sended Message: {msg}")
+            self.ui.history_txt.append("")
+            self.ui.history_txt.append("Ai Messages: ")
+
+            words = answer.split(' ')
+            for i, doc in enumerate(words):
+                cursor = self.ui.history_txt.textCursor()
+                cursor.movePosition(cursor.End)
+
+                # 마지막 단어가 아니면 공백 추가
+                if i < len(words) - 1:
+                    cursor.insertText(doc + " ")
+                else:
+                    cursor.insertText(doc + "\n")
+                
+                self.ui.history_txt.setTextCursor(cursor)
+                
+                # 텍스트가 추가될 때마다 UI 업데이트
+                QCoreApplication.processEvents()
+                
+                # 시작적 지연
+                time.sleep(0.05)
+            self.ui.history_txt.insertPlainText("\n")
+        else:
+            print("오류")
+
+
+        # retreiver = self.worker.vector_db.as_retriever()
+        # res_doc = retreiver = retreiver.invoke(msg)
+
+        # if res_doc:
+        #     for i, doc in enumerate(res_doc):
+        #         print(f"[{i+1}] 문서내용: {doc.page_content[:200]}...")
+        #         words = str(doc).split(' ')
+        #         for j, d in enumerate(words):
+        #             cursor = self.ui.history_txt.textCursor()
+        #             cursor.movePosition(cursor.End)
+
+        #             # 마지막 단어가 아니면 공백 추가
+        #             if j < len(words) - 1:
+        #                 cursor.insertText(d + " ")
+        #             else:
+        #                 cursor.insertText(d + "\n")
+                    
+        #             self.ui.history_txt.setTextCursor(cursor)
+                    
+        #             # 텍스트가 추가될 때마다 UI 업데이트
+        #             QCoreApplication.processEvents()
+                    
+        #             # 시작적 지연
+        #             time.sleep(0.05)
+        #         if doc.metadata:
+        #             print(f"출처: {doc.metadata.get('source', '알 수 없음')}")
+        # else:
+        #     print("관련문서를 찾을 수 없습니다")
+        # return
+    def print_retrieved_document(self, in_dict):
+        print("\n--- [디버그] 검색된 문서 ---")
+        for i, doc in enumerate(in_dict['context']):
+            print(f"문서 #{i+1}: {doc.page_content}")
+            if doc.metadata:
+                print(f"출처: {doc.metadata.get('source', '알 수 없음')}")
+        print("----------------------------\n")
+        print(in_dict)
+        print("----------------------------\n")
+        # 다음 단계로 데이터를 전달하기 위해 받은 딕셔너리를 그대로 반환합니다.
+        return in_dict
 
 if __name__ == "__main__":
 

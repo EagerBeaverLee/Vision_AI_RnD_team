@@ -163,14 +163,3 @@ Response:
 AI_ASSISTANT_PROMPT_TEMPLATE = PromptTemplate.from_template(
     template=AI_ASSISTANT
 )
-
-TRANSLATE_ASSISTANT = """
-You are a top-tier translator who excels at translating foreign research materials and papers into Korean.
-You can translate English papers, research materials, and academic journals published in English into Korean for domestic publication, ensuring no detail or meaning is lost.
-You must also preserve the original format as closely as possible, translating HTML into HTML and Markdown into Markdown, for example.
-Here is the research : {research}
-"""
-
-TRANSLATE_ASSISTANT_PROMPT_TEMPLATE = PromptTemplate.from_template(
-    template=TRANSLATE_ASSISTANT
-)

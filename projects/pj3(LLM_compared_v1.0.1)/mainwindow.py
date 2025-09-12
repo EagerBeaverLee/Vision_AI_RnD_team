@@ -10,13 +10,11 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from PlainTextEdit import mPlainTextEdit
-from PromptText import MyTextEditor
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1201, 714)
+        MainWindow.resize(1178, 714)
         MainWindow.setMinimumSize(QtCore.QSize(1160, 674))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setStyleSheet("QWidget {\n"
@@ -89,9 +87,9 @@ class Ui_MainWindow(object):
         self.splitter = QtWidgets.QSplitter(self.centralwidget)
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setObjectName("splitter")
-        self.widget = QtWidgets.QWidget(self.splitter)
-        self.widget.setObjectName("widget")
-        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.widget)
+        self.layoutWidget = QtWidgets.QWidget(self.splitter)
+        self.layoutWidget.setObjectName("layoutWidget")
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.layoutWidget)
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
@@ -99,7 +97,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         spacerItem1 = QtWidgets.QSpacerItem(0, 18, QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem1)
-        self.new_chat_btn = QtWidgets.QPushButton(self.widget)
+        self.new_chat_btn = QtWidgets.QPushButton(self.layoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -125,7 +123,7 @@ class Ui_MainWindow(object):
 "}")
         self.new_chat_btn.setObjectName("new_chat_btn")
         self.horizontalLayout_2.addWidget(self.new_chat_btn)
-        self.del_chat_btn = QtWidgets.QPushButton(self.widget)
+        self.del_chat_btn = QtWidgets.QPushButton(self.layoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -155,7 +153,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.setStretch(1, 10)
         self.horizontalLayout_2.setStretch(2, 10)
         self.verticalLayout_3.addLayout(self.horizontalLayout_2)
-        self.chat_room_table = QtWidgets.QTableWidget(self.widget)
+        self.chat_room_table = QtWidgets.QTableWidget(self.layoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -219,16 +217,16 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addWidget(self.chat_room_table)
         self.verticalLayout_3.setStretch(0, 1)
         self.verticalLayout_3.setStretch(1, 26)
-        self.widget1 = QtWidgets.QWidget(self.splitter)
-        self.widget1.setObjectName("widget1")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.widget1)
+        self.layoutWidget1 = QtWidgets.QWidget(self.splitter)
+        self.layoutWidget1.setObjectName("layoutWidget1")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.layoutWidget1)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setSpacing(2)
         self.verticalLayout.setObjectName("verticalLayout")
         self.gridLayout = QtWidgets.QGridLayout()
         self.gridLayout.setSpacing(2)
         self.gridLayout.setObjectName("gridLayout")
-        self.non_history_txt = QtWidgets.QTextEdit(self.widget1)
+        self.non_history_txt = QtWidgets.QTextEdit(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -249,7 +247,7 @@ class Ui_MainWindow(object):
         self.non_history_txt.setReadOnly(True)
         self.non_history_txt.setObjectName("non_history_txt")
         self.gridLayout.addWidget(self.non_history_txt, 1, 0, 1, 1)
-        self.history_txt = QtWidgets.QTextEdit(self.widget1)
+        self.history_txt = QtWidgets.QTextEdit(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -270,7 +268,7 @@ class Ui_MainWindow(object):
         self.history_txt.setReadOnly(True)
         self.history_txt.setObjectName("history_txt")
         self.gridLayout.addWidget(self.history_txt, 1, 1, 1, 1)
-        self.label = QtWidgets.QLabel(self.widget1)
+        self.label = QtWidgets.QLabel(self.layoutWidget1)
         self.label.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
@@ -278,7 +276,7 @@ class Ui_MainWindow(object):
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
-        self.label_2 = QtWidgets.QLabel(self.widget1)
+        self.label_2 = QtWidgets.QLabel(self.layoutWidget1)
         self.label_2.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
@@ -293,8 +291,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        # self.input_text = QtWidgets.QPlainTextEdit(self.widget1)
-        self.input_text = mPlainTextEdit(self.widget1)
+        self.input_text = QtWidgets.QPlainTextEdit(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -322,7 +319,7 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addItem(spacerItem3, 2, 1, 1, 1)
         spacerItem4 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout_2.addItem(spacerItem4, 1, 2, 1, 1)
-        self.send_btn = QtWidgets.QPushButton(self.widget1)
+        self.send_btn = QtWidgets.QPushButton(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(1)
@@ -409,8 +406,7 @@ class Ui_MainWindow(object):
 "}")
         self.label_4.setObjectName("label_4")
         self.verticalLayout_2.addWidget(self.label_4)
-        # self.prompt_txt = QtWidgets.QTextEdit(self.Setting)
-        self.prompt_txt = MyTextEditor(self.Setting)
+        self.prompt_txt = QtWidgets.QTextEdit(self.Setting)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -490,13 +486,92 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.Setting, "")
         self.tab_2 = QtWidgets.QWidget()
         self.tab_2.setObjectName("tab_2")
+        self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.tab_2)
+        self.verticalLayout_6.setObjectName("verticalLayout_6")
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_5.setSpacing(4)
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.label_6 = QtWidgets.QLabel(self.tab_2)
+        self.label_6.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.label_6.setObjectName("label_6")
+        self.horizontalLayout_5.addWidget(self.label_6)
+        self.path = QtWidgets.QLabel(self.tab_2)
+        self.path.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.path.setText("")
+        self.path.setObjectName("path")
+        self.horizontalLayout_5.addWidget(self.path)
+        self.Load_btn = QtWidgets.QPushButton(self.tab_2)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(1)
+        sizePolicy.setVerticalStretch(1)
+        sizePolicy.setHeightForWidth(self.Load_btn.sizePolicy().hasHeightForWidth())
+        self.Load_btn.setSizePolicy(sizePolicy)
+        self.Load_btn.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.Load_btn.setAutoDefault(False)
+        self.Load_btn.setFlat(False)
+        self.Load_btn.setObjectName("Load_btn")
+        self.horizontalLayout_5.addWidget(self.Load_btn)
+        self.horizontalLayout_5.setStretch(0, 1)
+        self.horizontalLayout_5.setStretch(1, 6)
+        self.horizontalLayout_5.setStretch(2, 1)
+        self.verticalLayout_6.addLayout(self.horizontalLayout_5)
+        self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_6.setObjectName("horizontalLayout_6")
+        self.label_7 = QtWidgets.QLabel(self.tab_2)
+        self.label_7.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.label_7.setObjectName("label_7")
+        self.horizontalLayout_6.addWidget(self.label_7)
+        self.Loading_bar = QtWidgets.QProgressBar(self.tab_2)
+        self.Loading_bar.setStyleSheet("QProgressBar {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    border-radius: 5px;\n"
+"    background-color: rgb(40, 40, 40);\n"
+"    text-align: center;\n"
+"    color: White;\n"
+"}\n"
+"QProgressBar::chunk {\n"
+"    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(50, 120, 50), stop:1 rgb(100,180,100));\n"
+"    border-radius: 2px;\n"
+"}")
+        self.Loading_bar.setProperty("value", 0)
+        self.Loading_bar.setObjectName("Loading_bar")
+        self.horizontalLayout_6.addWidget(self.Loading_bar)
+        self.horizontalLayout_6.setStretch(0, 1)
+        self.horizontalLayout_6.setStretch(1, 4)
+        self.verticalLayout_6.addLayout(self.horizontalLayout_6)
+        spacerItem7 = QtWidgets.QSpacerItem(20, 516, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_6.addItem(spacerItem7)
+        self.verticalLayout_6.setStretch(0, 1)
+        self.verticalLayout_6.setStretch(1, 1)
+        self.verticalLayout_6.setStretch(2, 25)
         self.tabWidget.addTab(self.tab_2, "")
         self.verticalLayout_5.addWidget(self.splitter)
         self.verticalLayout_5.setStretch(0, 1)
         self.verticalLayout_5.setStretch(1, 30)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1201, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1178, 21))
         self.menubar.setObjectName("menubar")
         self.menu_Setting = QtWidgets.QMenu(self.menubar)
         self.menu_Setting.setObjectName("menu_Setting")
@@ -510,15 +585,13 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu_Setting.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
         self.send_btn.clicked.connect(self.input_text.setFocus) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.send_btn, self.input_text)
         MainWindow.setTabOrder(self.input_text, self.non_history_txt)
         MainWindow.setTabOrder(self.non_history_txt, self.history_txt)
         MainWindow.setTabOrder(self.history_txt, self.tabWidget)
-
-        self.input_text.set_send_button(self.send_btn)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -547,6 +620,9 @@ class Ui_MainWindow(object):
         self.label_5.setText(_translate("MainWindow", "Temperature"))
         self.temp_val.setText(_translate("MainWindow", "0.00"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.Setting), _translate("MainWindow", "setting"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Tab 2"))
+        self.label_6.setText(_translate("MainWindow", "Path: "))
+        self.Load_btn.setText(_translate("MainWindow", "Load"))
+        self.label_7.setText(_translate("MainWindow", "Loading"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "RAG"))
         self.menu_Setting.setTitle(_translate("MainWindow", "&Setting"))
         self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))
