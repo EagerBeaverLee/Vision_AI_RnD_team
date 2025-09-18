@@ -1,4 +1,4 @@
-import sys, os, time, copy
+import sys, os, time, copy, tiktoken
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy, QMenu, QAction, QFileDialog
 )
@@ -7,12 +7,13 @@ from PyQt5.QtGui import QDoubleValidator
 from PyQt5.uic import loadUi
 
 from mainwindow import Ui_MainWindow
+from ParentChildDocumentRetriever import ParentRetriverPipeline
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables.history import RunnableWithMessageHistory
+
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-from langchain_community.chat_message_histories import ChatMessageHistory
+
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader, CSVLoader, JSONLoader, DirectoryLoader
 from langchain_teddynote.document_loaders import HWPLoader
 from langchain_community.vectorstores import FAISS
@@ -20,13 +21,29 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.output_parsers import StrOutputParser
 
+#tokenizer
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
+from typing import List
+from transformers import AutoTokenizer
+
+
 class EmbeddingWorder(QObject):
     finished = pyqtSignal()
     progresses = pyqtSignal(int)
     error = pyqtSignal(str)
 
-    def __init__(self, folder_path, api_key, parent=None):
+    def __init__(self, retriever_name, folder_path, api_key, parent=None):
         super().__init__(parent)
+
+        retriever_map = {
+            "default": create_basic_retriever,
+            "ParentRetriverPipeline": ParentRetriverPipeline,
+            "hypothetical_questions": create_hypothetical_questions_retriever,
+        }
+
+
         self.folder_path = folder_path
         self.embedding_model = OpenAIEmbeddings(api_key=api_key)
         self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
@@ -107,11 +124,23 @@ class ChatRoom:
         self.m_temperature = "0.00"
         self.m_prompt = ""
 
-        self.default_chat_log = ""
-        self.experiment_chat_log = ""
+        self.default_chat_list = ""
+        self.experiment_chat_list = ""
         self.user_in_txt = ""
 
-        self.chat_histroy = ChatMessageHistory() #챗히스토리 관리
+        self.rag_technique = None
+
+        self.default_token = 0
+        self.experiment_token = 0
+
+        self.default_history = ChatMessageHistory()
+        self.experiment_history = ChatMessageHistory()
+
+        self.chat_stored = {}
+        self.default_session_id = "default"
+        self.experiment_session_id = "experiment"
+        self.default_config = {"configurable": {"session_id": self.default_session_id}}
+        self.experiment_config = {"configurable": {"session_id": self.experiment_session_id}}
 
 class Slider_Animation(QObject):
     def __init__(self, parent=None):
@@ -159,6 +188,14 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.threading = None
         self.text_splitter = None
+        self.worker = None
+
+        self.tokenizer = AutoTokenizer.from_pretrained("openai/gpt-oss-20b")
+        self.token_encoding = tiktoken.get_encoding("o200k_harmony")
+        self.MAX_TOKENS = 128000
+
+        #selected rag tech
+        self.rag_technique = None
 
     def load_folder(self):
         if not self.current_chat_room.m_api_key:
@@ -347,6 +384,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.right_split_btn.clicked.connect(self.toggle_right_animation)
         self.ui.Load_btn.clicked.connect(self.load_folder)
 
+        #RAG radio_btn
+        self.ui.
+        self.ui.parent_retriever.toggled.connect(self.apply_rag_techniques)
+
     def show_status_messages(self, message, is_error=False):
         if is_error:
             self.ui.statusbar.setStyleSheet("QStatusBar {background-color: #ffcccc; color: red;}")
@@ -418,8 +459,8 @@ class Window(QMainWindow, Ui_MainWindow):
             self.current_chat_room.m_api_key = self.ui.api_key_txt.text().strip()
             self.current_chat_room.m_prompt = self.ui.prompt_txt.toPlainText().strip()
             self.current_chat_room.m_temperature = self.ui.temp_val.text().strip()
-            self.current_chat_room.default_chat_log = self.ui.non_history_txt.toPlainText().strip()
-            self.current_chat_room.experiment_chat_log = self.ui.history_txt.toPlainText().strip()
+            self.current_chat_room.default_chat_list = self.ui.default_txt.toPlainText().strip()
+            self.current_chat_room.experiment_chat_list = self.ui.experiment_txt.toPlainText().strip()
             self.current_chat_room.user_in_txt = self.ui.input_text.toPlainText().strip()
 
     def room_name_changed(self, item: QTableWidgetItem):
@@ -459,9 +500,15 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.prompt_txt.setText(room.m_prompt if room.m_prompt else "")
         self.ui.temp_val.setText(room.m_temperature)
         self.ui.temp_slider.setValue(int(float(room.m_temperature) * 100))
-        self.ui.non_history_txt.setText(room.default_chat_log)
-        self.ui.history_txt.setText(room.experiment_chat_log)
+        self.ui.default_txt.setText(room.default_chat_list)
+        self.ui.experiment_txt.setText(room.experiment_chat_list)
         self.ui.input_text.setPlainText(room.user_in_txt)
+
+        self.ui.default_token_bar.setFormat(f"used tokens: {self.current_chat_room.default_token:.2f}%")
+        self.ui.default_token_bar.setValue(int(self.current_chat_room.default_token))
+        self.ui.experiment_token_bar.setFormat(f"used tokens: {self.current_chat_room.experiment_token:.2f}%")
+        self.ui.experiment_token_bar.setValue(int(self.current_chat_room.experiment_token))
+
 
         # Reconnect signals
         self.ui.api_key_txt.textChanged.connect(self.apply_api_key)
@@ -471,8 +518,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.api_key_txt.clear()
         self.ui.prompt_txt.clear()
         self.ui.temp_val.setText("0.00") # Reset to default
-        self.ui.non_history_txt.clear()
-        self.ui.history_txt.clear()
+        self.ui.default_txt.clear()
+        self.ui.experiment_txt.clear()
         self.ui.input_text.clear()
         
     def load_message(self):
@@ -487,9 +534,9 @@ class Window(QMainWindow, Ui_MainWindow):
                 )
                 return
             self.ui.input_text.clear()
+            self.default_llm(message)
             self.rag_llm(message)
 
-            # self.default_llm(message)
             # self.history_llm(message)
 
         else:
@@ -512,39 +559,131 @@ class Window(QMainWindow, Ui_MainWindow):
             self.show_status_messages(f"prompt is apply successful")
         
     
+    # non-histroy llm func
+    # def default_llm(self, msg):
+    #     response = None
+    #     chat_model = ChatOpenAI(
+    #         api_key=self.current_chat_room.m_api_key,
+    #         temperature=self.current_chat_room.m_temperature,
+    #     )
+    #     prompt = ChatPromptTemplate.from_messages(
+    #         [
+    #             (
+    #                 "system",
+    #                 self.current_chat_room.m_prompt
+    #             ),
+    #             ("human", "{input}"),
+    #         ]
+    #     )
+    #     chain = prompt | chat_model
+
+    #     try:
+    #         response = chain.invoke(
+    #             {"input": msg},
+    #         )
+    #     except Exception as e:
+    #         QMessageBox.critical(self, "API 오류", f"메시지 전송 중 오류 발생: {e}")
+
+    #     if response:
+    #         self.ui.default_txt.append(f"Sended Message: {msg}")
+    #         self.ui.default_txt.append("")
+    #         words = response.content.split(' ')
+    #         self.ui.default_txt.append("Ai Messages: ")
+
+    #         #stream효과
+    #         for i, w in enumerate(words):
+    #             cursor = self.ui.default_txt.textCursor()
+    #             cursor.movePosition(cursor.End)
+
+    #             # 마지막 단어가 아니면 공백 추가
+    #             if i < len(words) - 1:
+    #                 cursor.insertText(w + " ")
+    #             else:
+    #                 cursor.insertText(w + "\n")
+                
+    #             self.ui.default_txt.setTextCursor(cursor)
+                
+    #             # 텍스트가 추가될 때마다 UI 업데이트
+    #             QCoreApplication.processEvents()
+                
+    #             # 시작적 지연
+    #             time.sleep(0.05)
+
+    #     self.ui.default_txt.append("")
+
     def default_llm(self, msg):
         response = None
+
+        # chat_model = ChatOpenAI(
+        #     api_key=self.current_chat_room.m_api_key,
+        #     temperature=self.current_chat_room.m_temperature,
+        # )
+
+        #Local LLM applied
         chat_model = ChatOpenAI(
-            api_key=self.current_chat_room.m_api_key,
-            temperature=self.current_chat_room.m_temperature,
+            api_key="ai",
+            model="openai/gpt-oss-20b",
+            base_url="http://192.168.0.108:8000/v1",
+            temperature=self.current_chat_room.m_temperature
         )
+
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
                     self.current_chat_room.m_prompt
                 ),
+                ("placeholder", "{chat_history}"),
                 ("human", "{input}"),
             ]
         )
-        chain = prompt | chat_model
+
+        chain = (
+            prompt
+            # | RunnableLambda(lambda x: print(x["chat history"].messages))
+            | chat_model
+        )
+
+        chain_history = RunnableWithMessageHistory(
+            chain,
+            self.get_session_history,
+            input_messages_key="input",
+            history_messages_key="chat_history",
+        )
 
         try:
-            response = chain.invoke(
+            # self.current_chat_room.default_history.add_user_message(msg)
+            # response = chain.invoke(
+            #     {"chat_history": self.current_chat_room.default_history.messages},
+            # )
+            # self.current_chat_room.default_history.add_ai_message(response)
+
+            response = chain_history.invoke(
                 {"input": msg},
+                self.current_chat_room.default_config
             )
+
         except Exception as e:
             QMessageBox.critical(self, "API 오류", f"메시지 전송 중 오류 발생: {e}")
-
+        
         if response:
-            self.ui.non_history_txt.append(f"Sended Message: {msg}")
-            self.ui.non_history_txt.append("")
+            print(response.response_metadata['token_usage'])
+            print(response.response_metadata['token_usage']['total_tokens'])
+            self.current_chat_room.default_token += response.response_metadata['token_usage']['total_tokens'] / self.MAX_TOKENS * 100
+            update = f"used tokens: {self.current_chat_room.default_token:.2f}%"
+            self.ui.default_token_bar.setFormat(update)
+            self.ui.default_token_bar.setValue(int(self.current_chat_room.default_token))
+            print(self.current_chat_room.default_token)
+            print(self.current_chat_room.default_token * 128000)
+
+            self.ui.default_txt.append(f"Sended Message: {msg}")
+            self.ui.default_txt.append("")
             words = response.content.split(' ')
-            self.ui.non_history_txt.append("Ai Messages: ")
+            self.ui.default_txt.append("Ai Messages: ")
 
             #stream효과
             for i, w in enumerate(words):
-                cursor = self.ui.non_history_txt.textCursor()
+                cursor = self.ui.default_txt.textCursor()
                 cursor.movePosition(cursor.End)
 
                 # 마지막 단어가 아니면 공백 추가
@@ -553,7 +692,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 else:
                     cursor.insertText(w + "\n")
                 
-                self.ui.non_history_txt.setTextCursor(cursor)
+                self.ui.default_txt.setTextCursor(cursor)
                 
                 # 텍스트가 추가될 때마다 UI 업데이트
                 QCoreApplication.processEvents()
@@ -561,7 +700,8 @@ class Window(QMainWindow, Ui_MainWindow):
                 # 시작적 지연
                 time.sleep(0.05)
 
-        self.ui.non_history_txt.append("")
+        self.ui.default_txt.append("")
+        self.show_status_messages("Default chat is working successful")
 
     def history_llm(self, msg):
         response = None
@@ -597,14 +737,14 @@ class Window(QMainWindow, Ui_MainWindow):
             QMessageBox.critical(self, "API 오류", f"메시지 전송 중 오류 발생: {e}")
         
         if response:
-            self.ui.history_txt.append(f"Sended Message: {msg}")
-            self.ui.history_txt.append("")
+            self.ui.experiment_txt.append(f"Sended Message: {msg}")
+            self.ui.experiment_txt.append("")
             words = response.content.split(' ')
-            self.ui.history_txt.append("Ai Messages: ")
+            self.ui.experiment_txt.append("Ai Messages: ")
 
             #stream효과
             for i, w in enumerate(words):
-                cursor = self.ui.history_txt.textCursor()
+                cursor = self.ui.experiment_txt.textCursor()
                 cursor.movePosition(cursor.End)
 
                 # 마지막 단어가 아니면 공백 추가
@@ -613,7 +753,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 else:
                     cursor.insertText(w + "\n")
                 
-                self.ui.history_txt.setTextCursor(cursor)
+                self.ui.experiment_txt.setTextCursor(cursor)
                 
                 # 텍스트가 추가될 때마다 UI 업데이트
                 QCoreApplication.processEvents()
@@ -621,56 +761,97 @@ class Window(QMainWindow, Ui_MainWindow):
                 # 시작적 지연
                 time.sleep(0.05)
 
-        self.ui.history_txt.append("")
+        self.ui.experiment_txt.append("")
         self.show_status_messages("Experiment chat is ")
 
     def rag_llm(self, msg):
-        retreiver = self.worker.vector_db.as_retriever(search_kwargs={"k": 2})
+        if not self.current_chat_room.m_api_key or not self.worker:
+            QMessageBox.critical(self, "오류", "api key를 입력해주세요")
+            return
+        
+        retriever = self.worker.vector_db.as_retriever(search_kwargs={"k": 2})
 
-        prompt_template = """
-            당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다.
-            문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요.
-            만약 문서에 질문에 대한 정보가 없다면, "제공된 문서에는 이 질문에 대한 정보가 없습니다."라고 답변하세요.
-            문서에 있는 내용만을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다.
+        # prompt_template = """
+        #     당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다.
+        #     문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요.
+        #     만약 문서에 질문에 대한 정보가 없다면, "제공된 문서에는 이 질문에 대한 정보가 없습니다."라고 답변하세요.
+        #     문서에 있는 내용만을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다.
 
-            질문: {question}
+        #     이전 대화:
+        #     {history}
 
-            문서 내용:
-            {context}
+        #     문서 내용:
+        #     {context}
 
-            답변:
-            """
-        prompt = ChatPromptTemplate.from_template(prompt_template)
+        #     질문: {question}
+
+        #     답변:
+        #     """
+        # prompt = ChatPromptTemplate.from_template(prompt_template)
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", f"{self.current_chat_room.m_prompt}"
+                 "당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다."
+                "문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요."
+                "만약 문서에 질문에 대한 정보가 없다면, '제공된 문서에는 이 질문에 대한 정보가 없습니다.'라고 답변하세요."
+                "문서에 있는 내용만을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다."
+                "문서 내용: {context}"),
+                ("placeholder", "{history}"),
+                ("human", "질문: {question}"),
+            ]
+        )
 
         llm = ChatOpenAI(
             api_key="ai",
             model="openai/gpt-oss-20b",
             base_url="http://192.168.0.108:8000/v1",
-            temperature=0.2,
+            temperature=self.current_chat_room.m_temperature,
             # max_tokens = 6000
         )
         # llm = ChatOpenAI(
-        #     api_key=self.current_chat_room.m_api_key
+        #     api_key=self.current_chat_room.m_api_key,
+        #     temperature=self.current_chat_room.m_temperature,
         # )
 
         rag_chain=(
-            {"context": retreiver, "question": RunnablePassthrough()}
-            | RunnableLambda(self.print_retrieved_document)
+            # {"context": retriever, "question": RunnablePassthrough()}
+            RunnablePassthrough.assign(context=lambda x: retriever.invoke(x["question"]))
+            # | RunnableLambda(self.print_retrieved_document)
             | prompt
+            # | RunnableLambda(lambda x: (print(f"\n[Experiment]LLM에 전달된 총 토큰 수: {self.get_full_prompt_token_count(x)}/{self.MAX_TOKENS}"), x)[1])
             | llm
-            | StrOutputParser()
         )
-        
 
-        answer = rag_chain.invoke(msg)
+        rag_history_chain = RunnableWithMessageHistory(
+            rag_chain,
+            self.get_session_history,
+            input_messages_key="question",
+            history_messages_key="history"
+        )
+
+        answer = rag_history_chain.invoke(
+            {"question": msg},
+            self.current_chat_room.experiment_config
+        )
+
         if answer:
-            self.ui.history_txt.append(f"Sended Message: {msg}")
-            self.ui.history_txt.append("")
-            self.ui.history_txt.append("Ai Messages: ")
+            print(answer.response_metadata['token_usage'])
+            print(answer.response_metadata['token_usage']['total_tokens'])
+            self.current_chat_room.experiment_token += answer.response_metadata['token_usage']['total_tokens'] / self.MAX_TOKENS * 100
+            update = f"used tokens: {self.current_chat_room.experiment_token:.2f}%"
+            self.ui.experiment_token_bar.setFormat(update)
+            self.ui.experiment_token_bar.setValue(int(self.current_chat_room.experiment_token))
+            print(self.current_chat_room.experiment_token)
+            print(self.current_chat_room.experiment_token * 128000)
 
-            words = answer.split(' ')
+            self.ui.experiment_txt.append(f"Sended Message: {msg}")
+            self.ui.experiment_txt.append("")
+            self.ui.experiment_txt.append("Ai Messages: ")
+
+            words = answer.content.split(' ')
             for i, doc in enumerate(words):
-                cursor = self.ui.history_txt.textCursor()
+                cursor = self.ui.experiment_txt.textCursor()
                 cursor.movePosition(cursor.End)
 
                 # 마지막 단어가 아니면 공백 추가
@@ -679,27 +860,28 @@ class Window(QMainWindow, Ui_MainWindow):
                 else:
                     cursor.insertText(doc + "\n")
                 
-                self.ui.history_txt.setTextCursor(cursor)
+                self.ui.experiment_txt.setTextCursor(cursor)
                 
                 # 텍스트가 추가될 때마다 UI 업데이트
                 QCoreApplication.processEvents()
                 
                 # 시작적 지연
                 time.sleep(0.05)
-            self.ui.history_txt.insertPlainText("\n")
+            self.ui.experiment_txt.append("")
+            self.show_status_messages("Default chat is working successful")
         else:
             print("오류")
 
 
-        # retreiver = self.worker.vector_db.as_retriever()
-        # res_doc = retreiver = retreiver.invoke(msg)
+        # retriever = self.worker.vector_db.as_retriever()
+        # res_doc = retriever = retriever.invoke(msg)
 
         # if res_doc:
         #     for i, doc in enumerate(res_doc):
         #         print(f"[{i+1}] 문서내용: {doc.page_content[:200]}...")
         #         words = str(doc).split(' ')
         #         for j, d in enumerate(words):
-        #             cursor = self.ui.history_txt.textCursor()
+        #             cursor = self.ui.experiment_txt.textCursor()
         #             cursor.movePosition(cursor.End)
 
         #             # 마지막 단어가 아니면 공백 추가
@@ -708,7 +890,7 @@ class Window(QMainWindow, Ui_MainWindow):
         #             else:
         #                 cursor.insertText(d + "\n")
                     
-        #             self.ui.history_txt.setTextCursor(cursor)
+        #             self.ui.experiment_txt.setTextCursor(cursor)
                     
         #             # 텍스트가 추가될 때마다 UI 업데이트
         #             QCoreApplication.processEvents()
@@ -731,6 +913,47 @@ class Window(QMainWindow, Ui_MainWindow):
         print("----------------------------\n")
         # 다음 단계로 데이터를 전달하기 위해 받은 딕셔너리를 그대로 반환합니다.
         return in_dict
+    
+    #tokenizer func
+    def count_tokens(self, messages: List[BaseMessage]) -> int:
+        token_count = 0
+        # 시스템 프롬프트 토큰도 계산
+        token_count += len(self.token_encoding.encode("너는 친절한 AI 어시스턴트야. 항상 존댓말로 대답해."))
+        
+        for message in messages:
+            token_count += len(self.token_encoding.encode(message.content))
+        return token_count
+    
+    def get_full_prompt_token_count(self, prompt_object) -> int:
+        """
+        LLM에 전달되는 프롬프트의 모든 요소(role 포함)의 토큰 수를 정확하게 계산합니다.
+        """
+        full_prompt_string = ""
+        
+        # 프롬프트 객체는 messages 리스트를 가지고 있습니다.
+        for message in prompt_object.messages:
+            # 각 메시지를 LLM이 이해하는 형태로 문자열에 추가
+            if isinstance(message, SystemMessage):
+                full_prompt_string += f"<|system|>\n{message.content}\n"
+            elif isinstance(message, HumanMessage):
+                full_prompt_string += f"<|user|>\n{message.content}\n"
+            elif isinstance(message, AIMessage):
+                full_prompt_string += f"<|assistant|>\n{message.content}\n"
+            # 기타 다른 메시지 타입이 있다면 추가
+
+        # 최종적으로 완성된 전체 프롬프트 문자열을 토크나이징
+        return len(self.tokenizer.encode(full_prompt_string))
+    
+    def get_session_history(self, session_id: str) -> ChatMessageHistory:
+        if session_id not in self.current_chat_room.chat_stored:
+            self.current_chat_room.chat_stored[session_id] = ChatMessageHistory()
+        return self.current_chat_room.chat_stored[session_id]
+    
+    def apply_rag_techniques(self):
+        radio_btn = self.sender()
+        if radio_btn.isChecked():
+            self.rag_technique = radio_btn.text()
+            self.ui.selected_engine.setText(f'{radio_btn.text()}')
 
 if __name__ == "__main__":
 

@@ -9,9 +9,7 @@ from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema.output_parser import StrOutputParser
 from langchain.schema.runnable import RunnableLambda, RunnableParallel
 
-from langchain_openai import ChatOpenAI
 from mainwindow import Ui_MainWindow
-from prompts import TRANSLATE_ASSISTANT_PROMPT_TEMPLATE
 from prompts import ASSISTANT_SELECTION_PROMPT_TEMPLATE
 from prompts import WEB_SEARCH_PROMPT_TEMPLATE
 from prompts import SUMMARY_PROMPT_TEMPLATE
