@@ -1,0 +1,8 @@
+page_content='04 October 2018 ATP 3-13.1 1-1
+Chapter 1
+Information Operations Terms and Considerations
+INFORMATION OPERATIONS TERMINOLOGY
+1-1. Understanding information operations (IO) begins with understanding the terminology used to discuss
+it. Information operations is the integrated employment, during military operations, of information -related
+capabilities in concert with oth er lines of operation to influence, disrupt, corrupt, or usurp the decision-' metadata={'producer': 'ezPDF Maker', 'creator': 'ezPDF Maker', 'creationdate': '2025-09-08T16:11:05+09:00', 'moddate': '2025-09-08T16:11:05+09:00', 'source': 'D:/AI_team/github/데이터 생성/1/seperate\\atp_The_Conduct_of_information_operations_ch1.pdf', 'total_pages': 4, 'page': 0, 'page_label': '1'}
+page_content='making of adversaries and potential adversaries while protecting our own (JP 3 -13). An information-related
