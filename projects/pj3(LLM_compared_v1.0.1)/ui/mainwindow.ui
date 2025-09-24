@@ -1350,7 +1350,7 @@ QSlider::handle:horizontal:pressed{
 }</string>
               </property>
               <property name="text">
-               <string>summary</string>
+               <string>Summary</string>
               </property>
              </widget>
             </item>
@@ -1466,7 +1466,7 @@ QSlider::handle:horizontal:pressed{
 }</string>
               </property>
               <property name="text">
-               <string>hypothetical</string>
+               <string>Hypothetical</string>
               </property>
              </widget>
             </item>
@@ -1579,7 +1579,7 @@ QSlider::handle:horizontal:pressed{
 }</string>
               </property>
               <property name="text">
-               <string>granular</string>
+               <string>Granular</string>
               </property>
              </widget>
             </item>
