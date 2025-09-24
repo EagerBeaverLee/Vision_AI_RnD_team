@@ -2,7 +2,7 @@
 ### ParentDocumentRetriever ###
 ###############################
 import os
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QObject
 
 from langchain.retrievers import ParentDocumentRetriever
 from langchain.storage import InMemoryStore
@@ -10,16 +10,21 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 from langchain.docstore.document import Document
-from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
+from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader, CSVLoader, JSONLoader, DirectoryLoader
+from langchain_teddynote.document_loaders import HWPLoader
 
-class ParentRetriverPipeline:
-    done = pyqtSignal()
-    
-    def __init__(self, openai_api_key: str,
-                parent_chunk_size: int = 3000, child_chunk_size: int = 500):
+class ParentRetriverPipeline(QObject):
+    finished = pyqtSignal()
+    progresses = pyqtSignal(int)
+    error = pyqtSignal(str)
 
+    def __init__(self, folder_path: str, openai_api_key: str,
+                parent_chunk_size: int = 3000, child_chunk_size: int = 500, parent=None):
+        super().__init__(parent)
+
+        self.folder_path = folder_path
         #Defining Splitter
         self.parent_splitter = RecursiveCharacterTextSplitter(chunk_size = parent_chunk_size)
         self.child_splitter = RecursiveCharacterTextSplitter(chunk_size = child_chunk_size)
@@ -46,7 +51,10 @@ class ParentRetriverPipeline:
         self.loader_classes = {
             'docx': Docx2txtLoader,
             'pdf': PyPDFLoader,
-            'txt': TextLoader
+            'txt': TextLoader,
+            'csv': CSVLoader,
+            'json': JSONLoader,
+            'hwp': HWPLoader
         }
      
     def remove_dummy_doc(self):
@@ -77,21 +85,31 @@ class ParentRetriverPipeline:
         self.retriever.add_documents(docs, ids=None)
         print(f"Ingested chunks created by {loader}")
 
-    def load_folder(self, folder_path: str):      # db_reset: bool = True):
+    def run(self):      # db_reset: bool = True):
         """Load all documents from a folder into the retriever pipeline"""
         # if db_reset:
         #     self.reset()
+        files = os.listdir(self.folder_path)
+        total_files = len(files)
 
-        for filename in os.listdir(folder_path):
-            file_path = os.path.join(folder_path, filename)
+        progress_step = 100 / total_files
+
+        for i, filename in enumerate(files):
+            file_path = os.path.join(self.folder_path, filename)
             if os.path.isfile(file_path):
                 try:
                     loader = self.get_loader(file_path)
                     print(f"Loader for {filename}: {loader}")
                     self.add_document(loader)
-                    self.done.emit()
+
+                    curr_progress = (i + 1) * progress_step
+                    self.progresses.emit(int(curr_progress))
                 except ValueError as e:
+                    self.error.emit(f"{filename} 파일 임베딩 중 오류 발생: {e}")
                     print(e)
+
+        self.progresses.emit(100)
+        self.finished.emit()
     
     def format_docs(self, docs):
         """Format retrieved docs into a single string."""
@@ -99,18 +117,22 @@ class ParentRetriverPipeline:
 
     def query(self, question: str) -> str:
         retrieved_parent_doc = self.retriever.invoke(question)
+        return retrieved_parent_doc
+    
+    def query_merge(self, question: str) -> str:
+        retrieved_parent_doc = self.retriever.invoke(question)
         return self.format_docs(retrieved_parent_doc)
 
 ##실행예제
 #### ParentDocumentRetriever 사용 예제 ###
-#parent_pipeline = ParentRetriverPipeline(openai_api_key=OPENAI_API_KEY)
+# parent_pipeline = ParentRetriverPipeline(openai_api_key=OPENAI_API_KEY)
 
 #더미 문서 제거
-#parent_pipeline.remove_dummy_doc()
+# parent_pipeline.remove_dummy_doc()
 
 #폴더 내 문서 로드
-#parent_pipeline.load_folder("documents/tactic_north_korea")
+# parent_pipeline.load_folder("documents/tactic_north_korea")
 
-#parent_docs = parent_pipeline.retriever.invoke("north korean caste system")
-#child_docs = parent_pipeline.child_chunks_collection.similarity_search("north korean caste system")
-#print(f"Parent_docs: {parent_docs[1].page_content[:1000]}\n\nChild_docs:{child_docs}")
+# parent_docs = parent_pipeline.retriever.invoke("north korean caste system")
+# child_docs = parent_pipeline.child_chunks_collection.similarity_search("north korean caste system")
+# print(f"Parent_docs: {parent_docs[1].page_content[:1000]}\n\nChild_docs:{child_docs}")

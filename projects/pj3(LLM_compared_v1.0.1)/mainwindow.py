@@ -10,7 +10,6 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from PlainTextEdit import mPlainTextEdit
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -217,9 +216,9 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addWidget(self.chat_room_table)
         self.verticalLayout_3.setStretch(0, 1)
         self.verticalLayout_3.setStretch(1, 26)
-        self.widget = QtWidgets.QWidget(self.splitter)
-        self.widget.setObjectName("widget")
-        self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.widget)
+        self.layoutWidget1 = QtWidgets.QWidget(self.splitter)
+        self.layoutWidget1.setObjectName("layoutWidget1")
+        self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.layoutWidget1)
         self.verticalLayout_7.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_7.setObjectName("verticalLayout_7")
         self.horizontalLayout_9 = QtWidgets.QHBoxLayout()
@@ -228,7 +227,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName("verticalLayout")
         self.horizontalLayout_7 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_7.setObjectName("horizontalLayout_7")
-        self.label = QtWidgets.QLabel(self.widget)
+        self.label = QtWidgets.QLabel(self.layoutWidget1)
         font = QtGui.QFont()
         font.setBold(True)
         font.setWeight(75)
@@ -242,7 +241,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_7.addWidget(self.label)
         spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_7.addItem(spacerItem2)
-        self.default_token_bar = QtWidgets.QProgressBar(self.widget)
+        self.default_token_bar = QtWidgets.QProgressBar(self.layoutWidget1)
         self.default_token_bar.setStyleSheet("QProgressBar {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    border-radius: 5px;\n"
@@ -258,7 +257,7 @@ class Ui_MainWindow(object):
         self.default_token_bar.setObjectName("default_token_bar")
         self.horizontalLayout_7.addWidget(self.default_token_bar)
         self.verticalLayout.addLayout(self.horizontalLayout_7)
-        self.default_txt = QtWidgets.QTextEdit(self.widget)
+        self.default_txt = QtWidgets.QTextEdit(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -284,7 +283,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
-        self.label_2 = QtWidgets.QLabel(self.widget)
+        self.label_2 = QtWidgets.QLabel(self.layoutWidget1)
         font = QtGui.QFont()
         font.setBold(True)
         font.setWeight(75)
@@ -297,7 +296,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_8.addWidget(self.label_2)
         spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_8.addItem(spacerItem3)
-        self.experiment_token_bar = QtWidgets.QProgressBar(self.widget)
+        self.experiment_token_bar = QtWidgets.QProgressBar(self.layoutWidget1)
         self.experiment_token_bar.setStyleSheet("QProgressBar {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    border-radius: 5px;\n"
@@ -313,7 +312,7 @@ class Ui_MainWindow(object):
         self.experiment_token_bar.setObjectName("experiment_token_bar")
         self.horizontalLayout_8.addWidget(self.experiment_token_bar)
         self.verticalLayout_5.addLayout(self.horizontalLayout_8)
-        self.experiment_txt = QtWidgets.QTextEdit(self.widget)
+        self.experiment_txt = QtWidgets.QTextEdit(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -341,8 +340,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        # self.input_text = QtWidgets.QPlainTextEdit(self.widget)
-        self.input_text = mPlainTextEdit(self.widget)
+        self.input_text = QtWidgets.QPlainTextEdit(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -366,7 +364,7 @@ class Ui_MainWindow(object):
         self.gridLayout_2.setObjectName("gridLayout_2")
         spacerItem4 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.gridLayout_2.addItem(spacerItem4, 2, 1, 1, 1)
-        self.send_btn = QtWidgets.QPushButton(self.widget)
+        self.send_btn = QtWidgets.QPushButton(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(1)
@@ -537,10 +535,10 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.Setting, "")
         self.RAG = QtWidgets.QWidget()
         self.RAG.setObjectName("RAG")
-        self.verticalLayout_12 = QtWidgets.QVBoxLayout(self.RAG)
+        self.verticalLayout_13 = QtWidgets.QVBoxLayout(self.RAG)
+        self.verticalLayout_13.setObjectName("verticalLayout_13")
+        self.verticalLayout_12 = QtWidgets.QVBoxLayout()
         self.verticalLayout_12.setObjectName("verticalLayout_12")
-        self.verticalLayout_11 = QtWidgets.QVBoxLayout()
-        self.verticalLayout_11.setObjectName("verticalLayout_11")
         self.horizontalLayout_17 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_17.setObjectName("horizontalLayout_17")
         self.label_12 = QtWidgets.QLabel(self.RAG)
@@ -557,19 +555,19 @@ class Ui_MainWindow(object):
         self.horizontalLayout_17.addWidget(self.rag_technique)
         spacerItem9 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_17.addItem(spacerItem9)
-        self.verticalLayout_11.addLayout(self.horizontalLayout_17)
+        self.verticalLayout_12.addLayout(self.horizontalLayout_17)
         self.default_retriever = QtWidgets.QRadioButton(self.RAG)
         self.default_retriever.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
         self.default_retriever.setObjectName("default_retriever")
-        self.verticalLayout_11.addWidget(self.default_retriever)
+        self.verticalLayout_12.addWidget(self.default_retriever)
         self.parent_retriever = QtWidgets.QRadioButton(self.RAG)
         self.parent_retriever.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
         self.parent_retriever.setObjectName("parent_retriever")
-        self.verticalLayout_11.addWidget(self.parent_retriever)
+        self.verticalLayout_12.addWidget(self.parent_retriever)
         self.horizontalLayout_10 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_10.setObjectName("horizontalLayout_10")
         spacerItem10 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
@@ -604,6 +602,8 @@ class Ui_MainWindow(object):
 "    text-align: center;\n"
 "    color: White;\n"
 "}")
+        self.parentretreiver_parent_chunk_size.setMaximum(100000)
+        self.parentretreiver_parent_chunk_size.setSingleStep(10)
         self.parentretreiver_parent_chunk_size.setObjectName("parentretreiver_parent_chunk_size")
         self.horizontalLayout_11.addWidget(self.parentretreiver_parent_chunk_size)
         self.horizontalLayout_11.setStretch(0, 6)
@@ -624,6 +624,8 @@ class Ui_MainWindow(object):
 "    text-align: center;\n"
 "    color: White;\n"
 "}")
+        self.parentretreiver_child_chunk_size.setMaximum(100000)
+        self.parentretreiver_child_chunk_size.setSingleStep(10)
         self.parentretreiver_child_chunk_size.setObjectName("parentretreiver_child_chunk_size")
         self.horizontalLayout_12.addWidget(self.parentretreiver_child_chunk_size)
         self.horizontalLayout_12.setStretch(0, 6)
@@ -634,13 +636,13 @@ class Ui_MainWindow(object):
         self.horizontalLayout_10.addWidget(self.groupBox)
         self.horizontalLayout_10.setStretch(0, 1)
         self.horizontalLayout_10.setStretch(1, 21)
-        self.verticalLayout_11.addLayout(self.horizontalLayout_10)
+        self.verticalLayout_12.addLayout(self.horizontalLayout_10)
         self.summary_retriever = QtWidgets.QRadioButton(self.RAG)
         self.summary_retriever.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
         self.summary_retriever.setObjectName("summary_retriever")
-        self.verticalLayout_11.addWidget(self.summary_retriever)
+        self.verticalLayout_12.addWidget(self.summary_retriever)
         self.horizontalLayout_13 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_13.setObjectName("horizontalLayout_13")
         spacerItem11 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
@@ -675,6 +677,8 @@ class Ui_MainWindow(object):
 "    text-align: center;\n"
 "    color: White;\n"
 "}")
+        self.summary_parent_chunk_size.setMaximum(100000)
+        self.summary_parent_chunk_size.setSingleStep(10)
         self.summary_parent_chunk_size.setObjectName("summary_parent_chunk_size")
         self.horizontalLayout_14.addWidget(self.summary_parent_chunk_size)
         self.horizontalLayout_14.setStretch(0, 6)
@@ -683,13 +687,13 @@ class Ui_MainWindow(object):
         self.horizontalLayout_13.addWidget(self.groupBox_2)
         self.horizontalLayout_13.setStretch(0, 1)
         self.horizontalLayout_13.setStretch(1, 21)
-        self.verticalLayout_11.addLayout(self.horizontalLayout_13)
-        self.hyper_retriever = QtWidgets.QRadioButton(self.RAG)
-        self.hyper_retriever.setStyleSheet("QRadioButton {\n"
+        self.verticalLayout_12.addLayout(self.horizontalLayout_13)
+        self.hypothetical_retriever = QtWidgets.QRadioButton(self.RAG)
+        self.hypothetical_retriever.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
-        self.hyper_retriever.setObjectName("hyper_retriever")
-        self.verticalLayout_11.addWidget(self.hyper_retriever)
+        self.hypothetical_retriever.setObjectName("hypothetical_retriever")
+        self.verticalLayout_12.addWidget(self.hypothetical_retriever)
         self.horizontalLayout_15 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_15.setObjectName("horizontalLayout_15")
         spacerItem12 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
@@ -724,6 +728,8 @@ class Ui_MainWindow(object):
 "    text-align: center;\n"
 "    color: White;\n"
 "}")
+        self.hyper_parent_chunk_size.setMaximum(100000)
+        self.hyper_parent_chunk_size.setSingleStep(10)
         self.hyper_parent_chunk_size.setObjectName("hyper_parent_chunk_size")
         self.horizontalLayout_16.addWidget(self.hyper_parent_chunk_size)
         self.horizontalLayout_16.setStretch(0, 6)
@@ -732,15 +738,60 @@ class Ui_MainWindow(object):
         self.horizontalLayout_15.addWidget(self.groupBox_3)
         self.horizontalLayout_15.setStretch(0, 1)
         self.horizontalLayout_15.setStretch(1, 21)
-        self.verticalLayout_11.addLayout(self.horizontalLayout_15)
-        self.max_retriever = QtWidgets.QRadioButton(self.RAG)
-        self.max_retriever.setStyleSheet("QRadioButton {\n"
+        self.verticalLayout_12.addLayout(self.horizontalLayout_15)
+        self.granular_retriever = QtWidgets.QRadioButton(self.RAG)
+        self.granular_retriever.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
-        self.max_retriever.setObjectName("max_retriever")
-        self.verticalLayout_11.addWidget(self.max_retriever)
-        spacerItem13 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout_11.addItem(spacerItem13)
+        self.granular_retriever.setObjectName("granular_retriever")
+        self.verticalLayout_12.addWidget(self.granular_retriever)
+        self.horizontalLayout_18 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_18.setObjectName("horizontalLayout_18")
+        spacerItem13 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_18.addItem(spacerItem13)
+        self.groupBox_4 = QtWidgets.QGroupBox(self.RAG)
+        self.groupBox_4.setStyleSheet("QGroupBox {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    border-radius: 5px;\n"
+"    background-color: rgb(40, 40, 40);\n"
+"    text-align: center;\n"
+"    color: White;\n"
+"}")
+        self.groupBox_4.setTitle("")
+        self.groupBox_4.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+        self.groupBox_4.setObjectName("groupBox_4")
+        self.verticalLayout_11 = QtWidgets.QVBoxLayout(self.groupBox_4)
+        self.verticalLayout_11.setContentsMargins(-1, 0, -1, 0)
+        self.verticalLayout_11.setSpacing(0)
+        self.verticalLayout_11.setObjectName("verticalLayout_11")
+        self.horizontalLayout_19 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_19.setObjectName("horizontalLayout_19")
+        self.label_13 = QtWidgets.QLabel(self.groupBox_4)
+        self.label_13.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"    background-color: rgb(40, 40, 40);\n"
+"}")
+        self.label_13.setObjectName("label_13")
+        self.horizontalLayout_19.addWidget(self.label_13)
+        self.hyper_parent_chunk_size_2 = QtWidgets.QSpinBox(self.groupBox_4)
+        self.hyper_parent_chunk_size_2.setStyleSheet("QSpinBox {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    text-align: center;\n"
+"    color: White;\n"
+"}")
+        self.hyper_parent_chunk_size_2.setMaximum(100000)
+        self.hyper_parent_chunk_size_2.setSingleStep(10)
+        self.hyper_parent_chunk_size_2.setObjectName("hyper_parent_chunk_size_2")
+        self.horizontalLayout_19.addWidget(self.hyper_parent_chunk_size_2)
+        self.horizontalLayout_19.setStretch(0, 6)
+        self.horizontalLayout_19.setStretch(1, 3)
+        self.verticalLayout_11.addLayout(self.horizontalLayout_19)
+        self.horizontalLayout_18.addWidget(self.groupBox_4)
+        self.horizontalLayout_18.setStretch(0, 1)
+        self.horizontalLayout_18.setStretch(1, 21)
+        self.verticalLayout_12.addLayout(self.horizontalLayout_18)
+        spacerItem14 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_12.addItem(spacerItem14)
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setSpacing(4)
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
@@ -786,7 +837,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.setStretch(0, 1)
         self.horizontalLayout_5.setStretch(1, 6)
         self.horizontalLayout_5.setStretch(2, 1)
-        self.verticalLayout_11.addLayout(self.horizontalLayout_5)
+        self.verticalLayout_12.addLayout(self.horizontalLayout_5)
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
         self.label_7 = QtWidgets.QLabel(self.RAG)
@@ -812,10 +863,10 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6.addWidget(self.Loading_bar)
         self.horizontalLayout_6.setStretch(0, 1)
         self.horizontalLayout_6.setStretch(1, 4)
-        self.verticalLayout_11.addLayout(self.horizontalLayout_6)
-        spacerItem14 = QtWidgets.QSpacerItem(236, 178, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout_11.addItem(spacerItem14)
-        self.verticalLayout_12.addLayout(self.verticalLayout_11)
+        self.verticalLayout_12.addLayout(self.horizontalLayout_6)
+        spacerItem15 = QtWidgets.QSpacerItem(236, 178, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_12.addItem(spacerItem15)
+        self.verticalLayout_13.addLayout(self.verticalLayout_12)
         self.tabWidget.addTab(self.RAG, "")
         self.verticalLayout_8.addWidget(self.splitter)
         self.verticalLayout_8.setStretch(0, 1)
@@ -843,8 +894,6 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.input_text, self.default_txt)
         MainWindow.setTabOrder(self.default_txt, self.experiment_txt)
         MainWindow.setTabOrder(self.experiment_txt, self.tabWidget)
-
-        self.input_text.set_send_button(self.send_btn)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -883,9 +932,10 @@ class Ui_MainWindow(object):
         self.label_9.setText(_translate("MainWindow", "child_chunk_size:"))
         self.summary_retriever.setText(_translate("MainWindow", "summary"))
         self.label_10.setText(_translate("MainWindow", "parent_chunk_size:"))
-        self.hyper_retriever.setText(_translate("MainWindow", "hyper"))
+        self.hypothetical_retriever.setText(_translate("MainWindow", "hypothetical"))
         self.label_11.setText(_translate("MainWindow", "parent_chunk_size:"))
-        self.max_retriever.setText(_translate("MainWindow", "max worker"))
+        self.granular_retriever.setText(_translate("MainWindow", "granular"))
+        self.label_13.setText(_translate("MainWindow", "chunk_size:"))
         self.label_6.setText(_translate("MainWindow", "Path: "))
         self.Load_btn.setText(_translate("MainWindow", "Load"))
         self.label_7.setText(_translate("MainWindow", "Loading"))

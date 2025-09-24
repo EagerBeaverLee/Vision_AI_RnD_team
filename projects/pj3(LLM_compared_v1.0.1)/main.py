@@ -7,19 +7,15 @@ from PyQt5.QtGui import QDoubleValidator
 from PyQt5.uic import loadUi
 
 from mainwindow import Ui_MainWindow
+from DefaultRetriever import DefaultRetriever
 from ParentChildDocumentRetriever import ParentRetriverPipeline
+from SummaryDocumentRetriever import SummaryDocumentRetrieverPipeline
+from HypotheticalQuestionRetrieverPipeline import HypotheticalQuestionRetrieverPipeline
+from GranularChunkExpansionRetriever import GranularChunkExpansionRetriverPipeline
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-
-from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader, CSVLoader, JSONLoader, DirectoryLoader
-from langchain_teddynote.document_loaders import HWPLoader
-from langchain_community.vectorstores import FAISS
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
-from langchain_core.output_parsers import StrOutputParser
 
 #tokenizer
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
@@ -28,94 +24,6 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from typing import List
 from transformers import AutoTokenizer
 
-
-class EmbeddingWorder(QObject):
-    finished = pyqtSignal()
-    progresses = pyqtSignal(int)
-    error = pyqtSignal(str)
-
-    def __init__(self, retriever_name, folder_path, api_key, parent=None):
-        super().__init__(parent)
-
-        retriever_map = {
-            "default": create_basic_retriever,
-            "ParentRetriverPipeline": ParentRetriverPipeline,
-            "hypothetical_questions": create_hypothetical_questions_retriever,
-        }
-
-
-        self.folder_path = folder_path
-        self.embedding_model = OpenAIEmbeddings(api_key=api_key)
-        self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
-        self.vector_db = None
-
-    def get_loader(self, filename):
-        loader_classes = {
-            'docx': Docx2txtLoader,
-            'pdf': PyPDFLoader,
-            'txt': TextLoader,
-            'csv': CSVLoader,
-            'json': JSONLoader,
-            'hwp': HWPLoader
-        }
-
-        _, file_extension = os.path.splitext(filename)
-        file_extension = file_extension.lstrip('.')
-
-        loader_class = loader_classes.get(file_extension)
-
-        if not loader_class:
-            raise ValueError(f"No loader available for file extension '{file_extension}'")
-        
-        # JSON 파일인 경우 jq_schema 인자를 추가하여 반환
-        if file_extension == 'json':
-            return loader_class(filename, jq_schema='.', text_content=False)
-        else:
-            # 그 외의 경우 일반적인 방식으로 로더 반환
-            return loader_class(filename)
-        
-    def run(self):
-        try:
-            files = os.listdir(self.folder_path)
-            total_files = len(files)
-            save_vector = "./faiss_index_kr"
-
-            if total_files == 0:
-                self.error.emit("선택한 폴더에 파일이 없습니다.")
-                self.finished.emit()
-                return
-            
-            progress_step = 100 / total_files
-
-            # all_chunks = []
-            for i, file_name in enumerate(files):
-                file_path = os.path.join(self.folder_path, file_name)
-                try:
-                    loader = self.get_loader(file_path)
-                    chunks = self.text_splitter.split_documents(loader.load())
-                    # all_chunks.extend(chunks)
-                    # if self.vector_db:
-                    #     self.vector_db.add_documents(chunks)
-                    # else:
-                    #     self.vector_db = FAISS.from_documents(chunks, self.embedding_model)
-                    
-                    curr_progress = (i + 1) * progress_step
-                    self.progresses.emit(int(curr_progress))
-                except Exception as e:
-                    self.error.emit(f"{file_name} 파일 임베딩 중 오류 발생: {e}")
-
-            # self.vector_db.save_local(save_vector)
-            # print("FAISS 벡터스토어 생성 및 저장 완료")
-
-            self.vector_db = FAISS.load_local(save_vector, self.embedding_model, allow_dangerous_deserialization=True)
-            print("FAISS 벡터스토어 로드 완료")
-
-            self.progresses.emit(100)
-            self.finished.emit()
-
-        except Exception as e:
-            self.error.emit(f"임베딩 작업 중 치명적인 오류 발생: {e}")
-            self.finished.emit()
 
 class ChatRoom:
     def __init__(self, name):
@@ -135,6 +43,10 @@ class ChatRoom:
 
         self.default_history = ChatMessageHistory()
         self.experiment_history = ChatMessageHistory()
+
+        #rag tech values
+        self.parentretriever_parent_chunk_size = 0
+        self.parentretriever_child_chunk_size = 0
 
         self.chat_stored = {}
         self.default_session_id = "default"
@@ -166,25 +78,24 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.connectSignalsSlots()
 
-        self.chat_rooms = []    #채팅방 관리
+        #chatroom 클래스 관련 변수
+        self.chat_rooms = []                    #채팅방 관리
         self.current_chat_room = None
-        self.add_new_chat_room(initial=True)
+        self.add_new_chat_room(initial=True)    #처음에 채팅방 1개 만듬
+        self.chat_room_update_flag = False      #채팅방 첫 생성인지 확인 flag
+
+        #채팅방 ui관련 설정
+        self.ui.chat_room_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.chat_room_table.customContextMenuRequested.connect(self.on_context_menu)
 
         # 오른쪽 클릭된 아이템을 저장할 멤버 변수
         self.clicked_item = None
 
-        self.chat_room_update_flag = False
-
+        #slider 관련 변수
         self.left_animation = Slider_Animation(self)
         self.left_animation.animation_timer.timeout.connect(self.update_left_animation)
-
         self.right_animation = Slider_Animation(self)
         self.right_animation.animation_timer.timeout.connect(self.update_right_animation)
-
-        self.ui.chat_room_table.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.ui.chat_room_table.customContextMenuRequested.connect(self.on_context_menu)
-
-        self.ui.splitter.setSizes([174, 758, 227])
 
         self.threading = None
         self.text_splitter = None
@@ -197,6 +108,54 @@ class Window(QMainWindow, Ui_MainWindow):
         #selected rag tech
         self.rag_technique = None
 
+        #초기값 세팅
+        self.ui.splitter.setSizes([174, 758, 227])      #초기 프로그램 크기 조정
+        self.ui.default_retriever.setChecked(True)
+
+    def create_default_retriever(self, path):
+        return DefaultRetriever(
+            folder_path=path,
+            api_key=self.current_chat_room.m_api_key
+        )
+    
+    def create_parent_retriever(self, path):
+        return ParentRetriverPipeline(
+            folder_path=path,
+            openai_api_key=self.current_chat_room.m_api_key,
+            # parent_chunk_size=self.current_chat_room.parentretriever_parent_chunk_size,
+            # child_chunk_size=self.current_chat_room.parentretriever_child_chunk_size
+        )
+    def create_summary_retriever(self, path):
+        chat_model = ChatOpenAI(
+            api_key="ai",
+            model="openai/gpt-oss-20b",
+            base_url="http://192.168.0.108:8000/v1",
+            temperature=self.current_chat_room.m_temperature
+        )
+        return SummaryDocumentRetrieverPipeline(
+            folder_path=path,
+            openai_api_key=self.current_chat_room.m_api_key,
+            llm_model=chat_model
+        )
+    def create_hypothetical_retriever(self, path):
+        chat_model = ChatOpenAI(
+            api_key="ai",
+            model="openai/gpt-oss-20b",
+            base_url="http://192.168.0.108:8000/v1",
+            temperature=self.current_chat_room.m_temperature
+        )
+        return HypotheticalQuestionRetrieverPipeline(
+            folder_path=path,
+            openai_api_key=self.current_chat_room.m_api_key,
+            llm_model=chat_model,
+        )
+    def create_granular_retriever(self, path):
+        return GranularChunkExpansionRetriverPipeline(
+            folder_path=path,
+            openai_api_key=self.current_chat_room.m_api_key,
+            granular_chunk_size=500,
+        )
+
     def load_folder(self):
         if not self.current_chat_room.m_api_key:
             QMessageBox.critical(self, "오류", "api key를 입력해주세요")
@@ -204,6 +163,14 @@ class Window(QMainWindow, Ui_MainWindow):
         
         path = QFileDialog.getExistingDirectory(self, "폴더 선택")
         
+        retriever_map = {
+            "Default": self.create_default_retriever,
+            "ParentRetriverPipeline": self.create_parent_retriever,
+            "summary": self.create_summary_retriever,
+            "hypothetical": self.create_hypothetical_retriever,
+            "granular": self.create_granular_retriever,
+        }
+
         if path:
             self.ui.path.setText(f"{path}")
 
@@ -211,10 +178,13 @@ class Window(QMainWindow, Ui_MainWindow):
             self.ui.Load_btn.setEnabled(False) #작업 중 버튼 비활성화
 
             self.threading = QThread()
-            self.worker = EmbeddingWorder(
-                folder_path=path,
-                api_key=self.current_chat_room.m_api_key
-            )
+
+            self.worker = retriever_map[self.rag_technique](path)
+            
+            # self.worker = DefaultRetriever(
+            #     folder_path=path,
+            #     api_key=self.current_chat_room.m_api_key
+            # )
 
             self.worker.moveToThread(self.threading)
 
@@ -370,6 +340,9 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.ui.temp_val.text().strip() != final_val:
             self.ui.temp_val.setText(final_val)
 
+    def set_parentretriever_parent_chunk_size(self):
+        self.current_chat_room.parentretriever_parent_chunk_size = self.ui.parentretreiver_parent_chunk_size.val
+
     def connectSignalsSlots(self):
         self.ui.send_btn.clicked.connect(self.load_message)
         self.ui.api_key_txt.textChanged.connect(self.apply_api_key)
@@ -383,10 +356,14 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.left_split_btn.clicked.connect(self.toggle_left_animation)
         self.ui.right_split_btn.clicked.connect(self.toggle_right_animation)
         self.ui.Load_btn.clicked.connect(self.load_folder)
+        self.ui.parentretreiver_parent_chunk_size.valueChanged
 
         #RAG radio_btn
-        self.ui.
+        self.ui.default_retriever.toggled.connect(self.apply_rag_techniques)
         self.ui.parent_retriever.toggled.connect(self.apply_rag_techniques)
+        self.ui.summary_retriever.toggled.connect(self.apply_rag_techniques)
+        self.ui.hypothetical_retriever.toggled.connect(self.apply_rag_techniques)
+        self.ui.granular_retriever.toggled.connect(self.apply_rag_techniques)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -503,6 +480,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.default_txt.setText(room.default_chat_list)
         self.ui.experiment_txt.setText(room.experiment_chat_list)
         self.ui.input_text.setPlainText(room.user_in_txt)
+        self.ui.parentretreiver_parent_chunk_size.setValue(room.parentretriever_parent_chunk_size)
+        self.ui.parentretreiver_child_chunk_size.setValue(room.parentretriever_child_chunk_size)
 
         self.ui.default_token_bar.setFormat(f"used tokens: {self.current_chat_room.default_token:.2f}%")
         self.ui.default_token_bar.setValue(int(self.current_chat_room.default_token))
@@ -631,7 +610,8 @@ class Window(QMainWindow, Ui_MainWindow):
             [
                 (
                     "system",
-                    self.current_chat_room.m_prompt
+                    "3단락 이하로 답변해줘"
+                    # self.current_chat_room.m_prompt
                 ),
                 ("placeholder", "{chat_history}"),
                 ("human", "{input}"),
@@ -768,8 +748,6 @@ class Window(QMainWindow, Ui_MainWindow):
         if not self.current_chat_room.m_api_key or not self.worker:
             QMessageBox.critical(self, "오류", "api key를 입력해주세요")
             return
-        
-        retriever = self.worker.vector_db.as_retriever(search_kwargs={"k": 2})
 
         # prompt_template = """
         #     당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다.
@@ -816,7 +794,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         rag_chain=(
             # {"context": retriever, "question": RunnablePassthrough()}
-            RunnablePassthrough.assign(context=lambda x: retriever.invoke(x["question"]))
+            RunnablePassthrough.assign(context=lambda x: self.worker.query(x["question"]))
             # | RunnableLambda(self.print_retrieved_document)
             | prompt
             # | RunnableLambda(lambda x: (print(f"\n[Experiment]LLM에 전달된 총 토큰 수: {self.get_full_prompt_token_count(x)}/{self.MAX_TOKENS}"), x)[1])
@@ -953,7 +931,7 @@ class Window(QMainWindow, Ui_MainWindow):
         radio_btn = self.sender()
         if radio_btn.isChecked():
             self.rag_technique = radio_btn.text()
-            self.ui.selected_engine.setText(f'{radio_btn.text()}')
+            self.ui.rag_technique.setText(f'{radio_btn.text()}')
 
 if __name__ == "__main__":
 
