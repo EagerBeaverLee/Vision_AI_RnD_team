@@ -18,19 +18,19 @@ class DefaultRetriever(QObject):
         super().__init__(parent)
 
         self.folder_path = folder_path
-        # self.embedding_model = OpenAIEmbeddings(
-        #     api_key=api_key
-        # )
+        self.embedding_model = OpenAIEmbeddings(
+            api_key=api_key
+        )
         # self.embedding_model = HuggingFaceEmbeddings(
         #     model_name="BAAI/bge-m3",
         #     model_kwargs={'device': 'cuda'},
         #     encode_kwargs={'normalize_embedding': True}
         # )
-        self.embedding_model = OpenAIEmbeddings(
-            model="Qwen/Qwen3-Embedding-8B",
-            openai_api_base="http://192.168.0.108:8001/v1",
-            openai_api_key="em"
-        )
+        # self.embedding_model = OpenAIEmbeddings(
+        #     model="Qwen/Qwen3-Embedding-8B",
+        #     openai_api_base="http://192.168.0.108:8001/v1",
+        #     openai_api_key="em"
+        # )
         self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
         self.vector_db = None
 
@@ -72,17 +72,17 @@ class DefaultRetriever(QObject):
             
             progress_step = 100 / total_files
 
-            all_chunks = []
+            # all_chunks = []
             for i, file_name in enumerate(files):
                 file_path = os.path.join(self.folder_path, file_name)
                 try:
                     loader = self.get_loader(file_path)
                     chunks = self.text_splitter.split_documents(loader.load())
-                    all_chunks.extend(chunks)
-                    if self.vector_db:
-                        self.vector_db.add_documents(chunks)
-                    else:
-                        self.vector_db = FAISS.from_documents(chunks, self.embedding_model)
+                    # all_chunks.extend(chunks)
+                    # if self.vector_db:
+                    #     self.vector_db.add_documents(chunks)
+                    # else:
+                    #     self.vector_db = FAISS.from_documents(chunks, self.embedding_model)
                     
                     curr_progress = (i + 1) * progress_step
                     self.progresses.emit(int(curr_progress))
@@ -90,11 +90,11 @@ class DefaultRetriever(QObject):
                 except Exception as e:
                     self.error.emit(f"{file_name} 파일 임베딩 중 오류 발생: {e}")
 
-            self.vector_db.save_local(save_vector)
-            print("FAISS 벡터스토어 생성 및 저장 완료")
+            # self.vector_db.save_local(save_vector)
+            # print("FAISS 벡터스토어 생성 및 저장 완료")
 
-            # self.vector_db = FAISS.load_local(save_vector, self.embedding_model, allow_dangerous_deserialization=True)
-            # print("FAISS 벡터스토어 로드 완료")
+            self.vector_db = FAISS.load_local(save_vector, self.embedding_model, allow_dangerous_deserialization=True)
+            print("FAISS 벡터스토어 로드 완료")
 
             self.progresses.emit(100)
             self.finished.emit()
@@ -102,6 +102,10 @@ class DefaultRetriever(QObject):
         except Exception as e:
             self.error.emit(f"임베딩 작업 중 치명적인 오류 발생: {e}")
             self.finished.emit()
+
+    def copy_retriever(self):
+        retriever = self.vector_db.as_retriever(search_kwargs={"k": 2})
+        return retriever
 
     def query(self, question: str) -> str:
         retriever = self.vector_db.as_retriever(search_kwargs={"k": 2})

@@ -169,6 +169,9 @@ class HypotheticalQuestionRetrieverPipeline(QObject):
     def format_docs(self, docs):
         """Format retrieved docs into a single string."""
         return "\n\n".join(doc.page_content for doc in docs)
+    
+    def copy_retriever(self):
+        return self.retriever
 
     def query(self, question: str) -> str:
         retrieved_summary_doc = self.retriever.invoke(question)

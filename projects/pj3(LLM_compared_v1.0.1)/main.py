@@ -12,6 +12,9 @@ from ParentChildDocumentRetriever import ParentRetriverPipeline
 from SummaryDocumentRetriever import SummaryDocumentRetrieverPipeline
 from HypotheticalQuestionRetrieverPipeline import HypotheticalQuestionRetrieverPipeline
 from GranularChunkExpansionRetriever import GranularChunkExpansionRetriverPipeline
+from Rewrite_Retrieve_Read_Gen import RewriteRetrieveReadQuestionGenerator
+from Step_Back_Question_Gen import StepBackQuestionGenerator
+from Multiple_Questions_Gen import MultipleQuestionGenerator
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -36,7 +39,8 @@ class ChatRoom:
         self.experiment_chat_list = ""
         self.user_in_txt = ""
 
-        self.rag_technique = None
+        self.rag_indexing = None
+        self.rag_transformation = None
 
         self.default_token = 0
         self.experiment_token = 0
@@ -105,12 +109,42 @@ class Window(QMainWindow, Ui_MainWindow):
         self.token_encoding = tiktoken.get_encoding("o200k_harmony")
         self.MAX_TOKENS = 128000
 
+        self.local_llm = None
+
         #selected rag tech
-        self.rag_technique = None
+        self.rag_indexing = None
+        self.rag_transformation = None
 
         #초기값 세팅
         self.ui.splitter.setSizes([174, 758, 227])      #초기 프로그램 크기 조정
         self.ui.default_retriever.setChecked(True)
+        self.ui.default_generator.setChecked(True)
+
+        self.init_local_llm()
+
+    def init_local_llm(self):
+        self.local_llm = ChatOpenAI(
+            api_key="ai",
+            model="openai/gpt-oss-20b",
+            base_url="http://192.168.0.108:8000/v1",
+            temperature=self.current_chat_room.m_temperature,
+            # max_tokens = 6000
+        )
+
+    def create_default_generator(self):
+        return 
+    def create_rewrite_retrieve_read_generator(self):
+        return RewriteRetrieveReadQuestionGenerator(
+            llm=self.local_llm
+        )
+    def create_multiple_question_generator(self):
+        return  MultipleQuestionGenerator(
+            llm=self.local_llm
+        )
+    def create_step_back_question_generator(self):
+        return StepBackQuestionGenerator(
+            llm=self.local_llm
+        )
 
     def create_default_retriever(self, path):
         return DefaultRetriever(
@@ -126,28 +160,16 @@ class Window(QMainWindow, Ui_MainWindow):
             # child_chunk_size=self.current_chat_room.parentretriever_child_chunk_size
         )
     def create_summary_retriever(self, path):
-        chat_model = ChatOpenAI(
-            api_key="ai",
-            model="openai/gpt-oss-20b",
-            base_url="http://192.168.0.108:8000/v1",
-            temperature=self.current_chat_room.m_temperature
-        )
         return SummaryDocumentRetrieverPipeline(
             folder_path=path,
             openai_api_key=self.current_chat_room.m_api_key,
-            llm_model=chat_model
+            llm_model=self.local_llm
         )
     def create_hypothetical_retriever(self, path):
-        chat_model = ChatOpenAI(
-            api_key="ai",
-            model="openai/gpt-oss-20b",
-            base_url="http://192.168.0.108:8000/v1",
-            temperature=self.current_chat_room.m_temperature
-        )
         return HypotheticalQuestionRetrieverPipeline(
             folder_path=path,
             openai_api_key=self.current_chat_room.m_api_key,
-            llm_model=chat_model,
+            llm_model=self.local_llm,
         )
     def create_granular_retriever(self, path):
         return GranularChunkExpansionRetriverPipeline(
@@ -179,7 +201,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
             self.threading = QThread()
 
-            self.worker = retriever_map[self.rag_technique](path)
+            self.worker = retriever_map[self.rag_indexing](path)
             
             # self.worker = DefaultRetriever(
             #     folder_path=path,
@@ -358,12 +380,18 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.Load_btn.clicked.connect(self.load_folder)
         self.ui.parentretreiver_parent_chunk_size.valueChanged
 
-        #RAG radio_btn
-        self.ui.default_retriever.toggled.connect(self.apply_rag_techniques)
-        self.ui.parent_retriever.toggled.connect(self.apply_rag_techniques)
-        self.ui.summary_retriever.toggled.connect(self.apply_rag_techniques)
-        self.ui.hypothetical_retriever.toggled.connect(self.apply_rag_techniques)
-        self.ui.granular_retriever.toggled.connect(self.apply_rag_techniques)
+        #Question Transformations radio_btn
+        self.ui.default_generator.toggled.connect(self.apply_rag_transformation)
+        self.ui.rewrite_generator.toggled.connect(self.apply_rag_transformation)
+        self.ui.multiple_generator.toggled.connect(self.apply_rag_transformation)
+        self.ui.step_back_generator.toggled.connect(self.apply_rag_transformation)
+
+        #Advanced Indexing radio_btn
+        self.ui.default_retriever.toggled.connect(self.apply_rag_indexing)
+        self.ui.parent_retriever.toggled.connect(self.apply_rag_indexing)
+        self.ui.summary_retriever.toggled.connect(self.apply_rag_indexing)
+        self.ui.hypothetical_retriever.toggled.connect(self.apply_rag_indexing)
+        self.ui.granular_retriever.toggled.connect(self.apply_rag_indexing)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -749,6 +777,15 @@ class Window(QMainWindow, Ui_MainWindow):
             QMessageBox.critical(self, "오류", "api key를 입력해주세요")
             return
 
+        generator_map = {
+            "Default": self.create_default_generator,
+            "Rewrite-Retrieve-Read Generator": self.create_rewrite_retrieve_read_generator,
+            "Multiple Questions Generator": self.create_multiple_question_generator,
+            "Step-Back Question Generator": self.create_step_back_question_generator,
+        }
+        print(self.rag_transformation)
+        generator = generator_map[self.rag_transformation]()
+
         # prompt_template = """
         #     당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다.
         #     문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요.
@@ -766,11 +803,11 @@ class Window(QMainWindow, Ui_MainWindow):
         #     답변:
         #     """
         # prompt = ChatPromptTemplate.from_template(prompt_template)
-
+ 
         prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", f"{self.current_chat_room.m_prompt}"
-                 "당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다."
+                ("system", f"{self.current_chat_room.m_prompt}\n"
+                "당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다."
                 "문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요."
                 "만약 문서에 질문에 대한 정보가 없다면, '제공된 문서에는 이 질문에 대한 정보가 없습니다.'라고 답변하세요."
                 "문서에 있는 내용만을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다."
@@ -780,26 +817,21 @@ class Window(QMainWindow, Ui_MainWindow):
             ]
         )
 
-        llm = ChatOpenAI(
-            api_key="ai",
-            model="openai/gpt-oss-20b",
-            base_url="http://192.168.0.108:8000/v1",
-            temperature=self.current_chat_room.m_temperature,
-            # max_tokens = 6000
-        )
         # llm = ChatOpenAI(
         #     api_key=self.current_chat_room.m_api_key,
         #     temperature=self.current_chat_room.m_temperature,
         # )
 
-        rag_chain=(
-            # {"context": retriever, "question": RunnablePassthrough()}
-            RunnablePassthrough.assign(context=lambda x: self.worker.query(x["question"]))
-            # | RunnableLambda(self.print_retrieved_document)
-            | prompt
-            # | RunnableLambda(lambda x: (print(f"\n[Experiment]LLM에 전달된 총 토큰 수: {self.get_full_prompt_token_count(x)}/{self.MAX_TOKENS}"), x)[1])
-            | llm
-        )
+        
+        # rag_chain=(
+        #     RunnablePassthrough.assign(context=lambda x: self.worker.query(x["question"]))
+        #     | RunnableLambda(self.print_retrieved_document)
+        #     | prompt
+        #     | RunnableLambda(lambda x: (print(f"\n[Experiment]LLM에 전달된 총 토큰 수: {self.get_full_prompt_token_count(x)}/{self.MAX_TOKENS}"), x)[1])
+        #     | llm
+        # )
+
+        rag_chain = generator.build_rag_chain(prompt, self.worker.copy_retriever())
 
         rag_history_chain = RunnableWithMessageHistory(
             rag_chain,
@@ -927,11 +959,18 @@ class Window(QMainWindow, Ui_MainWindow):
             self.current_chat_room.chat_stored[session_id] = ChatMessageHistory()
         return self.current_chat_room.chat_stored[session_id]
     
-    def apply_rag_techniques(self):
+    def apply_rag_transformation(self):
         radio_btn = self.sender()
         if radio_btn.isChecked():
-            self.rag_technique = radio_btn.text()
-            self.ui.rag_technique.setText(f'{radio_btn.text()}')
+            self.rag_transformation = radio_btn.text()
+            self.ui.rag_transformation.setText(f'{radio_btn.text()}')
+    
+    def apply_rag_indexing(self):
+        radio_btn = self.sender()
+        if radio_btn.isChecked():
+            self.rag_indexing = radio_btn.text()
+            self.ui.rag_indexing.setText(f'{radio_btn.text()}')
+    
 
 if __name__ == "__main__":
 

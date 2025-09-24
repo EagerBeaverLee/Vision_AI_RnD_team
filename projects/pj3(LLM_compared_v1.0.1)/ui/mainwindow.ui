@@ -913,526 +913,818 @@ QSlider::handle:horizontal:pressed{
         <attribute name="title">
          <string>RAG</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_13">
+        <layout class="QVBoxLayout" name="verticalLayout_14" stretch="10,30,2,2,6">
+         <property name="spacing">
+          <number>20</number>
+         </property>
+         <property name="leftMargin">
+          <number>20</number>
+         </property>
+         <property name="topMargin">
+          <number>20</number>
+         </property>
+         <property name="rightMargin">
+          <number>20</number>
+         </property>
+         <property name="bottomMargin">
+          <number>20</number>
+         </property>
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_12">
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_17">
-             <item>
-              <widget class="QLabel" name="label_12">
-               <property name="styleSheet">
-                <string notr="true">QLabel {
+          <widget class="QGroupBox" name="groupBox_6">
+           <property name="styleSheet">
+            <string notr="true">QGroupBox {
+	color: rgb(184, 247, 185);
+    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+	border: 1px solid rgb(184, 247, 185);
+	border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */
+}</string>
+           </property>
+           <property name="title">
+            <string>Question Transformations</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_13" stretch="1,1,4,4,4,4">
+            <item>
+             <spacer name="verticalSpacer_7">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QWidget" name="widget_2" native="true">
+              <property name="styleSheet">
+               <string notr="true">QWidget{
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_20">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <spacer name="horizontalSpacer_12">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_14">
+                 <property name="styleSheet">
+                  <string notr="true">QLabel {
+    color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+                 </property>
+                 <property name="text">
+                  <string>Applied: </string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="rag_transformation">
+                 <property name="styleSheet">
+                  <string notr="true">QLabel {
+    color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+                 </property>
+                 <property name="text">
+                  <string>TextLabel</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="default_generator">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton {
+    color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+              </property>
+              <property name="text">
+               <string>Default</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rewrite_generator">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton {
+    color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+              </property>
+              <property name="text">
+               <string>Rewrite-Retrieve-Read Generator</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="multiple_generator">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton {
+    color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+              </property>
+              <property name="text">
+               <string>Multiple Questions Generator</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="step_back_generator">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton {
+    color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+              </property>
+              <property name="text">
+               <string>Step-Back Question Generator</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="groupBox_5">
+           <property name="styleSheet">
+            <string notr="true">QGroupBox {
+	color: rgb(184, 247, 185);
+    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+	border: 1px solid rgb(184, 247, 185);
+	border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */
+}</string>
+           </property>
+           <property name="title">
+            <string>Advanced Indexing</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_12" stretch="1,1,3,3,3,3,3,3,3,3,3">
+            <property name="spacing">
+             <number>6</number>
+            </property>
+            <property name="topMargin">
+             <number>5</number>
+            </property>
+            <property name="bottomMargin">
+             <number>9</number>
+            </property>
+            <item>
+             <spacer name="verticalSpacer_6">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QWidget" name="widget_3" native="true">
+              <property name="styleSheet">
+               <string notr="true">QWidget{
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_17">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <spacer name="horizontalSpacer_10">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_12">
+                 <property name="styleSheet">
+                  <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 }</string>
-               </property>
-               <property name="text">
-                <string>Applied: </string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="rag_technique">
-               <property name="styleSheet">
-                <string notr="true">QLabel {
+                 </property>
+                 <property name="text">
+                  <string>Applied: </string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="rag_indexing">
+                 <property name="styleSheet">
+                  <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 }</string>
-               </property>
-               <property name="text">
-                <string>TextLabel</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_10">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="default_retriever">
-             <property name="styleSheet">
-              <string notr="true">QRadioButton {
+                 </property>
+                 <property name="text">
+                  <string>TextLabel</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="default_retriever">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton {
     color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
 }</string>
-             </property>
-             <property name="text">
-              <string>Default</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="parent_retriever">
-             <property name="styleSheet">
-              <string notr="true">QRadioButton {
+              </property>
+              <property name="text">
+               <string>Default</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="parent_retriever">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton {
     color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
 }</string>
-             </property>
-             <property name="text">
-              <string>ParentRetriverPipeline</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="1,21">
-             <item>
-              <spacer name="horizontalSpacer_7">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="text">
+               <string>ParentRetriverPipeline</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widget_4" native="true">
+              <property name="styleSheet">
+               <string notr="true">QWidget {
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="1,19">
+               <property name="leftMargin">
+                <number>0</number>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
+               <property name="topMargin">
+                <number>0</number>
                </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QGroupBox" name="groupBox">
-               <property name="styleSheet">
-                <string notr="true">QGroupBox {
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <spacer name="horizontalSpacer_7">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="groupBox">
+                 <property name="styleSheet">
+                  <string notr="true">QGroupBox {
 	border: 1px solid rgb(184, 247, 185);
 	border-radius: 5px;
 	background-color: rgb(40, 40, 40);
 	text-align: center;
 	color: White;
 }</string>
-               </property>
-               <property name="title">
-                <string/>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-               </property>
-               <layout class="QVBoxLayout" name="verticalLayout_6" stretch="1,1">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <property name="leftMargin">
-                 <number>6</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <property name="rightMargin">
-                 <number>6</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="6,3">
+                 </property>
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_6" stretch="1,1">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>6</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>6</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
                   <item>
-                   <widget class="QLabel" name="label_8">
-                    <property name="styleSheet">
-                     <string notr="true">QLabel {
+                   <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="6,3">
+                    <item>
+                     <widget class="QLabel" name="label_8">
+                      <property name="styleSheet">
+                       <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 	background-color: rgb(40, 40, 40);
 }</string>
-                    </property>
-                    <property name="text">
-                     <string>parent_chunk_size:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QSpinBox" name="parentretreiver_parent_chunk_size">
-                    <property name="styleSheet">
-                     <string notr="true">QSpinBox {
+                      </property>
+                      <property name="text">
+                       <string>parent_chunk_size:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QSpinBox" name="parentretreiver_parent_chunk_size">
+                      <property name="styleSheet">
+                       <string notr="true">QSpinBox {
 	border: 1px solid rgb(184, 247, 185);
 	text-align: center;
 	color: White;
 }</string>
-                    </property>
-                    <property name="maximum">
-                     <number>100000</number>
-                    </property>
-                    <property name="singleStep">
-                     <number>10</number>
-                    </property>
-                   </widget>
+                      </property>
+                      <property name="maximum">
+                       <number>100000</number>
+                      </property>
+                      <property name="singleStep">
+                       <number>10</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
                   </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="6,3">
                   <item>
-                   <widget class="QLabel" name="label_9">
-                    <property name="styleSheet">
-                     <string notr="true">QLabel {
+                   <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="6,3">
+                    <item>
+                     <widget class="QLabel" name="label_9">
+                      <property name="styleSheet">
+                       <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 	background-color: rgb(40, 40, 40);
 }</string>
-                    </property>
-                    <property name="text">
-                     <string>child_chunk_size:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QSpinBox" name="parentretreiver_child_chunk_size">
-                    <property name="styleSheet">
-                     <string notr="true">QSpinBox {
+                      </property>
+                      <property name="text">
+                       <string>child_chunk_size:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QSpinBox" name="parentretreiver_child_chunk_size">
+                      <property name="styleSheet">
+                       <string notr="true">QSpinBox {
 	border: 1px solid rgb(184, 247, 185);
 	text-align: center;
 	color: White;
 }</string>
-                    </property>
-                    <property name="maximum">
-                     <number>100000</number>
-                    </property>
-                    <property name="singleStep">
-                     <number>10</number>
-                    </property>
-                   </widget>
+                      </property>
+                      <property name="maximum">
+                       <number>100000</number>
+                      </property>
+                      <property name="singleStep">
+                       <number>10</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
                   </item>
                  </layout>
-                </item>
-               </layout>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="summary_retriever">
-             <property name="styleSheet">
-              <string notr="true">QRadioButton {
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="summary_retriever">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton {
     color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
 }</string>
-             </property>
-             <property name="text">
-              <string>summary</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_13" stretch="1,21">
-             <item>
-              <spacer name="horizontalSpacer_8">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="text">
+               <string>summary</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widget_5" native="true">
+              <property name="styleSheet">
+               <string notr="true">QWidget {
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_13" stretch="1,19">
+               <property name="spacing">
+                <number>6</number>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
+               <property name="leftMargin">
+                <number>0</number>
                </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QGroupBox" name="groupBox_2">
-               <property name="styleSheet">
-                <string notr="true">QGroupBox {
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <spacer name="horizontalSpacer_8">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="groupBox_2">
+                 <property name="styleSheet">
+                  <string notr="true">QGroupBox {
 	border: 1px solid rgb(184, 247, 185);
 	border-radius: 5px;
 	background-color: rgb(40, 40, 40);
 	text-align: center;
 	color: White;
 }</string>
-               </property>
-               <property name="title">
-                <string/>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-               </property>
-               <layout class="QVBoxLayout" name="verticalLayout_9">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="6,3">
+                 </property>
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_9">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
                   <item>
-                   <widget class="QLabel" name="label_10">
-                    <property name="styleSheet">
-                     <string notr="true">QLabel {
+                   <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="6,3">
+                    <item>
+                     <widget class="QLabel" name="label_10">
+                      <property name="styleSheet">
+                       <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 	background-color: rgb(40, 40, 40);
 }</string>
-                    </property>
-                    <property name="text">
-                     <string>parent_chunk_size:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QSpinBox" name="summary_parent_chunk_size">
-                    <property name="styleSheet">
-                     <string notr="true">QSpinBox {
+                      </property>
+                      <property name="text">
+                       <string>parent_chunk_size:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QSpinBox" name="summary_parent_chunk_size">
+                      <property name="styleSheet">
+                       <string notr="true">QSpinBox {
 	border: 1px solid rgb(184, 247, 185);
 	text-align: center;
 	color: White;
 }</string>
-                    </property>
-                    <property name="maximum">
-                     <number>100000</number>
-                    </property>
-                    <property name="singleStep">
-                     <number>10</number>
-                    </property>
-                   </widget>
+                      </property>
+                      <property name="maximum">
+                       <number>100000</number>
+                      </property>
+                      <property name="singleStep">
+                       <number>10</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
                   </item>
                  </layout>
-                </item>
-               </layout>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="hypothetical_retriever">
-             <property name="styleSheet">
-              <string notr="true">QRadioButton {
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="hypothetical_retriever">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton {
     color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
 }</string>
-             </property>
-             <property name="text">
-              <string>hypothetical</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="1,21">
-             <item>
-              <spacer name="horizontalSpacer_9">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="text">
+               <string>hypothetical</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widget_6" native="true">
+              <property name="styleSheet">
+               <string notr="true">QWidget {
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="1,19">
+               <property name="leftMargin">
+                <number>0</number>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
+               <property name="topMargin">
+                <number>0</number>
                </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QGroupBox" name="groupBox_3">
-               <property name="styleSheet">
-                <string notr="true">QGroupBox {
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <spacer name="horizontalSpacer_9">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="groupBox_3">
+                 <property name="styleSheet">
+                  <string notr="true">QGroupBox {
 	border: 1px solid rgb(184, 247, 185);
 	border-radius: 5px;
 	background-color: rgb(40, 40, 40);
 	text-align: center;
 	color: White;
 }</string>
-               </property>
-               <property name="title">
-                <string/>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-               </property>
-               <layout class="QVBoxLayout" name="verticalLayout_10">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_16" stretch="6,3">
+                 </property>
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_10">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
                   <item>
-                   <widget class="QLabel" name="label_11">
-                    <property name="styleSheet">
-                     <string notr="true">QLabel {
+                   <layout class="QHBoxLayout" name="horizontalLayout_16" stretch="6,3">
+                    <item>
+                     <widget class="QLabel" name="label_11">
+                      <property name="styleSheet">
+                       <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 	background-color: rgb(40, 40, 40);
 }</string>
-                    </property>
-                    <property name="text">
-                     <string>parent_chunk_size:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QSpinBox" name="hyper_parent_chunk_size">
-                    <property name="styleSheet">
-                     <string notr="true">QSpinBox {
+                      </property>
+                      <property name="text">
+                       <string>parent_chunk_size:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QSpinBox" name="hyper_parent_chunk_size">
+                      <property name="styleSheet">
+                       <string notr="true">QSpinBox {
 	border: 1px solid rgb(184, 247, 185);
 	text-align: center;
 	color: White;
 }</string>
-                    </property>
-                    <property name="maximum">
-                     <number>100000</number>
-                    </property>
-                    <property name="singleStep">
-                     <number>10</number>
-                    </property>
-                   </widget>
+                      </property>
+                      <property name="maximum">
+                       <number>100000</number>
+                      </property>
+                      <property name="singleStep">
+                       <number>10</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
                   </item>
                  </layout>
-                </item>
-               </layout>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="granular_retriever">
-             <property name="styleSheet">
-              <string notr="true">QRadioButton {
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="granular_retriever">
+              <property name="styleSheet">
+               <string notr="true">QRadioButton {
     color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
 }</string>
-             </property>
-             <property name="text">
-              <string>granular</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_18" stretch="1,21">
-             <item>
-              <spacer name="horizontalSpacer_11">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="text">
+               <string>granular</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widget_7" native="true">
+              <property name="styleSheet">
+               <string notr="true">QWidget {
+	background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
+}</string>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_18" stretch="1,19">
+               <property name="leftMargin">
+                <number>0</number>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
+               <property name="topMargin">
+                <number>0</number>
                </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QGroupBox" name="groupBox_4">
-               <property name="styleSheet">
-                <string notr="true">QGroupBox {
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <spacer name="horizontalSpacer_11">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="groupBox_4">
+                 <property name="styleSheet">
+                  <string notr="true">QGroupBox {
 	border: 1px solid rgb(184, 247, 185);
 	border-radius: 5px;
 	background-color: rgb(40, 40, 40);
 	text-align: center;
 	color: White;
 }</string>
-               </property>
-               <property name="title">
-                <string/>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-               </property>
-               <layout class="QVBoxLayout" name="verticalLayout_11">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_19" stretch="6,3">
+                 </property>
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_11">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
                   <item>
-                   <widget class="QLabel" name="label_13">
-                    <property name="styleSheet">
-                     <string notr="true">QLabel {
+                   <layout class="QHBoxLayout" name="horizontalLayout_19" stretch="6,3">
+                    <item>
+                     <widget class="QLabel" name="label_13">
+                      <property name="styleSheet">
+                       <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 	background-color: rgb(40, 40, 40);
 }</string>
-                    </property>
-                    <property name="text">
-                     <string>chunk_size:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QSpinBox" name="hyper_parent_chunk_size_2">
-                    <property name="styleSheet">
-                     <string notr="true">QSpinBox {
+                      </property>
+                      <property name="text">
+                       <string>chunk_size:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QSpinBox" name="hyper_parent_chunk_size_2">
+                      <property name="styleSheet">
+                       <string notr="true">QSpinBox {
 	border: 1px solid rgb(184, 247, 185);
 	text-align: center;
 	color: White;
 }</string>
-                    </property>
-                    <property name="maximum">
-                     <number>100000</number>
-                    </property>
-                    <property name="singleStep">
-                     <number>10</number>
-                    </property>
-                   </widget>
+                      </property>
+                      <property name="maximum">
+                       <number>100000</number>
+                      </property>
+                      <property name="singleStep">
+                       <number>10</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
                   </item>
                  </layout>
-                </item>
-               </layout>
-              </widget>
-             </item>
-            </layout>
-           </item>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,6,1">
+           <property name="spacing">
+            <number>4</number>
+           </property>
            <item>
-            <spacer name="verticalSpacer_5">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,6,1">
-             <property name="spacing">
-              <number>4</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="label_6">
-               <property name="styleSheet">
-                <string notr="true">QLabel {
+            <widget class="QLabel" name="label_6">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 }</string>
-               </property>
-               <property name="text">
-                <string>Path: </string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="path">
-               <property name="styleSheet">
-                <string notr="true">QLabel {
+             </property>
+             <property name="text">
+              <string>Path: </string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="path">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="Load_btn">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-                 <horstretch>1</horstretch>
-                 <verstretch>1</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="Load_btn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>1</horstretch>
+               <verstretch>1</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton {
 	color: rgb(184, 247, 185);
     border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
     border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
@@ -1448,38 +1740,38 @@ QPushButton:pressed {
     background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
     border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
 }</string>
-               </property>
-               <property name="text">
-                <string>Load</string>
-               </property>
-               <property name="autoDefault">
-                <bool>false</bool>
-               </property>
-               <property name="flat">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
+             </property>
+             <property name="text">
+              <string>Load</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+             <property name="flat">
+              <bool>false</bool>
+             </property>
+            </widget>
            </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,4">
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,4">
-             <item>
-              <widget class="QLabel" name="label_7">
-               <property name="styleSheet">
-                <string notr="true">QLabel {
+            <widget class="QLabel" name="label_7">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 }</string>
-               </property>
-               <property name="text">
-                <string>Loading</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QProgressBar" name="Loading_bar">
-               <property name="styleSheet">
-                <string notr="true">QProgressBar {
+             </property>
+             <property name="text">
+              <string>Loading</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="Loading_bar">
+             <property name="styleSheet">
+              <string notr="true">QProgressBar {
 	border: 1px solid rgb(184, 247, 185);
 	border-radius: 5px;
 	background-color: rgb(40, 40, 40);
@@ -1490,28 +1782,26 @@ QProgressBar::chunk {
 	background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(50, 120, 50), stop:1 rgb(100,180,100));
 	border-radius: 2px;
 }</string>
-               </property>
-               <property name="value">
-                <number>0</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_4">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
              </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>236</width>
-               <height>178</height>
-              </size>
+             <property name="value">
+              <number>0</number>
              </property>
-            </spacer>
+            </widget>
            </item>
           </layout>
+         </item>
+         <item>
+          <spacer name="verticalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>236</width>
+             <height>34</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </widget>
