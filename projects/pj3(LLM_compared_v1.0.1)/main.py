@@ -110,6 +110,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.MAX_TOKENS = 128000
 
         self.local_llm = None
+        self.openai_llm = None
 
         #selected rag tech
         self.rag_indexing = None
@@ -121,6 +122,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.default_generator.setChecked(True)
 
         self.init_local_llm()
+        
 
     def init_local_llm(self):
         self.local_llm = ChatOpenAI(
@@ -129,6 +131,11 @@ class Window(QMainWindow, Ui_MainWindow):
             base_url="http://192.168.0.108:8000/v1",
             temperature=self.current_chat_room.m_temperature,
             # max_tokens = 6000
+        )
+    def init_openai_llm(self):
+        self.openai_llm = ChatOpenAI(
+            api_key=self.current_chat_room.m_api_key,
+            temperature=self.current_chat_room.m_temperature,
         )
 
     def create_default_generator(self):
@@ -143,7 +150,8 @@ class Window(QMainWindow, Ui_MainWindow):
         )
     def create_step_back_question_generator(self):
         return StepBackQuestionGenerator(
-            llm=self.local_llm
+            # llm=self.local_llm
+            llm=self.openai_llm
         )
 
     def create_default_retriever(self, path):
@@ -183,6 +191,7 @@ class Window(QMainWindow, Ui_MainWindow):
             QMessageBox.critical(self, "오류", "api key를 입력해주세요")
             return
         
+        self.init_openai_llm()
         path = QFileDialog.getExistingDirectory(self, "폴더 선택")
         
         retriever_map = {
@@ -621,18 +630,13 @@ class Window(QMainWindow, Ui_MainWindow):
     def default_llm(self, msg):
         response = None
 
-        # chat_model = ChatOpenAI(
-        #     api_key=self.current_chat_room.m_api_key,
-        #     temperature=self.current_chat_room.m_temperature,
-        # )
+        chat_model = ChatOpenAI(
+            api_key=self.current_chat_room.m_api_key,
+            temperature=self.current_chat_room.m_temperature,
+        )
 
         #Local LLM applied
-        chat_model = ChatOpenAI(
-            api_key="ai",
-            model="openai/gpt-oss-20b",
-            base_url="http://192.168.0.108:8000/v1",
-            temperature=self.current_chat_room.m_temperature
-        )
+        # chat_model = self.local_llm
 
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -773,8 +777,12 @@ class Window(QMainWindow, Ui_MainWindow):
         self.show_status_messages("Experiment chat is ")
 
     def rag_llm(self, msg):
-        if not self.current_chat_room.m_api_key or not self.worker:
+        if not self.current_chat_room.m_api_key:
             QMessageBox.critical(self, "오류", "api key를 입력해주세요")
+            return
+        
+        if not self.worker:
+            QMessageBox.critical(self, "오류", "벡터스토어가 없습니다")
             return
 
         generator_map = {
@@ -837,12 +845,12 @@ class Window(QMainWindow, Ui_MainWindow):
             rag_chain,
             self.get_session_history,
             input_messages_key="question",
-            history_messages_key="history"
+            history_messages_key="history",
         )
 
         answer = rag_history_chain.invoke(
             {"question": msg},
-            self.current_chat_room.experiment_config
+            self.current_chat_room.experiment_config,
         )
 
         if answer:

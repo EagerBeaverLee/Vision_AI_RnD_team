@@ -10,6 +10,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from PlainTextEdit import mPlainTextEdit
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -340,7 +341,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.input_text = QtWidgets.QPlainTextEdit(self.layoutWidget1)
+        # self.input_text = QtWidgets.QPlainTextEdit(self.layoutWidget1)
+        self.input_text = mPlainTextEdit(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -1032,6 +1034,8 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.input_text, self.default_txt)
         MainWindow.setTabOrder(self.default_txt, self.experiment_txt)
         MainWindow.setTabOrder(self.experiment_txt, self.tabWidget)
+
+        self.input_text.set_send_button(self.send_btn)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate

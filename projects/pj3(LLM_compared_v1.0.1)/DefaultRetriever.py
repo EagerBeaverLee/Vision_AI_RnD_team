@@ -63,7 +63,8 @@ class DefaultRetriever(QObject):
         try:
             files = os.listdir(self.folder_path)
             total_files = len(files)
-            save_vector = "./test_faiss_embedding"
+            # save_vector = "./test_faiss_embedding"
+            save_vector = "./faiss_index_kr"
 
             if total_files == 0:
                 self.error.emit("선택한 폴더에 파일이 없습니다.")
