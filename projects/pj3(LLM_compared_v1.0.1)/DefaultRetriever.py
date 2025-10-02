@@ -13,6 +13,7 @@ class DefaultRetriever(QObject):
     finished = pyqtSignal()
     progresses = pyqtSignal(int)
     error = pyqtSignal(str)
+    changeUi = pyqtSignal()
 
     def __init__(self, folder_path, api_key, parent=None):
         super().__init__(parent)
@@ -64,7 +65,7 @@ class DefaultRetriever(QObject):
             files = os.listdir(self.folder_path)
             total_files = len(files)
             # save_vector = "./test_faiss_embedding"
-            save_vector = "./faiss_index_kr"
+            save_vector = "./faiss_default"
 
             if total_files == 0:
                 self.error.emit("선택한 폴더에 파일이 없습니다.")
@@ -73,13 +74,13 @@ class DefaultRetriever(QObject):
             
             progress_step = 100 / total_files
 
-            # all_chunks = []
+            all_chunks = []
             for i, file_name in enumerate(files):
                 file_path = os.path.join(self.folder_path, file_name)
                 try:
                     loader = self.get_loader(file_path)
                     chunks = self.text_splitter.split_documents(loader.load())
-                    # all_chunks.extend(chunks)
+                    all_chunks.extend(chunks)
                     # if self.vector_db:
                     #     self.vector_db.add_documents(chunks)
                     # else:
@@ -99,6 +100,7 @@ class DefaultRetriever(QObject):
 
             self.progresses.emit(100)
             self.finished.emit()
+            self.changeUi.emit()
 
         except Exception as e:
             self.error.emit(f"임베딩 작업 중 치명적인 오류 발생: {e}")

@@ -10,7 +10,6 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from PlainTextEdit import mPlainTextEdit
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -341,8 +340,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        # self.input_text = QtWidgets.QPlainTextEdit(self.layoutWidget1)
-        self.input_text = mPlainTextEdit(self.layoutWidget1)
+        self.input_text = QtWidgets.QPlainTextEdit(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -483,11 +481,8 @@ class Ui_MainWindow(object):
 "}")
         self.label_5.setObjectName("label_5")
         self.horizontalLayout_4.addWidget(self.label_5)
-        self.line = QtWidgets.QFrame(self.Setting)
-        self.line.setFrameShape(QtWidgets.QFrame.HLine)
-        self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
-        self.line.setObjectName("line")
-        self.horizontalLayout_4.addWidget(self.line)
+        spacerItem8 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_4.addItem(spacerItem8)
         self.temp_val = QtWidgets.QLineEdit(self.Setting)
         self.temp_val.setMinimumSize(QtCore.QSize(30, 0))
         self.temp_val.setStyleSheet("QLineEdit {\n"
@@ -531,16 +526,14 @@ class Ui_MainWindow(object):
         self.temp_slider.setOrientation(QtCore.Qt.Horizontal)
         self.temp_slider.setObjectName("temp_slider")
         self.verticalLayout_2.addWidget(self.temp_slider)
-        spacerItem8 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout_2.addItem(spacerItem8)
+        spacerItem9 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_2.addItem(spacerItem9)
         self.verticalLayout_4.addLayout(self.verticalLayout_2)
         self.tabWidget.addTab(self.Setting, "")
         self.RAG = QtWidgets.QWidget()
         self.RAG.setObjectName("RAG")
-        self.verticalLayout_14 = QtWidgets.QVBoxLayout(self.RAG)
-        self.verticalLayout_14.setContentsMargins(20, 20, 20, 20)
-        self.verticalLayout_14.setSpacing(20)
-        self.verticalLayout_14.setObjectName("verticalLayout_14")
+        self.verticalLayout_16 = QtWidgets.QVBoxLayout(self.RAG)
+        self.verticalLayout_16.setObjectName("verticalLayout_16")
         self.groupBox_6 = QtWidgets.QGroupBox(self.RAG)
         self.groupBox_6.setStyleSheet("QGroupBox {\n"
 "    color: rgb(184, 247, 185);\n"
@@ -550,9 +543,11 @@ class Ui_MainWindow(object):
 "}")
         self.groupBox_6.setObjectName("groupBox_6")
         self.verticalLayout_13 = QtWidgets.QVBoxLayout(self.groupBox_6)
+        self.verticalLayout_13.setContentsMargins(9, 3, 9, 3)
+        self.verticalLayout_13.setSpacing(0)
         self.verticalLayout_13.setObjectName("verticalLayout_13")
-        spacerItem9 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout_13.addItem(spacerItem9)
+        spacerItem10 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_13.addItem(spacerItem10)
         self.widget_2 = QtWidgets.QWidget(self.groupBox_6)
         self.widget_2.setStyleSheet("QWidget{\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -562,8 +557,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_20.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_20.setSpacing(0)
         self.horizontalLayout_20.setObjectName("horizontalLayout_20")
-        spacerItem10 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_20.addItem(spacerItem10)
+        spacerItem11 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_20.addItem(spacerItem11)
         self.label_14 = QtWidgets.QLabel(self.widget_2)
         self.label_14.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
@@ -580,6 +575,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_20.addWidget(self.rag_transformation)
         self.verticalLayout_13.addWidget(self.widget_2)
         self.default_generator = QtWidgets.QRadioButton(self.groupBox_6)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.default_generator.sizePolicy().hasHeightForWidth())
+        self.default_generator.setSizePolicy(sizePolicy)
         self.default_generator.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -587,6 +587,11 @@ class Ui_MainWindow(object):
         self.default_generator.setObjectName("default_generator")
         self.verticalLayout_13.addWidget(self.default_generator)
         self.rewrite_generator = QtWidgets.QRadioButton(self.groupBox_6)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.rewrite_generator.sizePolicy().hasHeightForWidth())
+        self.rewrite_generator.setSizePolicy(sizePolicy)
         self.rewrite_generator.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -594,6 +599,11 @@ class Ui_MainWindow(object):
         self.rewrite_generator.setObjectName("rewrite_generator")
         self.verticalLayout_13.addWidget(self.rewrite_generator)
         self.multiple_generator = QtWidgets.QRadioButton(self.groupBox_6)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.multiple_generator.sizePolicy().hasHeightForWidth())
+        self.multiple_generator.setSizePolicy(sizePolicy)
         self.multiple_generator.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -601,6 +611,11 @@ class Ui_MainWindow(object):
         self.multiple_generator.setObjectName("multiple_generator")
         self.verticalLayout_13.addWidget(self.multiple_generator)
         self.step_back_generator = QtWidgets.QRadioButton(self.groupBox_6)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.step_back_generator.sizePolicy().hasHeightForWidth())
+        self.step_back_generator.setSizePolicy(sizePolicy)
         self.step_back_generator.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -609,11 +624,11 @@ class Ui_MainWindow(object):
         self.verticalLayout_13.addWidget(self.step_back_generator)
         self.verticalLayout_13.setStretch(0, 1)
         self.verticalLayout_13.setStretch(1, 1)
-        self.verticalLayout_13.setStretch(2, 4)
-        self.verticalLayout_13.setStretch(3, 4)
-        self.verticalLayout_13.setStretch(4, 4)
-        self.verticalLayout_13.setStretch(5, 4)
-        self.verticalLayout_14.addWidget(self.groupBox_6)
+        self.verticalLayout_13.setStretch(2, 3)
+        self.verticalLayout_13.setStretch(3, 3)
+        self.verticalLayout_13.setStretch(4, 3)
+        self.verticalLayout_13.setStretch(5, 3)
+        self.verticalLayout_16.addWidget(self.groupBox_6)
         self.groupBox_5 = QtWidgets.QGroupBox(self.RAG)
         self.groupBox_5.setStyleSheet("QGroupBox {\n"
 "    color: rgb(184, 247, 185);\n"
@@ -623,11 +638,11 @@ class Ui_MainWindow(object):
 "}")
         self.groupBox_5.setObjectName("groupBox_5")
         self.verticalLayout_12 = QtWidgets.QVBoxLayout(self.groupBox_5)
-        self.verticalLayout_12.setContentsMargins(-1, 5, -1, 9)
-        self.verticalLayout_12.setSpacing(6)
+        self.verticalLayout_12.setContentsMargins(-1, 3, -1, 3)
+        self.verticalLayout_12.setSpacing(0)
         self.verticalLayout_12.setObjectName("verticalLayout_12")
-        spacerItem11 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout_12.addItem(spacerItem11)
+        spacerItem12 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_12.addItem(spacerItem12)
         self.widget_3 = QtWidgets.QWidget(self.groupBox_5)
         self.widget_3.setStyleSheet("QWidget{\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -637,8 +652,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_17.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_17.setSpacing(0)
         self.horizontalLayout_17.setObjectName("horizontalLayout_17")
-        spacerItem12 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_17.addItem(spacerItem12)
+        spacerItem13 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_17.addItem(spacerItem13)
         self.label_12 = QtWidgets.QLabel(self.widget_3)
         self.label_12.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
@@ -653,6 +668,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_17.addWidget(self.rag_indexing)
         self.verticalLayout_12.addWidget(self.widget_3)
         self.default_retriever = QtWidgets.QRadioButton(self.groupBox_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.default_retriever.sizePolicy().hasHeightForWidth())
+        self.default_retriever.setSizePolicy(sizePolicy)
         self.default_retriever.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -660,6 +680,11 @@ class Ui_MainWindow(object):
         self.default_retriever.setObjectName("default_retriever")
         self.verticalLayout_12.addWidget(self.default_retriever)
         self.parent_retriever = QtWidgets.QRadioButton(self.groupBox_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.parent_retriever.sizePolicy().hasHeightForWidth())
+        self.parent_retriever.setSizePolicy(sizePolicy)
         self.parent_retriever.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -667,6 +692,11 @@ class Ui_MainWindow(object):
         self.parent_retriever.setObjectName("parent_retriever")
         self.verticalLayout_12.addWidget(self.parent_retriever)
         self.widget_4 = QtWidgets.QWidget(self.groupBox_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.widget_4.sizePolicy().hasHeightForWidth())
+        self.widget_4.setSizePolicy(sizePolicy)
         self.widget_4.setStyleSheet("QWidget {\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
 "}")
@@ -674,8 +704,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_10 = QtWidgets.QHBoxLayout(self.widget_4)
         self.horizontalLayout_10.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_10.setObjectName("horizontalLayout_10")
-        spacerItem13 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_10.addItem(spacerItem13)
+        spacerItem14 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_10.addItem(spacerItem14)
         self.groupBox = QtWidgets.QGroupBox(self.widget_4)
         self.groupBox.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
@@ -742,6 +772,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_10.setStretch(1, 19)
         self.verticalLayout_12.addWidget(self.widget_4)
         self.summary_retriever = QtWidgets.QRadioButton(self.groupBox_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.summary_retriever.sizePolicy().hasHeightForWidth())
+        self.summary_retriever.setSizePolicy(sizePolicy)
         self.summary_retriever.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -749,6 +784,11 @@ class Ui_MainWindow(object):
         self.summary_retriever.setObjectName("summary_retriever")
         self.verticalLayout_12.addWidget(self.summary_retriever)
         self.widget_5 = QtWidgets.QWidget(self.groupBox_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.widget_5.sizePolicy().hasHeightForWidth())
+        self.widget_5.setSizePolicy(sizePolicy)
         self.widget_5.setStyleSheet("QWidget {\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
 "}")
@@ -757,8 +797,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_13.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_13.setSpacing(6)
         self.horizontalLayout_13.setObjectName("horizontalLayout_13")
-        spacerItem14 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_13.addItem(spacerItem14)
+        spacerItem15 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_13.addItem(spacerItem15)
         self.groupBox_2 = QtWidgets.QGroupBox(self.widget_5)
         self.groupBox_2.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
@@ -801,6 +841,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_13.setStretch(1, 19)
         self.verticalLayout_12.addWidget(self.widget_5)
         self.hypothetical_retriever = QtWidgets.QRadioButton(self.groupBox_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.hypothetical_retriever.sizePolicy().hasHeightForWidth())
+        self.hypothetical_retriever.setSizePolicy(sizePolicy)
         self.hypothetical_retriever.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -808,6 +853,11 @@ class Ui_MainWindow(object):
         self.hypothetical_retriever.setObjectName("hypothetical_retriever")
         self.verticalLayout_12.addWidget(self.hypothetical_retriever)
         self.widget_6 = QtWidgets.QWidget(self.groupBox_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.widget_6.sizePolicy().hasHeightForWidth())
+        self.widget_6.setSizePolicy(sizePolicy)
         self.widget_6.setStyleSheet("QWidget {\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
 "}")
@@ -815,8 +865,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_15 = QtWidgets.QHBoxLayout(self.widget_6)
         self.horizontalLayout_15.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_15.setObjectName("horizontalLayout_15")
-        spacerItem15 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_15.addItem(spacerItem15)
+        spacerItem16 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_15.addItem(spacerItem16)
         self.groupBox_3 = QtWidgets.QGroupBox(self.widget_6)
         self.groupBox_3.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
@@ -841,16 +891,16 @@ class Ui_MainWindow(object):
 "}")
         self.label_11.setObjectName("label_11")
         self.horizontalLayout_16.addWidget(self.label_11)
-        self.hyper_parent_chunk_size = QtWidgets.QSpinBox(self.groupBox_3)
-        self.hyper_parent_chunk_size.setStyleSheet("QSpinBox {\n"
+        self.hypo_parent_chunk_size = QtWidgets.QSpinBox(self.groupBox_3)
+        self.hypo_parent_chunk_size.setStyleSheet("QSpinBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    text-align: center;\n"
 "    color: White;\n"
 "}")
-        self.hyper_parent_chunk_size.setMaximum(100000)
-        self.hyper_parent_chunk_size.setSingleStep(10)
-        self.hyper_parent_chunk_size.setObjectName("hyper_parent_chunk_size")
-        self.horizontalLayout_16.addWidget(self.hyper_parent_chunk_size)
+        self.hypo_parent_chunk_size.setMaximum(100000)
+        self.hypo_parent_chunk_size.setSingleStep(10)
+        self.hypo_parent_chunk_size.setObjectName("hypo_parent_chunk_size")
+        self.horizontalLayout_16.addWidget(self.hypo_parent_chunk_size)
         self.horizontalLayout_16.setStretch(0, 6)
         self.horizontalLayout_16.setStretch(1, 3)
         self.verticalLayout_10.addLayout(self.horizontalLayout_16)
@@ -859,6 +909,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_15.setStretch(1, 19)
         self.verticalLayout_12.addWidget(self.widget_6)
         self.granular_retriever = QtWidgets.QRadioButton(self.groupBox_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.granular_retriever.sizePolicy().hasHeightForWidth())
+        self.granular_retriever.setSizePolicy(sizePolicy)
         self.granular_retriever.setStyleSheet("QRadioButton {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -866,6 +921,11 @@ class Ui_MainWindow(object):
         self.granular_retriever.setObjectName("granular_retriever")
         self.verticalLayout_12.addWidget(self.granular_retriever)
         self.widget_7 = QtWidgets.QWidget(self.groupBox_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.widget_7.sizePolicy().hasHeightForWidth())
+        self.widget_7.setSizePolicy(sizePolicy)
         self.widget_7.setStyleSheet("QWidget {\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
 "}")
@@ -873,8 +933,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_18 = QtWidgets.QHBoxLayout(self.widget_7)
         self.horizontalLayout_18.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_18.setObjectName("horizontalLayout_18")
-        spacerItem16 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_18.addItem(spacerItem16)
+        spacerItem17 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_18.addItem(spacerItem17)
         self.groupBox_4 = QtWidgets.QGroupBox(self.widget_7)
         self.groupBox_4.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
@@ -899,16 +959,16 @@ class Ui_MainWindow(object):
 "}")
         self.label_13.setObjectName("label_13")
         self.horizontalLayout_19.addWidget(self.label_13)
-        self.hyper_parent_chunk_size_2 = QtWidgets.QSpinBox(self.groupBox_4)
-        self.hyper_parent_chunk_size_2.setStyleSheet("QSpinBox {\n"
+        self.granular_chunk_size = QtWidgets.QSpinBox(self.groupBox_4)
+        self.granular_chunk_size.setStyleSheet("QSpinBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    text-align: center;\n"
 "    color: White;\n"
 "}")
-        self.hyper_parent_chunk_size_2.setMaximum(100000)
-        self.hyper_parent_chunk_size_2.setSingleStep(10)
-        self.hyper_parent_chunk_size_2.setObjectName("hyper_parent_chunk_size_2")
-        self.horizontalLayout_19.addWidget(self.hyper_parent_chunk_size_2)
+        self.granular_chunk_size.setMaximum(100000)
+        self.granular_chunk_size.setSingleStep(10)
+        self.granular_chunk_size.setObjectName("granular_chunk_size")
+        self.horizontalLayout_19.addWidget(self.granular_chunk_size)
         self.horizontalLayout_19.setStretch(0, 6)
         self.horizontalLayout_19.setStretch(1, 3)
         self.verticalLayout_11.addLayout(self.horizontalLayout_19)
@@ -916,7 +976,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_18.setStretch(0, 1)
         self.horizontalLayout_18.setStretch(1, 19)
         self.verticalLayout_12.addWidget(self.widget_7)
-        self.verticalLayout_12.setStretch(0, 1)
+        self.verticalLayout_12.setStretch(0, 2)
         self.verticalLayout_12.setStretch(1, 1)
         self.verticalLayout_12.setStretch(2, 3)
         self.verticalLayout_12.setStretch(3, 3)
@@ -927,7 +987,214 @@ class Ui_MainWindow(object):
         self.verticalLayout_12.setStretch(8, 3)
         self.verticalLayout_12.setStretch(9, 3)
         self.verticalLayout_12.setStretch(10, 3)
-        self.verticalLayout_14.addWidget(self.groupBox_5)
+        self.verticalLayout_16.addWidget(self.groupBox_5)
+        self.groupBox_7 = QtWidgets.QGroupBox(self.RAG)
+        self.groupBox_7.setStyleSheet("QGroupBox {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
+"}")
+        self.groupBox_7.setObjectName("groupBox_7")
+        self.verticalLayout_15 = QtWidgets.QVBoxLayout(self.groupBox_7)
+        self.verticalLayout_15.setContentsMargins(-1, 3, -1, 3)
+        self.verticalLayout_15.setSpacing(0)
+        self.verticalLayout_15.setObjectName("verticalLayout_15")
+        spacerItem18 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_15.addItem(spacerItem18)
+        self.widget_8 = QtWidgets.QWidget(self.groupBox_7)
+        self.widget_8.setStyleSheet("QWidget{\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"}")
+        self.widget_8.setObjectName("widget_8")
+        self.horizontalLayout_21 = QtWidgets.QHBoxLayout(self.widget_8)
+        self.horizontalLayout_21.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_21.setSpacing(0)
+        self.horizontalLayout_21.setObjectName("horizontalLayout_21")
+        spacerItem19 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_21.addItem(spacerItem19)
+        self.label_15 = QtWidgets.QLabel(self.widget_8)
+        self.label_15.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"}")
+        self.label_15.setObjectName("label_15")
+        self.horizontalLayout_21.addWidget(self.label_15)
+        self.rag_post_processing = QtWidgets.QLabel(self.widget_8)
+        self.rag_post_processing.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"}")
+        self.rag_post_processing.setObjectName("rag_post_processing")
+        self.horizontalLayout_21.addWidget(self.rag_post_processing)
+        self.verticalLayout_15.addWidget(self.widget_8)
+        self.widget_10 = QtWidgets.QWidget(self.groupBox_7)
+        self.widget_10.setStyleSheet("QWidget {\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"}")
+        self.widget_10.setObjectName("widget_10")
+        self.horizontalLayout_24 = QtWidgets.QHBoxLayout(self.widget_10)
+        self.horizontalLayout_24.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_24.setObjectName("horizontalLayout_24")
+        self.similarity_post_processor = QtWidgets.QCheckBox(self.widget_10)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.similarity_post_processor.sizePolicy().hasHeightForWidth())
+        self.similarity_post_processor.setSizePolicy(sizePolicy)
+        self.similarity_post_processor.setStyleSheet("QCheckBox {\n"
+"    color: rgb(166, 217, 171);\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"}")
+        self.similarity_post_processor.setObjectName("similarity_post_processor")
+        self.horizontalLayout_24.addWidget(self.similarity_post_processor)
+        spacerItem20 = QtWidgets.QSpacerItem(78, 13, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_24.addItem(spacerItem20)
+        self.similarity_val = QtWidgets.QLineEdit(self.widget_10)
+        self.similarity_val.setMinimumSize(QtCore.QSize(30, 0))
+        self.similarity_val.setStyleSheet("QLineEdit {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"    border: 1px solid rgb(255,255,255);\n"
+"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
+"}\n"
+"QLineEdit:focus {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
+"}")
+        self.similarity_val.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.similarity_val.setObjectName("similarity_val")
+        self.horizontalLayout_24.addWidget(self.similarity_val)
+        self.horizontalLayout_24.setStretch(0, 3)
+        self.horizontalLayout_24.setStretch(1, 3)
+        self.horizontalLayout_24.setStretch(2, 1)
+        self.verticalLayout_15.addWidget(self.widget_10)
+        self.widget_11 = QtWidgets.QWidget(self.groupBox_7)
+        self.widget_11.setStyleSheet("QWidget {\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"}")
+        self.widget_11.setObjectName("widget_11")
+        self.horizontalLayout_25 = QtWidgets.QHBoxLayout(self.widget_11)
+        self.horizontalLayout_25.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_25.setObjectName("horizontalLayout_25")
+        spacerItem21 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_25.addItem(spacerItem21)
+        self.similarity_slider = QtWidgets.QSlider(self.widget_11)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.similarity_slider.sizePolicy().hasHeightForWidth())
+        self.similarity_slider.setSizePolicy(sizePolicy)
+        self.similarity_slider.setStyleSheet("QSlider::handle:horizontal{\n"
+"    background: rgb(166, 217, 171);\n"
+"    width: 20px;\n"
+"    margin: -5px 0;\n"
+"    border-radius: 10px;\n"
+"}\n"
+"QSlider::handle:horizontal:hover{\n"
+"    background: rgb(100,170,100);\n"
+"}\n"
+"QSlider::handle:horizontal:pressed{\n"
+"    background: rgb(50,120,50);\n"
+"}")
+        self.similarity_slider.setMaximum(100)
+        self.similarity_slider.setSingleStep(1)
+        self.similarity_slider.setProperty("value", 0)
+        self.similarity_slider.setOrientation(QtCore.Qt.Horizontal)
+        self.similarity_slider.setObjectName("similarity_slider")
+        self.horizontalLayout_25.addWidget(self.similarity_slider)
+        self.horizontalLayout_25.setStretch(0, 1)
+        self.horizontalLayout_25.setStretch(1, 19)
+        self.verticalLayout_15.addWidget(self.widget_11)
+        self.keywords = QtWidgets.QCheckBox(self.groupBox_7)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.keywords.sizePolicy().hasHeightForWidth())
+        self.keywords.setSizePolicy(sizePolicy)
+        self.keywords.setStyleSheet("QCheckBox {\n"
+"    color: rgb(166, 217, 171);\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"}")
+        self.keywords.setObjectName("keywords")
+        self.verticalLayout_15.addWidget(self.keywords)
+        self.widget_9 = QtWidgets.QWidget(self.groupBox_7)
+        self.widget_9.setStyleSheet("QWidget {\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"}")
+        self.widget_9.setObjectName("widget_9")
+        self.horizontalLayout_22 = QtWidgets.QHBoxLayout(self.widget_9)
+        self.horizontalLayout_22.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_22.setSpacing(6)
+        self.horizontalLayout_22.setObjectName("horizontalLayout_22")
+        spacerItem22 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_22.addItem(spacerItem22)
+        self.groupBox_8 = QtWidgets.QGroupBox(self.widget_9)
+        self.groupBox_8.setStyleSheet("QGroupBox {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    border-radius: 5px;\n"
+"    background-color: rgb(40, 40, 40);\n"
+"    text-align: center;\n"
+"    color: White;\n"
+"}")
+        self.groupBox_8.setTitle("")
+        self.groupBox_8.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+        self.groupBox_8.setObjectName("groupBox_8")
+        self.verticalLayout_14 = QtWidgets.QVBoxLayout(self.groupBox_8)
+        self.verticalLayout_14.setContentsMargins(-1, 0, -1, 0)
+        self.verticalLayout_14.setSpacing(0)
+        self.verticalLayout_14.setObjectName("verticalLayout_14")
+        self.horizontalLayout_23 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_23.setObjectName("horizontalLayout_23")
+        self.label_16 = QtWidgets.QLabel(self.groupBox_8)
+        self.label_16.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"    background-color: rgb(40, 40, 40);\n"
+"}")
+        self.label_16.setObjectName("label_16")
+        self.horizontalLayout_23.addWidget(self.label_16)
+        self.keyword_txt = QtWidgets.QLineEdit(self.groupBox_8)
+        self.keyword_txt.setStyleSheet("QLineEdit {\n"
+"    color: white;\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"    border: 1px solid rgb(255,255,255);\n"
+"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
+"}\n"
+"QLineEdit:focus {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
+"}")
+        self.keyword_txt.setObjectName("keyword_txt")
+        self.horizontalLayout_23.addWidget(self.keyword_txt)
+        self.horizontalLayout_23.setStretch(0, 1)
+        self.horizontalLayout_23.setStretch(1, 4)
+        self.verticalLayout_14.addLayout(self.horizontalLayout_23)
+        self.horizontalLayout_22.addWidget(self.groupBox_8)
+        self.horizontalLayout_22.setStretch(0, 1)
+        self.horizontalLayout_22.setStretch(1, 19)
+        self.verticalLayout_15.addWidget(self.widget_9)
+        self.reciprocal_rank_fusion = QtWidgets.QCheckBox(self.groupBox_7)
+        self.reciprocal_rank_fusion.setEnabled(False)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.reciprocal_rank_fusion.sizePolicy().hasHeightForWidth())
+        self.reciprocal_rank_fusion.setSizePolicy(sizePolicy)
+        self.reciprocal_rank_fusion.setStyleSheet("QCheckBox {\n"
+"    color: rgb(166, 217, 171);\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"}")
+        self.reciprocal_rank_fusion.setCheckable(True)
+        self.reciprocal_rank_fusion.setChecked(False)
+        self.reciprocal_rank_fusion.setObjectName("reciprocal_rank_fusion")
+        self.verticalLayout_15.addWidget(self.reciprocal_rank_fusion)
+        self.verticalLayout_15.setStretch(0, 1)
+        self.verticalLayout_15.setStretch(1, 1)
+        self.verticalLayout_15.setStretch(2, 3)
+        self.verticalLayout_15.setStretch(3, 3)
+        self.verticalLayout_15.setStretch(4, 3)
+        self.verticalLayout_15.setStretch(5, 3)
+        self.verticalLayout_16.addWidget(self.groupBox_7)
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setSpacing(4)
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
@@ -973,7 +1240,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.setStretch(0, 1)
         self.horizontalLayout_5.setStretch(1, 6)
         self.horizontalLayout_5.setStretch(2, 1)
-        self.verticalLayout_14.addLayout(self.horizontalLayout_5)
+        self.verticalLayout_16.addLayout(self.horizontalLayout_5)
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
         self.label_7 = QtWidgets.QLabel(self.RAG)
@@ -999,14 +1266,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6.addWidget(self.Loading_bar)
         self.horizontalLayout_6.setStretch(0, 1)
         self.horizontalLayout_6.setStretch(1, 4)
-        self.verticalLayout_14.addLayout(self.horizontalLayout_6)
-        spacerItem17 = QtWidgets.QSpacerItem(236, 34, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout_14.addItem(spacerItem17)
-        self.verticalLayout_14.setStretch(0, 10)
-        self.verticalLayout_14.setStretch(1, 30)
-        self.verticalLayout_14.setStretch(2, 2)
-        self.verticalLayout_14.setStretch(3, 2)
-        self.verticalLayout_14.setStretch(4, 6)
+        self.verticalLayout_16.addLayout(self.horizontalLayout_6)
+        spacerItem23 = QtWidgets.QSpacerItem(236, 34, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_16.addItem(spacerItem23)
         self.tabWidget.addTab(self.RAG, "")
         self.verticalLayout_8.addWidget(self.splitter)
         self.verticalLayout_8.setStretch(0, 1)
@@ -1034,8 +1296,6 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.input_text, self.default_txt)
         MainWindow.setTabOrder(self.default_txt, self.experiment_txt)
         MainWindow.setTabOrder(self.experiment_txt, self.tabWidget)
-
-        self.input_text.set_send_button(self.send_btn)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -1080,12 +1340,21 @@ class Ui_MainWindow(object):
         self.parent_retriever.setText(_translate("MainWindow", "ParentRetriverPipeline"))
         self.label_8.setText(_translate("MainWindow", "parent_chunk_size:"))
         self.label_9.setText(_translate("MainWindow", "child_chunk_size:"))
-        self.summary_retriever.setText(_translate("MainWindow", "summary"))
+        self.summary_retriever.setText(_translate("MainWindow", "Summary"))
         self.label_10.setText(_translate("MainWindow", "parent_chunk_size:"))
-        self.hypothetical_retriever.setText(_translate("MainWindow", "hypothetical"))
+        self.hypothetical_retriever.setText(_translate("MainWindow", "Hypothetical"))
         self.label_11.setText(_translate("MainWindow", "parent_chunk_size:"))
-        self.granular_retriever.setText(_translate("MainWindow", "granular"))
+        self.granular_retriever.setText(_translate("MainWindow", "Granular"))
         self.label_13.setText(_translate("MainWindow", "chunk_size:"))
+        self.groupBox_7.setTitle(_translate("MainWindow", "Retrieval Post-Processing"))
+        self.label_15.setText(_translate("MainWindow", "Applied: "))
+        self.rag_post_processing.setText(_translate("MainWindow", "TextLabel"))
+        self.similarity_post_processor.setText(_translate("MainWindow", "Similarity post-processor"))
+        self.similarity_val.setText(_translate("MainWindow", "0.00"))
+        self.keywords.setText(_translate("MainWindow", "Keywords"))
+        self.label_16.setText(_translate("MainWindow", "keywords"))
+        self.reciprocal_rank_fusion.setToolTip(_translate("MainWindow", "only Multiple Questions Generator can use this function"))
+        self.reciprocal_rank_fusion.setText(_translate("MainWindow", "Reciprocal Rank Fusion"))
         self.label_6.setText(_translate("MainWindow", "Path: "))
         self.Load_btn.setText(_translate("MainWindow", "Load"))
         self.label_7.setText(_translate("MainWindow", "Loading"))

@@ -19,10 +19,19 @@ from typing import List
 from pydantic import BaseModel, Field
 import os
 
+class InMemoryByteStoreWithId(InMemoryByteStore):
+    
+    def get(self, keys):
+        docs = super().get(keys)
+        for d in docs:
+            d.id = d.metadata.get("doc_id")
+        return docs
+
 class HypotheticalQuestionRetrieverPipeline(QObject):
     finished = pyqtSignal()
     progresses = pyqtSignal(int)
     error = pyqtSignal(str)
+    changeUi = pyqtSignal()
     
     def __init__(self,folder_path: str, openai_api_key: str, llm_model, 
                  parent_chunk_size: int = 3000, parent=None):
@@ -32,10 +41,13 @@ class HypotheticalQuestionRetrieverPipeline(QObject):
         self.parent_splitter = RecursiveCharacterTextSplitter(chunk_size=parent_chunk_size)
         self.embedding_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
 
-        self.dummy_doc = Document(page_content="dummy")
-        self.dummy_doc_id = "DUMMY_DOC"  # 임의의 doc_id 지정
-        self.dummy_doc.metadata = {"id": self.dummy_doc_id}
+        # self.dummy_doc = Document(page_content="dummy")
+        # self.dummy_doc_id = "DUMMY_DOC"  # 임의의 doc_id 지정
+        # self.dummy_doc.metadata = {"id": self.dummy_doc_id}
         
+        self.dummy_doc_id = "DUMMY_DOC"
+        self.dummy_doc = Document(page_content="dummy", metadata={"id": self.dummy_doc_id}, id=self.dummy_doc_id) ##revised!!
+
         #When using FAISS DB
         self.hypothetical_question_collection = FAISS.from_documents([self.dummy_doc], self.embedding_model)
 
@@ -125,7 +137,12 @@ class HypotheticalQuestionRetrieverPipeline(QObject):
 
         def hypotheticalQs_chunk(coarse_chunk, coarse_chunk_id):
             hypothetical_questions = self.hypothetical_questions_chain.invoke(coarse_chunk)
-            return [Document(page_content = question, metadata = {self.doc_key: coarse_chunk_id}) for question in hypothetical_questions]
+            return [Document(
+                page_content = question,
+                metadata = {self.doc_key: coarse_chunk_id, "source": coarse_chunk.metadata.get("source")},
+                id = str(uuid.uuid4()),
+                )
+                for question in hypothetical_questions]
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             all_documents = []
@@ -161,9 +178,15 @@ class HypotheticalQuestionRetrieverPipeline(QObject):
         #Adding summaries to vectorstore    
         # self.retriever.vectorstore.add_documents(i for i in all_documents)
         self.retriever.vectorstore.add_documents(all_documents)
+
+        for chunk, chunk_id in zip(self.coarse_chunks, self.coarse_chunks_ids):
+            chunk.metadata[self.doc_key] = chunk_id
+            chunk.id = chunk_id
+
         #Adding coarse_chunks to docstore along with IDs
         self.retriever.docstore.mset(list(zip(self.coarse_chunks_ids, self.coarse_chunks)))
         self.finished.emit()
+        self.changeUi.emit()
         return all_documents
  
     def format_docs(self, docs):

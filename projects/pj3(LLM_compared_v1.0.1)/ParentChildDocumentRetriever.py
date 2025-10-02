@@ -1,7 +1,7 @@
 ###############################
 ### ParentDocumentRetriever ###
 ###############################
-import os
+import os, uuid
 from PyQt5.QtCore import pyqtSignal, QObject
 
 from langchain.retrievers import ParentDocumentRetriever
@@ -19,6 +19,7 @@ class ParentRetriverPipeline(QObject):
     finished = pyqtSignal()
     progresses = pyqtSignal(int)
     error = pyqtSignal(str)
+    changeUi = pyqtSignal()
 
     def __init__(self, folder_path: str, openai_api_key: str,
                 parent_chunk_size: int = 3000, child_chunk_size: int = 500, parent=None):
@@ -81,9 +82,33 @@ class ParentRetriverPipeline(QObject):
         return loader_class(filename)
 
     def add_document(self, loader):
+        # docs = loader.load()
+        # self.retriever.add_documents(docs, ids=None)
+        # print(f"Ingested chunks created by {loader}")
+
         docs = loader.load()
-        self.retriever.add_documents(docs, ids=None)
-        print(f"Ingested chunks created by {loader}")
+    
+        parent_docs = self.parent_splitter.split_documents(docs)
+        all_child_docs = []
+    
+        for parent_doc in parent_docs:
+            parent_id = f"parent-{uuid.uuid4().hex}"
+            parent_doc.metadata["doc_id"] = parent_id
+            parent_doc.id = parent_id
+    
+            # child split
+            child_docs = self.child_splitter.split_documents([parent_doc])
+            for child_doc in child_docs:
+                child_doc.metadata["parent_doc_id"] = parent_id
+    
+            all_child_docs.extend(child_docs)
+    
+        # 한 번에 vectorstore에 저장
+        self.retriever.vectorstore.add_documents(all_child_docs)
+    
+        # parent_doc은 docstore에 한 번에 저장
+        self.retriever.docstore.mset([(doc.metadata["doc_id"], doc) for doc in parent_docs])
+
 
     def run(self):      # db_reset: bool = True):
         """Load all documents from a folder into the retriever pipeline"""
@@ -110,12 +135,14 @@ class ParentRetriverPipeline(QObject):
 
         self.progresses.emit(100)
         self.finished.emit()
+        self.changeUi.emit()
     
     def format_docs(self, docs):
         """Format retrieved docs into a single string."""
         return "\n\n".join(doc.page_content for doc in docs)
     
     def copy_retriever(self):
+        self.retriever.get_relevant_documents
         return self.retriever
 
     def query(self, question: str) -> str:

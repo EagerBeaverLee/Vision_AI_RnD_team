@@ -23,6 +23,7 @@ class SummaryDocumentRetrieverPipeline(QObject):
     finished = pyqtSignal()
     progresses = pyqtSignal(int)
     error = pyqtSignal(str)
+    changeUi = pyqtSignal()
 
     def __init__(self, folder_path, openai_api_key: str, llm_model, 
                  parent_chunk_size: int = 3000, parent=None):
@@ -117,7 +118,10 @@ class SummaryDocumentRetrieverPipeline(QObject):
 
         def summarize_chunk(coarse_chunk, coarse_chunk_id):
             summary_text = self.summarization_chain.invoke(coarse_chunk)
-            return Document(page_content = summary_text, metadata = {self.doc_key: coarse_chunk_id})
+            return Document(
+                id=coarse_chunk_id,
+                page_content = summary_text,
+                metadata = {self.doc_key: coarse_chunk_id})
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             results = []
@@ -147,10 +151,16 @@ class SummaryDocumentRetrieverPipeline(QObject):
         
         #Adding summaries to vectorstore    
         self.retriever.vectorstore.add_documents(results)
+
+        #coarse_chunk에도 id추가 후 docstore에 밀어넣기 # NEW 새로 추가된 코드
+        for chunk, chunk_id in zip(self.coarse_chunks, self.coarse_chunks_ids): #NEW line
+            chunk.id = chunk_id #NEW line
+            chunk.metadata[self.doc_key] = chunk_id #NEW line
         
         #Adding coarse_chunks to docstore along with IDs
         self.retriever.docstore.mset(list(zip(self.coarse_chunks_ids, self.coarse_chunks)))
         self.finished.emit()
+        self.changeUi.emit()
         return results
  
     def format_docs(self, docs):
@@ -160,6 +170,9 @@ class SummaryDocumentRetrieverPipeline(QObject):
     def query(self, question: str) -> str:
         retrieved_summary_doc = self.retriever.invoke(question)
         return retrieved_summary_doc #self.format_docs(retrieved_summary_doc)
+    
+    def copy_retriever(self):
+        return self.retriever
     
 
 ## 사용 예제

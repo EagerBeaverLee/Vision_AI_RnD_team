@@ -5,7 +5,8 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from DocumentPostProcessor_by_Scores_Keywords import DocumentPostProcessor
 # from langchain_together.chat_models import ChatTogether
 import os
 from dotenv import load_dotenv
@@ -59,16 +60,22 @@ class RewriteRetrieveReadQuestionGenerator:
         res = self.rewriter_chain.invoke(question)
         return res
 
-    def build_rag_chain(self, prompt, retriever = None):
+    def build_rag_chain(self, prompt, retriever = None, score_threshold: float | None = None, required_keywords: set[str] | None = None, isRRF = False):
         try:
             if not retriever:
                 raise ValueError("Retriever is required to build RAG chain.")
-            
+            postprocessing = DocumentPostProcessor(retriever)
+
+            print(score_threshold)
+            print(required_keywords)
+
             rewrite_retrieve_read_rag_chain = (
                 {
-                    "context": {"question": RunnablePassthrough()} | self.rewriter_chain | retriever,
+                    # "context": {"question": RunnablePassthrough()} | self.rewriter_chain | retriever,
+                    "context": {"question": RunnablePassthrough()} | self.rewriter_chain | RunnableLambda(lambda x : postprocessing.post_processor(x, score_threshold, required_keywords)),
                     "question": RunnablePassthrough(),
                 }
+                | RunnableLambda(self.print_log)
                 | prompt
                 # | self.rag_prompt
                 | self.llm
@@ -78,6 +85,10 @@ class RewriteRetrieveReadQuestionGenerator:
         except Exception as e:
             print(f"Error while building rewrite-retrieve-read RAG chain: {e}")
             return None
+        
+    def print_log(self, val):
+        print(val)
+        return val
 
     def generate_answer(self, user_question: str, retriever=None):
         try:

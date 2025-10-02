@@ -7,7 +7,9 @@ from typing import List
 from langchain_core.output_parsers import BaseOutputParser
 from langchain_core.output_parsers import StrOutputParser
 from pydantic import BaseModel, Field
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from DocumentPostProcessor_by_Scores_Keywords import DocumentPostProcessor
+from Reciprocal_Rank_Fusion_Post_Processing import ReciprocalRankFusionClass
 import os
 from dotenv import load_dotenv
 # from langchain_together.chat_models import ChatTogether
@@ -81,25 +83,43 @@ class MultipleQuestionGenerator:
         except Exception as e:
             print(f"Error while building multi_query_generator: {e}")  
     
-    def build_rag_chain(self, prompt, retriever = None):
+    def build_rag_chain(self, prompt, retriever = None, score_threshold: float | None = None, required_keywords: set[str] | None = None, isRRF = False):
         try:
             if not retriever:
                 raise ValueError("Retriever is required to build RAG chain.")
             
-            multiple_questions_rag_chain = (
-                {
-                    "context": {"question": RunnablePassthrough()} | self.multi_query_retriever(retriever),
-                    "question": RunnablePassthrough(),
-                }
-                # | self.rag_prompt
-                | prompt
-                | self.llm
-                )
-            return multiple_questions_rag_chain
+            if isRRF:
+                print("RRF is worked")
+                return ReciprocalRankFusionClass(self.llm, self.multi_query_gen_chain).build_RRF_rag_chain(retriever)
+            else:            
+                print(score_threshold)
+                print(required_keywords)
+                postprocessing = DocumentPostProcessor(retriever)
+                
+                multiple_questions_rag_chain = (
+                    {
+                        "context": {"question": RunnablePassthrough()} | self.multi_query_retriever(postprocessing.get_threshold_retriver(score_threshold))
+                        | RunnableLambda(lambda x: postprocessing._filter_by_keywords(x, required_keywords)),
+                        "question": RunnablePassthrough(),
+                    }
+                    # | self.rag_prompt
+                    | RunnableLambda(self.print)
+                    | RunnableLambda(self.print_log)
+                    | prompt
+                    | self.llm
+                    )
+                return multiple_questions_rag_chain
 
         except Exception as e:
             print(f"Error while building multiple question RAG chain: {e}")
             return None
+    def print(self, v):
+        print("=================")
+        return v
+    
+    def print_log(self, val):
+        print(val)
+        return val
 
     def generate_answer(self, user_question: str, retriever=None):
         try:

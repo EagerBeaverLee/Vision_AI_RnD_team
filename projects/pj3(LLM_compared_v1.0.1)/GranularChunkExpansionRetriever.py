@@ -14,6 +14,7 @@ class GranularChunkExpansionRetriverPipeline(QObject):
     finished = pyqtSignal()
     progresses = pyqtSignal(int)
     error = pyqtSignal(str)
+    changeUi = pyqtSignal()
 
     def __init__(self,folder_path: str, openai_api_key: str, granular_chunk_size: int = 500, parent=None):
         super().__init__(parent)
@@ -103,10 +104,17 @@ class GranularChunkExpansionRetriverPipeline(QObject):
                                 expanded_chunk_text += "\n"
                             
                             expanded_chunk_id = str(uuid.uuid4())
-                            expanded_chunk_doc = Document(page_content=expanded_chunk_text)
+                            
+                            expanded_chunk_doc = Document(
+                                id=expanded_chunk_id,
+                                page_content=expanded_chunk_text,
+                                metadata={}
+                            )
                     
-                            expanded_chunk_store_item = (expanded_chunk_id, expanded_chunk_doc)
-                            expanded_chunk_store_items.append(expanded_chunk_store_item)
+                            # expanded_chunk_store_item = (expanded_chunk_id, expanded_chunk_doc)
+                            # expanded_chunk_store_items.append(expanded_chunk_store_item)
+                            
+                            expanded_chunk_store_items.append((expanded_chunk_id, expanded_chunk_doc)) #NEW 새로추가된 수정된 코드
                     
                             granular_chunk.metadata[self.doc_key] = expanded_chunk_id # link each granular chunk to its related expanded chunk 
                         except Exception as e:
@@ -127,6 +135,7 @@ class GranularChunkExpansionRetriverPipeline(QObject):
 
         self.progresses.emit(100)
         self.finished.emit()
+        self.changeUi.emit()
     
     def format_docs(self, docs):
         """Format retrieved docs into a single string."""

@@ -4,6 +4,7 @@
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda
+from DocumentPostProcessor_by_Scores_Keywords import DocumentPostProcessor
 import os, re
 from dotenv import load_dotenv
 # from langchain_together.chat_models import ChatTogether
@@ -54,24 +55,34 @@ class StepBackQuestionGenerator:
     def init_chains(self):
         self.stepback_chain = self.step_prompt | self.llm | StrOutputParser()
 
-    def build_rag_chain(self, prompt, retriever = None, k=2):
-
+    def build_rag_chain(self, prompt, retriever = None, score_threshold: float | None = None, required_keywords: set[str] | None = None, isRRF = False):
+        k=2
         system_message_prompt = prompt.messages[0]
         template_string = system_message_prompt.prompt.template
         extracted_text = template_string.split('\n')[0].strip()
+
+        print(score_threshold)
+        print(required_keywords)
 
         try:
             if not retriever:
                 raise ValueError("Retriever is required to build RAG chain.")
             
+            postprocessing = DocumentPostProcessor(retriever)
+
+            print(score_threshold)
+            print(required_keywords)
+
             step_back_question_rag_chain = (
                 RunnablePassthrough.assign(
                     step_back_question = self.stepback_chain
                 )
                 |RunnableParallel(
                     question = RunnableLambda(lambda x: x["question"]),
-                    original_docs = RunnableLambda(lambda x: retriever.invoke(x["question"])[:k]),
-                    step_back_docs = RunnableLambda(lambda x: retriever.invoke(x["step_back_question"])[:k]),
+                    # original_docs = RunnableLambda(lambda x: retriever.invoke(x["question"])[:k]),
+                    # step_back_docs = RunnableLambda(lambda x: retriever.invoke(x["step_back_question"])[:k]),
+                    original_docs = RunnableLambda(lambda x: postprocessing.post_processor(x["question"], score_threshold, required_keywords)[:k]),
+                    step_back_docs = RunnableLambda(lambda x: postprocessing.post_processor(x["step_back_question"], score_threshold, required_keywords)[:k]),
                     user_prompt = RunnableLambda(lambda x: extracted_text)
                 )
                 | RunnableLambda(self.print_log)
