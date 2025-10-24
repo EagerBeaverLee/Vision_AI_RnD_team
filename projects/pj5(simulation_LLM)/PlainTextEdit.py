@@ -13,7 +13,7 @@ class mPlainTextEdit(QPlainTextEdit):
 
     def keyPressEvent(self, event):
         # Enter 키가 눌렸고, Shift 키가 함께 눌리지 않았다면
-        if (event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter) and not (event.modifiers() & Qt.ShiftModifier):
+        if (event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)) and not (event.modifiers() & Qt.KeyboardModifier.ShiftModifier):
             if self._send_button: # send_button이 설정되어 있다면
                 self._send_button.click() # send_button 클릭 시뮬레이션
                 # self.clear() # 메시지 전송 후 입력 필드 비우기 (선택 사항)

@@ -7,7 +7,7 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-
+from PlainTextEdit import mPlainTextEdit
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -19,267 +19,19 @@ class Ui_MainWindow(object):
 "    background-color: rgb(20, 20, 20); /* 원하는 색상으로 변경 */\n"
 "}")
         self.centralwidget.setObjectName("centralwidget")
-        self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.centralwidget)
-        self.verticalLayout_8.setObjectName("verticalLayout_8")
-        self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-        self.left_split_btn = QtWidgets.QPushButton(parent=self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.left_split_btn.sizePolicy().hasHeightForWidth())
-        self.left_split_btn.setSizePolicy(sizePolicy)
-        self.left_split_btn.setMinimumSize(QtCore.QSize(20, 20))
-        self.left_split_btn.setMaximumSize(QtCore.QSize(20, 20))
-        self.left_split_btn.setStyleSheet("QPushButton {\n"
-"    color: rgb(184, 247, 185);\n"
-"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
-"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
-"}\n"
-"QPushButton:hover {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
-"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
-"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
-"}")
-        self.left_split_btn.setObjectName("left_split_btn")
-        self.horizontalLayout_3.addWidget(self.left_split_btn)
-        spacerItem = QtWidgets.QSpacerItem(68, 17, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_3.addItem(spacerItem)
-        self.right_split_btn = QtWidgets.QPushButton(parent=self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.right_split_btn.sizePolicy().hasHeightForWidth())
-        self.right_split_btn.setSizePolicy(sizePolicy)
-        self.right_split_btn.setMinimumSize(QtCore.QSize(20, 20))
-        self.right_split_btn.setMaximumSize(QtCore.QSize(20, 20))
-        self.right_split_btn.setStyleSheet("QPushButton {\n"
-"    color: rgb(184, 247, 185);\n"
-"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
-"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
-"}\n"
-"QPushButton:hover {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
-"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
-"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
-"}")
-        self.right_split_btn.setObjectName("right_split_btn")
-        self.horizontalLayout_3.addWidget(self.right_split_btn)
-        self.horizontalLayout_3.setStretch(0, 1)
-        self.horizontalLayout_3.setStretch(1, 30)
-        self.horizontalLayout_3.setStretch(2, 1)
-        self.verticalLayout_8.addLayout(self.horizontalLayout_3)
-        self.splitter = QtWidgets.QSplitter(parent=self.centralwidget)
-        self.splitter.setOrientation(QtCore.Qt.Orientation.Horizontal)
-        self.splitter.setObjectName("splitter")
-        self.layoutWidget = QtWidgets.QWidget(parent=self.splitter)
-        self.layoutWidget.setObjectName("layoutWidget")
-        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.layoutWidget)
-        self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout_3.setObjectName("verticalLayout_3")
-        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_2.setSpacing(1)
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.centralwidget)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        spacerItem1 = QtWidgets.QSpacerItem(0, 18, QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_2.addItem(spacerItem1)
-        self.new_chat_btn = QtWidgets.QPushButton(parent=self.layoutWidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Ignored)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.new_chat_btn.sizePolicy().hasHeightForWidth())
-        self.new_chat_btn.setSizePolicy(sizePolicy)
-        self.new_chat_btn.setMinimumSize(QtCore.QSize(0, 0))
-        self.new_chat_btn.setMaximumSize(QtCore.QSize(21, 21))
-        self.new_chat_btn.setStyleSheet("QPushButton {\n"
-"    color: rgb(184, 247, 185);\n"
-"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
-"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
-"}\n"
-"QPushButton:hover {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
-"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
-"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
-"}")
-        self.new_chat_btn.setObjectName("new_chat_btn")
-        self.horizontalLayout_2.addWidget(self.new_chat_btn)
-        self.del_chat_btn = QtWidgets.QPushButton(parent=self.layoutWidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Ignored)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.del_chat_btn.sizePolicy().hasHeightForWidth())
-        self.del_chat_btn.setSizePolicy(sizePolicy)
-        self.del_chat_btn.setMinimumSize(QtCore.QSize(0, 0))
-        self.del_chat_btn.setMaximumSize(QtCore.QSize(20, 20))
-        self.del_chat_btn.setStyleSheet("QPushButton {\n"
-"    color: rgb(184, 247, 185);\n"
-"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
-"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
-"}\n"
-"QPushButton:hover {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
-"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
-"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
-"}")
-        self.del_chat_btn.setObjectName("del_chat_btn")
-        self.horizontalLayout_2.addWidget(self.del_chat_btn)
-        self.horizontalLayout_2.setStretch(0, 1)
-        self.horizontalLayout_2.setStretch(1, 10)
-        self.horizontalLayout_2.setStretch(2, 10)
-        self.verticalLayout_3.addLayout(self.horizontalLayout_2)
-        self.chat_room_table = QtWidgets.QTableWidget(parent=self.layoutWidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chat_room_table.sizePolicy().hasHeightForWidth())
-        self.chat_room_table.setSizePolicy(sizePolicy)
-        self.chat_room_table.setMinimumSize(QtCore.QSize(0, 0))
-        self.chat_room_table.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.DefaultContextMenu)
-        self.chat_room_table.setLayoutDirection(QtCore.Qt.LayoutDirection.LeftToRight)
-        self.chat_room_table.setStyleSheet("QTableWidget{\n"
-"    color: rgb(166, 217, 171);\n"
-"    border: 1px solid white;\n"
-"    background-color: rgb(40, 40, 40);\n"
-"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
-"}\n"
-"QHeaderView::section{\n"
-"    background-color: rgb(40,40,40);\n"
-"    color: rgb(166, 217, 171);\n"
-"    border: 1px solid rgb(40,40,40); /* 드롭다운 목록 테두리 (선택 사항) */\n"
-"    border-bottom: 1px solid rgb(166, 217, 171);\n"
-"}\n"
-"QTableWidget::item{\n"
-"    border-top: 1px solid rgb(166, 217, 171);\n"
-"    border-bottom: 1px solid rgb(166, 217, 171);\n"
-"}\n"
-"QTableWidget::item:selected{\n"
-"    color: white;\n"
-"    background-color: rgb(0,70,0); /* 항목 선택 시 배경색 */\n"
-"    border: 1px solid rgb(166, 217, 171); /* 드롭다운 목록 테두리 (선택 사항) */\n"
-"}\n"
-"/* QTableWidget 내에 생성되는 편집기 위젯(QLineEdit)의 스타일 */\n"
-"QTableWidget QLineEdit {\n"
-"    color: white;\n"
-"}\n"
-"QTableWidget:focus {    /*테이블 선택시 테두리 색깔*/\n"
-"    border: 1px solid rgb(184, 247, 185);\n"
-"}")
-        self.chat_room_table.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
-        self.chat_room_table.setMidLineWidth(0)
-        self.chat_room_table.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
-        self.chat_room_table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-        self.chat_room_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        self.chat_room_table.setObjectName("chat_room_table")
-        self.chat_room_table.setColumnCount(1)
-        self.chat_room_table.setRowCount(1)
-        item = QtWidgets.QTableWidgetItem()
-        self.chat_room_table.setVerticalHeaderItem(0, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.chat_room_table.setHorizontalHeaderItem(0, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.chat_room_table.setItem(0, 0, item)
-        self.chat_room_table.horizontalHeader().setVisible(True)
-        self.chat_room_table.horizontalHeader().setCascadingSectionResizes(False)
-        self.chat_room_table.horizontalHeader().setDefaultSectionSize(100)
-        self.chat_room_table.horizontalHeader().setHighlightSections(True)
-        self.chat_room_table.horizontalHeader().setSortIndicatorShown(False)
-        self.chat_room_table.horizontalHeader().setStretchLastSection(True)
-        self.chat_room_table.verticalHeader().setVisible(False)
-        self.chat_room_table.verticalHeader().setCascadingSectionResizes(False)
-        self.chat_room_table.verticalHeader().setDefaultSectionSize(30)
-        self.verticalLayout_3.addWidget(self.chat_room_table)
-        self.verticalLayout_3.setStretch(0, 1)
-        self.verticalLayout_3.setStretch(1, 26)
-        self.layoutWidget1 = QtWidgets.QWidget(parent=self.splitter)
-        self.layoutWidget1.setObjectName("layoutWidget1")
-        self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.layoutWidget1)
-        self.verticalLayout_7.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout_7.setObjectName("verticalLayout_7")
-        self.horizontalLayout_9 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_9.setObjectName("horizontalLayout_9")
+        self.webEngineView = QtWebEngineWidgets.QWebEngineView(parent=self.centralwidget)
+        self.webEngineView.setUrl(QtCore.QUrl("about:blank"))
+        self.webEngineView.setObjectName("webEngineView")
+        self.horizontalLayout_2.addWidget(self.webEngineView)
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setObjectName("verticalLayout")
-        self.horizontalLayout_7 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_7.setObjectName("horizontalLayout_7")
-        self.label = QtWidgets.QLabel(parent=self.layoutWidget1)
-        font = QtGui.QFont()
-        font.setBold(True)
-        self.label.setFont(font)
-        self.label.setStyleSheet("QLabel {\n"
-"    color: rgb(166, 217, 171);\n"
-"}")
-        self.label.setScaledContents(False)
-        self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.label.setObjectName("label")
-        self.horizontalLayout_7.addWidget(self.label)
-        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_7.addItem(spacerItem2)
-        self.default_token_bar = QtWidgets.QProgressBar(parent=self.layoutWidget1)
-        self.default_token_bar.setStyleSheet("QProgressBar {\n"
-"    border: 1px solid rgb(184, 247, 185);\n"
-"    border-radius: 5px;\n"
-"    background-color: rgb(40, 40, 40);\n"
-"    text-align: center;\n"
-"    color: White;\n"
-"}\n"
-"QProgressBar::chunk {\n"
-"    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(50, 120, 50), stop:1 rgb(100,180,100));\n"
-"    border-radius: 2px;\n"
-"}")
-        self.default_token_bar.setProperty("value", 20)
-        self.default_token_bar.setObjectName("default_token_bar")
-        self.horizontalLayout_7.addWidget(self.default_token_bar)
-        self.verticalLayout.addLayout(self.horizontalLayout_7)
-        self.default_txt = QtWidgets.QTextEdit(parent=self.layoutWidget1)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.default_txt.sizePolicy().hasHeightForWidth())
-        self.default_txt.setSizePolicy(sizePolicy)
-        self.default_txt.setMinimumSize(QtCore.QSize(300, 0))
-        self.default_txt.setStyleSheet("QTextEdit {\n"
-"    color: white;\n"
-"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
-"    border: 1px solid rgb(255,255,255);\n"
-"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
-"}\n"
-"QTextEdit:focus {\n"
-"    border: 1px solid rgb(184, 247, 185);\n"
-"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
-"}")
-        self.default_txt.setInputMethodHints(QtCore.Qt.InputMethodHint.ImhMultiLine)
-        self.default_txt.setReadOnly(True)
-        self.default_txt.setObjectName("default_txt")
-        self.verticalLayout.addWidget(self.default_txt)
-        self.horizontalLayout_9.addLayout(self.verticalLayout)
         self.verticalLayout_5 = QtWidgets.QVBoxLayout()
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
-        self.label_2 = QtWidgets.QLabel(parent=self.layoutWidget1)
+        self.label_2 = QtWidgets.QLabel(parent=self.centralwidget)
         font = QtGui.QFont()
         font.setBold(True)
         self.label_2.setFont(font)
@@ -289,9 +41,9 @@ class Ui_MainWindow(object):
         self.label_2.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.label_2.setObjectName("label_2")
         self.horizontalLayout_8.addWidget(self.label_2)
-        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_8.addItem(spacerItem3)
-        self.experiment_token_bar = QtWidgets.QProgressBar(parent=self.layoutWidget1)
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_8.addItem(spacerItem)
+        self.experiment_token_bar = QtWidgets.QProgressBar(parent=self.centralwidget)
         self.experiment_token_bar.setStyleSheet("QProgressBar {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    border-radius: 5px;\n"
@@ -307,7 +59,7 @@ class Ui_MainWindow(object):
         self.experiment_token_bar.setObjectName("experiment_token_bar")
         self.horizontalLayout_8.addWidget(self.experiment_token_bar)
         self.verticalLayout_5.addLayout(self.horizontalLayout_8)
-        self.experiment_txt = QtWidgets.QTextEdit(parent=self.layoutWidget1)
+        self.experiment_txt = QtWidgets.QTextEdit(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -328,14 +80,12 @@ class Ui_MainWindow(object):
         self.experiment_txt.setReadOnly(True)
         self.experiment_txt.setObjectName("experiment_txt")
         self.verticalLayout_5.addWidget(self.experiment_txt)
-        self.horizontalLayout_9.addLayout(self.verticalLayout_5)
-        self.horizontalLayout_9.setStretch(0, 1)
-        self.horizontalLayout_9.setStretch(1, 1)
-        self.verticalLayout_7.addLayout(self.horizontalLayout_9)
+        self.verticalLayout.addLayout(self.verticalLayout_5)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.input_text = QtWidgets.QPlainTextEdit(parent=self.layoutWidget1)
+        # self.input_text = QtWidgets.QPlainTextEdit(parent=self.centralwidget)
+        self.input_text = mPlainTextEdit(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -357,9 +107,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.input_text)
         self.gridLayout_2 = QtWidgets.QGridLayout()
         self.gridLayout_2.setObjectName("gridLayout_2")
-        spacerItem4 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.gridLayout_2.addItem(spacerItem4, 2, 1, 1, 1)
-        self.send_btn = QtWidgets.QPushButton(parent=self.layoutWidget1)
+        spacerItem1 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.gridLayout_2.addItem(spacerItem1, 2, 1, 1, 1)
+        self.send_btn = QtWidgets.QPushButton(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(1)
@@ -385,12 +135,12 @@ class Ui_MainWindow(object):
         self.send_btn.setFlat(False)
         self.send_btn.setObjectName("send_btn")
         self.gridLayout_2.addWidget(self.send_btn, 1, 1, 1, 1)
-        spacerItem5 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.gridLayout_2.addItem(spacerItem5, 0, 1, 1, 1)
-        spacerItem6 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.gridLayout_2.addItem(spacerItem6, 1, 2, 1, 1)
-        spacerItem7 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.gridLayout_2.addItem(spacerItem7, 1, 0, 1, 1)
+        spacerItem2 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.gridLayout_2.addItem(spacerItem2, 0, 1, 1, 1)
+        spacerItem3 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.gridLayout_2.addItem(spacerItem3, 1, 2, 1, 1)
+        spacerItem4 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.gridLayout_2.addItem(spacerItem4, 1, 0, 1, 1)
         self.gridLayout_2.setColumnStretch(0, 1)
         self.gridLayout_2.setColumnStretch(1, 8)
         self.gridLayout_2.setColumnStretch(2, 1)
@@ -400,10 +150,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addLayout(self.gridLayout_2)
         self.horizontalLayout.setStretch(0, 5)
         self.horizontalLayout.setStretch(1, 1)
-        self.verticalLayout_7.addLayout(self.horizontalLayout)
-        self.verticalLayout_7.setStretch(0, 7)
-        self.verticalLayout_7.setStretch(1, 2)
-        self.tabWidget = QtWidgets.QTabWidget(parent=self.splitter)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.verticalLayout.setStretch(0, 4)
+        self.verticalLayout.setStretch(1, 1)
+        self.horizontalLayout_2.addLayout(self.verticalLayout)
+        self.tabWidget = QtWidgets.QTabWidget(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -504,8 +255,8 @@ class Ui_MainWindow(object):
 "}")
         self.label_5.setObjectName("label_5")
         self.horizontalLayout_4.addWidget(self.label_5)
-        spacerItem8 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_4.addItem(spacerItem8)
+        spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_4.addItem(spacerItem5)
         self.temp_val = QtWidgets.QLineEdit(parent=self.Setting)
         self.temp_val.setMinimumSize(QtCore.QSize(30, 0))
         self.temp_val.setStyleSheet("QLineEdit {\n"
@@ -558,8 +309,8 @@ class Ui_MainWindow(object):
         self.temp_slider.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.temp_slider.setObjectName("temp_slider")
         self.verticalLayout_2.addWidget(self.temp_slider)
-        spacerItem9 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.verticalLayout_2.addItem(spacerItem9)
+        spacerItem6 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.verticalLayout_2.addItem(spacerItem6)
         self.verticalLayout_4.addLayout(self.verticalLayout_2)
         self.tabWidget.addTab(self.Setting, "")
         self.RAG = QtWidgets.QWidget()
@@ -578,8 +329,8 @@ class Ui_MainWindow(object):
         self.verticalLayout_13.setContentsMargins(9, 3, 9, 3)
         self.verticalLayout_13.setSpacing(1)
         self.verticalLayout_13.setObjectName("verticalLayout_13")
-        spacerItem10 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.verticalLayout_13.addItem(spacerItem10)
+        spacerItem7 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.verticalLayout_13.addItem(spacerItem7)
         self.widget_2 = QtWidgets.QWidget(parent=self.groupBox_6)
         self.widget_2.setStyleSheet("QWidget{\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -589,8 +340,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_20.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_20.setSpacing(0)
         self.horizontalLayout_20.setObjectName("horizontalLayout_20")
-        spacerItem11 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_20.addItem(spacerItem11)
+        spacerItem8 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_20.addItem(spacerItem8)
         self.label_14 = QtWidgets.QLabel(parent=self.widget_2)
         self.label_14.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
@@ -720,8 +471,8 @@ class Ui_MainWindow(object):
         self.verticalLayout_12.setContentsMargins(-1, 2, -1, 2)
         self.verticalLayout_12.setSpacing(0)
         self.verticalLayout_12.setObjectName("verticalLayout_12")
-        spacerItem12 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.verticalLayout_12.addItem(spacerItem12)
+        spacerItem9 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.verticalLayout_12.addItem(spacerItem9)
         self.widget_3 = QtWidgets.QWidget(parent=self.groupBox_5)
         self.widget_3.setStyleSheet("QWidget{\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -731,8 +482,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_17.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_17.setSpacing(0)
         self.horizontalLayout_17.setObjectName("horizontalLayout_17")
-        spacerItem13 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_17.addItem(spacerItem13)
+        spacerItem10 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_17.addItem(spacerItem10)
         self.label_12 = QtWidgets.QLabel(parent=self.widget_3)
         self.label_12.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
@@ -807,8 +558,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_10 = QtWidgets.QHBoxLayout(self.widget_4)
         self.horizontalLayout_10.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_10.setObjectName("horizontalLayout_10")
-        spacerItem14 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_10.addItem(spacerItem14)
+        spacerItem11 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_10.addItem(spacerItem11)
         self.groupBox = QtWidgets.QGroupBox(parent=self.widget_4)
         self.groupBox.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
@@ -912,8 +663,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_13.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_13.setSpacing(6)
         self.horizontalLayout_13.setObjectName("horizontalLayout_13")
-        spacerItem15 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_13.addItem(spacerItem15)
+        spacerItem12 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_13.addItem(spacerItem12)
         self.groupBox_2 = QtWidgets.QGroupBox(parent=self.widget_5)
         self.groupBox_2.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
@@ -992,8 +743,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_15 = QtWidgets.QHBoxLayout(self.widget_6)
         self.horizontalLayout_15.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_15.setObjectName("horizontalLayout_15")
-        spacerItem16 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_15.addItem(spacerItem16)
+        spacerItem13 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_15.addItem(spacerItem13)
         self.groupBox_3 = QtWidgets.QGroupBox(parent=self.widget_6)
         self.groupBox_3.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
@@ -1072,8 +823,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_18 = QtWidgets.QHBoxLayout(self.widget_7)
         self.horizontalLayout_18.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_18.setObjectName("horizontalLayout_18")
-        spacerItem17 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_18.addItem(spacerItem17)
+        spacerItem14 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_18.addItem(spacerItem14)
         self.groupBox_4 = QtWidgets.QGroupBox(parent=self.widget_7)
         self.groupBox_4.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
@@ -1139,8 +890,8 @@ class Ui_MainWindow(object):
         self.verticalLayout_15.setContentsMargins(-1, 2, -1, 2)
         self.verticalLayout_15.setSpacing(0)
         self.verticalLayout_15.setObjectName("verticalLayout_15")
-        spacerItem18 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.verticalLayout_15.addItem(spacerItem18)
+        spacerItem15 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.verticalLayout_15.addItem(spacerItem15)
         self.widget_8 = QtWidgets.QWidget(parent=self.groupBox_7)
         self.widget_8.setStyleSheet("QWidget{\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -1150,8 +901,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_21.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_21.setSpacing(0)
         self.horizontalLayout_21.setObjectName("horizontalLayout_21")
-        spacerItem19 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_21.addItem(spacerItem19)
+        spacerItem16 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_21.addItem(spacerItem16)
         self.label_15 = QtWidgets.QLabel(parent=self.widget_8)
         self.label_15.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
@@ -1199,8 +950,8 @@ class Ui_MainWindow(object):
 "")
         self.similarity_post_processor.setObjectName("similarity_post_processor")
         self.horizontalLayout_24.addWidget(self.similarity_post_processor)
-        spacerItem20 = QtWidgets.QSpacerItem(78, 13, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_24.addItem(spacerItem20)
+        spacerItem17 = QtWidgets.QSpacerItem(78, 13, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_24.addItem(spacerItem17)
         self.similarity_val = QtWidgets.QLineEdit(parent=self.widget_10)
         self.similarity_val.setMinimumSize(QtCore.QSize(30, 0))
         self.similarity_val.setStyleSheet("QLineEdit {\n"
@@ -1228,8 +979,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_25 = QtWidgets.QHBoxLayout(self.widget_11)
         self.horizontalLayout_25.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_25.setObjectName("horizontalLayout_25")
-        spacerItem21 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_25.addItem(spacerItem21)
+        spacerItem18 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_25.addItem(spacerItem18)
         self.similarity_slider = QtWidgets.QSlider(parent=self.widget_11)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -1299,8 +1050,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_22.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_22.setSpacing(6)
         self.horizontalLayout_22.setObjectName("horizontalLayout_22")
-        spacerItem22 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_22.addItem(spacerItem22)
+        spacerItem19 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_22.addItem(spacerItem19)
         self.groupBox_8 = QtWidgets.QGroupBox(parent=self.widget_9)
         self.groupBox_8.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
@@ -1451,12 +1202,13 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6.setStretch(0, 1)
         self.horizontalLayout_6.setStretch(1, 4)
         self.verticalLayout_16.addLayout(self.horizontalLayout_6)
-        spacerItem23 = QtWidgets.QSpacerItem(236, 34, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.verticalLayout_16.addItem(spacerItem23)
+        spacerItem20 = QtWidgets.QSpacerItem(236, 34, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.verticalLayout_16.addItem(spacerItem20)
         self.tabWidget.addTab(self.RAG, "")
-        self.verticalLayout_8.addWidget(self.splitter)
-        self.verticalLayout_8.setStretch(0, 1)
-        self.verticalLayout_8.setStretch(1, 30)
+        self.horizontalLayout_2.addWidget(self.tabWidget)
+        self.horizontalLayout_2.setStretch(0, 3)
+        self.horizontalLayout_2.setStretch(1, 2)
+        self.horizontalLayout_2.setStretch(2, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1196, 33))
@@ -1477,28 +1229,14 @@ class Ui_MainWindow(object):
         self.send_btn.clicked.connect(self.input_text.setFocus) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.send_btn, self.input_text)
-        MainWindow.setTabOrder(self.input_text, self.default_txt)
-        MainWindow.setTabOrder(self.default_txt, self.experiment_txt)
+        MainWindow.setTabOrder(self.input_text, self.experiment_txt)
         MainWindow.setTabOrder(self.experiment_txt, self.tabWidget)
+
+        self.input_text.set_send_button(self.send_btn)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.left_split_btn.setText(_translate("MainWindow", "l<"))
-        self.right_split_btn.setText(_translate("MainWindow", ">l"))
-        self.new_chat_btn.setText(_translate("MainWindow", "+"))
-        self.del_chat_btn.setText(_translate("MainWindow", "-"))
-        item = self.chat_room_table.verticalHeaderItem(0)
-        item.setText(_translate("MainWindow", "1"))
-        item = self.chat_room_table.horizontalHeaderItem(0)
-        item.setText(_translate("MainWindow", "Chat Rooms"))
-        __sortingEnabled = self.chat_room_table.isSortingEnabled()
-        self.chat_room_table.setSortingEnabled(False)
-        item = self.chat_room_table.item(0, 0)
-        item.setText(_translate("MainWindow", "chat1"))
-        self.chat_room_table.setSortingEnabled(__sortingEnabled)
-        self.label.setText(_translate("MainWindow", "DEFAULT"))
-        self.default_token_bar.setFormat(_translate("MainWindow", "used tokens: %p%"))
         self.label_2.setText(_translate("MainWindow", "EXPERIMENT"))
         self.experiment_token_bar.setFormat(_translate("MainWindow", "used tokens: %p%"))
         self.input_text.setPlaceholderText(_translate("MainWindow", "Enter your message..."))
@@ -1545,3 +1283,4 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.RAG), _translate("MainWindow", "RAG"))
         self.menu_Setting.setTitle(_translate("MainWindow", "&Setting"))
         self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))
+from PyQt6 import QtWebEngineWidgets

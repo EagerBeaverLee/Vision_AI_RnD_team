@@ -1,8 +1,10 @@
 import sys, os, time, copy, tiktoken
+import subprocess
+import atexit
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy, QMenu, QFileDialog
 )
-from PyQt6.QtCore import Qt, QCoreApplication, QTimer, QObject, QPoint, pyqtSignal, QThread
+from PyQt6.QtCore import Qt, QCoreApplication, QTimer, QObject, QPoint, pyqtSignal, QThread, QUrl
 from PyQt6.QtGui import QDoubleValidator, QAction
 from PyQt6.uic import loadUi
 
@@ -28,6 +30,7 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from typing import List
 from transformers import AutoTokenizer
 
+streamlit_process = None
 
 class ChatRoom:
     def __init__(self, name):
@@ -98,6 +101,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.temp_val.setValidator(validator)
 
         self.connectSignalsSlots()
+        self.set_web_view()
 
         #chatroom 클래스 관련 변수
         self.chat_rooms = []                    #채팅방 관리
@@ -106,8 +110,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.chat_room_update_flag = False      #채팅방 첫 생성인지 확인 flag
 
         #채팅방 ui관련 설정
-        self.ui.chat_room_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.ui.chat_room_table.customContextMenuRequested.connect(self.on_context_menu)
+        # self.ui.chat_room_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        # self.ui.chat_room_table.customContextMenuRequested.connect(self.on_context_menu)
 
         # 오른쪽 클릭된 아이템을 저장할 멤버 변수
         self.clicked_item = None
@@ -135,9 +139,12 @@ class Window(QMainWindow, Ui_MainWindow):
         self.rag_post_processing = None
 
         #초기값 세팅
-        self.ui.splitter.setSizes([175, 715, 278])      #초기 프로그램 크기 조정
-        # self.ui.default_retriever.setChecked(True)
-        # self.ui.default_generator.setChecked(True)
+        # self.ui.splitter.setSizes([175, 715, 278])      #초기 프로그램 크기 조정
+
+        self.ui.default_retriever.setChecked(True)
+        self.ui.default_generator.setChecked(True)
+
+        
 
         self.init_local_llm()
         
@@ -446,14 +453,14 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.send_btn.clicked.connect(self.load_message)
         self.ui.api_key_txt.textChanged.connect(self.apply_api_key)
         self.ui.prompt_txt.textChanged.connect(self.apply_prompt)
-        self.ui.new_chat_btn.clicked.connect(self.add_new_chat_room)
-        self.ui.del_chat_btn.clicked.connect(self.delete_selected_chat_room)
-        self.ui.chat_room_table.itemSelectionChanged.connect(self.load_selected_chat_room)
-        self.ui.chat_room_table.itemChanged.connect(self.room_name_changed)
+        # self.ui.new_chat_btn.clicked.connect(self.add_new_chat_room)
+        # self.ui.del_chat_btn.clicked.connect(self.delete_selected_chat_room)
+        # self.ui.chat_room_table.itemSelectionChanged.connect(self.load_selected_chat_room)
+        # self.ui.chat_room_table.itemChanged.connect(self.room_name_changed)
         self.ui.temp_slider.valueChanged.connect(self.slider_temp_value)
         self.ui.temp_val.textChanged.connect(self.text_temp_value)
-        self.ui.left_split_btn.clicked.connect(self.toggle_left_animation)
-        self.ui.right_split_btn.clicked.connect(self.toggle_right_animation)
+        # self.ui.left_split_btn.clicked.connect(self.toggle_left_animation)
+        # self.ui.right_split_btn.clicked.connect(self.toggle_right_animation)
         self.ui.Load_btn.clicked.connect(self.load_folder)
 
         #Question Transformations
@@ -486,23 +493,23 @@ class Window(QMainWindow, Ui_MainWindow):
             self.ui.statusbar.setStyleSheet("QStatusBar {background-color: #ccffcc; color: green;}")
         self.ui.statusbar.showMessage(message, 3000) # Show for 3 seconds
 
-    def update_chat_room_list(self):
-        self.chat_room_update_flag = True
+    # def update_chat_room_list(self):
+    #     self.chat_room_update_flag = True
 
-        self.ui.chat_room_table.setRowCount(len(self.chat_rooms))
-        for i, room in enumerate(self.chat_rooms):
-            item = QTableWidgetItem(room.name)
-            item.setData(Qt.ItemDataRole.UserRole, room) # Store the ChatRoom object in the item
-            self.ui.chat_room_table.setItem(i, 0, item)
+    #     # self.ui.chat_room_table.setRowCount(len(self.chat_rooms))
+    #     for i, room in enumerate(self.chat_rooms):
+    #         item = QTableWidgetItem(room.name)
+    #         item.setData(Qt.ItemDataRole.UserRole, room) # Store the ChatRoom object in the item
+    #         # self.ui.chat_room_table.setItem(i, 0, item)
         
-        # Select the current chat room in the list
-        if self.current_chat_room and self.current_chat_room in self.chat_rooms:
-            index = self.chat_rooms.index(self.current_chat_room)
-            self.ui.chat_room_table.selectRow(index)
-        elif self.chat_rooms:
-            self.ui.chat_room_table.selectRow(0) # Select first if no current or current deleted
+    #     # Select the current chat room in the list
+    #     if self.current_chat_room and self.current_chat_room in self.chat_rooms:
+    #         index = self.chat_rooms.index(self.current_chat_room)
+    #         self.ui.chat_room_table.selectRow(index)
+    #     elif self.chat_rooms:
+    #         self.ui.chat_room_table.selectRow(0) # Select first if no current or current deleted
 
-        self.chat_room_update_flag = False
+    #     self.chat_room_update_flag = False
 
     def add_new_chat_room(self, initial = False):
         if not initial:
@@ -510,13 +517,14 @@ class Window(QMainWindow, Ui_MainWindow):
         new_room_name = "Unnamed Chat"
         new_room = ChatRoom(name=new_room_name)
         self.chat_rooms.append(new_room)
-        self.update_chat_room_list()
+        self.current_chat_room = self.chat_rooms[0]
+        # self.update_chat_room_list()
         
         if not initial:
             self.current_chat_room = new_room
             self.load_chat_room_data_into_ui(new_room)
             self.show_status_messages(f"New chat room '{new_room_name}' created.")
-            self.ui.chat_room_table.selectRow(len(self.chat_rooms) - 1) # Select the newly added row
+            # self.ui.chat_room_table.selectRow(len(self.chat_rooms) - 1) # Select the newly added row
 
     def delete_selected_chat_room(self):
         selected_row = self.ui.chat_room_table.selectedIndexes()
@@ -1144,7 +1152,29 @@ class Window(QMainWindow, Ui_MainWindow):
             self.rag_post_processing = radio_btn.text()
             self.ui.rag_post_processing.setText(f'{radio_btn.text()}')
 
+    def set_web_view(self):
+        self.ui.webEngineView.setUrl(QUrl("http://localhost:8501"))
+
+def start_streamlit():
+    """Streamlit 서버를 백그라운드에서 실행"""
+    global streamlit_process
+    # Streamlit 앱 실행 명령어
+    cmd = ["streamlit", "run", "shorad_simulator.py", "--server.headless=True"]
+    # cmd = ["streamlit", "run", "shorad_simulator.py"]
+    streamlit_process = subprocess.Popen(cmd)
+    print("Streamlit 서버가 백그라운드에서 시작되었습니다.")
+
+def stop_streamlit():
+    """Streamlit 서버 프로세스 종료"""
+    global streamlit_process
+    if streamlit_process:
+        streamlit_process.kill()
+        print("Streamlit 서버가 종료되었습니다.")
+
 if __name__ == "__main__":
+    atexit.register(stop_streamlit)
+
+    start_streamlit()
 
     app = QApplication(sys.argv)
     win = Window()
