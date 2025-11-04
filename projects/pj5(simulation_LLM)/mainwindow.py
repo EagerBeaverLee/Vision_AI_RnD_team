@@ -7,7 +7,7 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PlainTextEdit import mPlainTextEdit
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -84,8 +84,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        # self.input_text = QtWidgets.QPlainTextEdit(parent=self.centralwidget)
-        self.input_text = mPlainTextEdit(parent=self.centralwidget)
+        self.input_text = QtWidgets.QPlainTextEdit(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -1206,7 +1205,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_16.addItem(spacerItem20)
         self.tabWidget.addTab(self.RAG, "")
         self.horizontalLayout_2.addWidget(self.tabWidget)
-        self.horizontalLayout_2.setStretch(0, 3)
+        self.horizontalLayout_2.setStretch(0, 5)
         self.horizontalLayout_2.setStretch(1, 2)
         self.horizontalLayout_2.setStretch(2, 1)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -1231,8 +1230,6 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.send_btn, self.input_text)
         MainWindow.setTabOrder(self.input_text, self.experiment_txt)
         MainWindow.setTabOrder(self.experiment_txt, self.tabWidget)
-
-        self.input_text.set_send_button(self.send_btn)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
