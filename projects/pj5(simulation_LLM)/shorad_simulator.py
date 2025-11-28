@@ -19,6 +19,24 @@ plt.rc('font', family=font_name)
 plt.rcParams['axes.unicode_minus'] = False # 마이너스 기호 깨짐 방지
 # ----------------------------------------
 
+st.markdown(
+    """
+    <style>
+    /* 전체 메인 컨테이너의 최대 너비를 1200px로 설정 (원하는 크기로 조절) */
+    .stApp .main .block-container {
+        max-width: 1200px; 
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    /* 또는 더 최신 버전의 클래스명을 사용할 수 있습니다 (브라우저 개발자 도구로 확인 권장) */
+    section[data-testid="stMain"] > div[data-testid="stMainBlockContainer"] {
+        max-width: 1200px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- 1. 데이터베이스(DataFrame) 초기 설정 ---
 # 시나리오 3 (복합 통합 공격 대응) 기반 데이터
 
@@ -65,7 +83,7 @@ def plot_hardcoded_movement_at_time(current_time_offset):
     하드코딩된 경로와 함께 적군 및 아군의 영향권(원) 및 다음 이동 방향 화살표를 시각화합니다.
     배경으로 'map.png' 이미지를 사용하며, 300초 경과 시점의 오류를 수정했습니다.
     """
-    st.subheader("적/아군 2차원 위치 추이: 배경 맵 적용 시뮬레이션")
+    # st.subheader("적/아군 2차원 위치 추이: 배경 맵 적용 시뮬레이션")
     
     # =========================================================
     # 1. 하드코딩된 경로 정의 (이전 코드와 동일)
@@ -381,13 +399,13 @@ def plot_hardcoded_movement_at_time(current_time_offset):
     # 4. 화살표 벡터 계산 (이전 코드와 동일)
     # =========================================================
 
-    def calculate_direction_vector(current, target, length):
-        direction_vector = target - current
-        if np.linalg.norm(direction_vector) == 0:
-            return np.array([0, 0])
+    # def calculate_direction_vector(current, target, length):
+    #     direction_vector = target - current
+    #     if np.linalg.norm(direction_vector) == 0:
+    #         return np.array([0, 0])
         
-        unit_vector = direction_vector / np.linalg.norm(direction_vector)
-        return unit_vector * length
+    #     unit_vector = direction_vector / np.linalg.norm(direction_vector)
+    #     return unit_vector * length
     
     def calculate_clockwise_angle(current, target):
         """
@@ -466,16 +484,16 @@ def plot_hardcoded_movement_at_time(current_time_offset):
             print(f"경고: 이미지 처리 중 오류 발생: {e}. 기본 마커를 사용합니다.")
             ax.scatter(xy[0], xy[1], marker='*', color='blue', s=250, label=label, zorder=5)
 
-    kpa_platoon1_direction_vector = calculate_direction_vector(kpa_platoon1_pos, kpa_platoon1_next_pos, ARROW_LENGTH)
-    kpa_platoon2_direction_vector = calculate_direction_vector(kpa_platoon2_pos, kpa_platoon2_next_pos, ARROW_LENGTH)
-    kpa_leader_direction_vector = calculate_direction_vector(kpa_leader_pos, kpa_leader_next_pos, ARROW_LENGTH)
-    kpa_artillery_direction_vector = calculate_direction_vector(kpa_artillery_pos, kpa_artillery_next_pos, ARROW_LENGTH)
-    kpa_squad_direction_vector = calculate_direction_vector(kpa_squad_pos, kpa_squad_next_pos, ARROW_LENGTH)
-    kpa_section_direction_vector = calculate_direction_vector(kpa_section_pos, kpa_section_next_pos, ARROW_LENGTH)
-    kpa_section2_direction_vector = calculate_direction_vector(kpa_section2_pos, kpa_section2_next_pos, ARROW_LENGTH)
-    rok_squad_direction_vector = calculate_direction_vector(rok_squad_pos, rok_squad_next_pos, ARROW_LENGTH)
-    rok_squad2_direction_vector = calculate_direction_vector(rok_squad2_pos, rok_squad2_next_pos, ARROW_LENGTH)
-    rok_leader_direction_vector = calculate_direction_vector(rok_leader_pos, rok_leader_next_pos, ARROW_LENGTH)
+    # kpa_platoon1_direction_vector = calculate_direction_vector(kpa_platoon1_pos, kpa_platoon1_next_pos, ARROW_LENGTH)
+    # kpa_platoon2_direction_vector = calculate_direction_vector(kpa_platoon2_pos, kpa_platoon2_next_pos, ARROW_LENGTH)
+    # kpa_leader_direction_vector = calculate_direction_vector(kpa_leader_pos, kpa_leader_next_pos, ARROW_LENGTH)
+    # kpa_artillery_direction_vector = calculate_direction_vector(kpa_artillery_pos, kpa_artillery_next_pos, ARROW_LENGTH)
+    # kpa_squad_direction_vector = calculate_direction_vector(kpa_squad_pos, kpa_squad_next_pos, ARROW_LENGTH)
+    # kpa_section_direction_vector = calculate_direction_vector(kpa_section_pos, kpa_section_next_pos, ARROW_LENGTH)
+    # kpa_section2_direction_vector = calculate_direction_vector(kpa_section2_pos, kpa_section2_next_pos, ARROW_LENGTH)
+    # rok_squad_direction_vector = calculate_direction_vector(rok_squad_pos, rok_squad_next_pos, ARROW_LENGTH)
+    # rok_squad2_direction_vector = calculate_direction_vector(rok_squad2_pos, rok_squad2_next_pos, ARROW_LENGTH)
+    # rok_leader_direction_vector = calculate_direction_vector(rok_leader_pos, rok_leader_next_pos, ARROW_LENGTH)
     
     # kpa_fs_direction_vector = calculate_direction_vector(kpa_fs_pos, kpa_fs_next_pos, ARROW_LENGTH)
     
@@ -496,86 +514,92 @@ def plot_hardcoded_movement_at_time(current_time_offset):
         ax.set_facecolor('lightgrey')
 
     # --- 영향권 원 추가 ---
-    kpa_platoon2_circle = Circle((kpa_platoon2_pos[0], kpa_platoon2_pos[1]), radius=kpa_platoon2_radius, edgecolor='red', facecolor='none', linestyle='-', linewidth=1.5, alpha=1)
-    kpa_section2_circle = Circle((kpa_section2_pos[0], kpa_section2_pos[1]), radius=kpa_section2_radius, edgecolor='red', facecolor='none', linestyle='-', linewidth=1.5, alpha=1)
+    # kpa_platoon2_circle = Circle((kpa_platoon2_pos[0], kpa_platoon2_pos[1]), radius=kpa_platoon2_radius, edgecolor='red', facecolor='none', linestyle='-', linewidth=1.5, alpha=1)
+    # kpa_section2_circle = Circle((kpa_section2_pos[0], kpa_section2_pos[1]), radius=kpa_section2_radius, edgecolor='red', facecolor='none', linestyle='-', linewidth=1.5, alpha=1)
+    kpa_platoon2_circle = Circle((kpa_platoon2_pos[0], kpa_platoon2_pos[1]), radius=kpa_platoon2_radius, edgecolor='yellow', facecolor='none', linestyle='-', linewidth=1.5, alpha=1)
+    kpa_section2_circle = Circle((kpa_section2_pos[0], kpa_section2_pos[1]), radius=kpa_section2_radius, edgecolor='yellow', facecolor='none', linestyle='-', linewidth=1.5, alpha=1)
+    kpa_platoon2_circle_line = Circle((kpa_platoon2_pos[0], kpa_platoon2_pos[1]), radius=kpa_platoon2_radius, color='yellow', linestyle='-', linewidth=1.5, alpha=0.2)
+    kpa_section2_circle_line = Circle((kpa_section2_pos[0], kpa_section2_pos[1]), radius=kpa_section2_radius, color='yellow', linestyle='-', linewidth=1.5, alpha=0.2)
     ax.add_patch(kpa_platoon2_circle)
     ax.add_patch(kpa_section2_circle)
+    ax.add_patch(kpa_platoon2_circle_line)
+    ax.add_patch(kpa_section2_circle_line)
 
     # --- 방향 화살표 추가 (축소된 크기) ---
     ARROW_WIDTH = 0.005
     HEAD_WIDTH = 3
     HEAD_LENGTH = 4
     
-    if np.linalg.norm(kpa_platoon1_direction_vector) > 0:
-        ax.quiver(
-            kpa_platoon1_pos[0], kpa_platoon1_pos[1], 
-            kpa_platoon1_direction_vector[0], kpa_platoon1_direction_vector[1], 
-            color='cyan', scale=1, scale_units='xy', angles='xy', 
-            width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_platoon1 다음방향'
-        )
-    if np.linalg.norm(kpa_platoon2_direction_vector) > 0:
-        ax.quiver(
-            kpa_platoon2_pos[0], kpa_platoon2_pos[1], 
-            kpa_platoon2_direction_vector[0], kpa_platoon2_direction_vector[1], 
-            color='cyan', scale=1, scale_units='xy', angles='xy', 
-            width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_platoon1 다음방향'
-        )
-    if np.linalg.norm(kpa_leader_direction_vector) > 0:
-        ax.quiver(
-            kpa_leader_pos[0], kpa_leader_pos[1], 
-            kpa_leader_direction_vector[0], kpa_leader_direction_vector[1], 
-            color='cyan', scale=1, scale_units='xy', angles='xy', 
-            width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
-        )
-    if np.linalg.norm(kpa_artillery_direction_vector) > 0:
-        ax.quiver(
-            kpa_artillery_pos[0], kpa_artillery_pos[1], 
-            kpa_artillery_direction_vector[0], kpa_artillery_direction_vector[1], 
-            color='cyan', scale=1, scale_units='xy', angles='xy', 
-            width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
-        )
-    if np.linalg.norm(kpa_squad_direction_vector) > 0:
-        ax.quiver(
-            kpa_squad_pos[0], kpa_squad_pos[1], 
-            kpa_squad_direction_vector[0], kpa_squad_direction_vector[1], 
-            color='cyan', scale=1, scale_units='xy', angles='xy', 
-            width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
-        )
-    if np.linalg.norm(kpa_section_direction_vector) > 0:
-        ax.quiver(
-            kpa_section_pos[0], kpa_section_pos[1], 
-            kpa_section_direction_vector[0], kpa_section_direction_vector[1], 
-            color='cyan', scale=1, scale_units='xy', angles='xy', 
-            width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
-        )
-    if np.linalg.norm(kpa_section2_direction_vector) > 0:
-        ax.quiver(
-            kpa_section2_pos[0], kpa_section2_pos[1], 
-            kpa_section2_direction_vector[0], kpa_section2_direction_vector[1], 
-            color='cyan', scale=1, scale_units='xy', angles='xy', 
-            width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
-        )
-    if np.linalg.norm(rok_squad_direction_vector) > 0:
-        ax.quiver(
-            rok_squad_pos[0], rok_squad_pos[1], 
-            rok_squad_direction_vector[0], rok_squad_direction_vector[1], 
-            color='cyan', scale=1, scale_units='xy', angles='xy', 
-            width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
-        )
-    if np.linalg.norm(rok_squad2_direction_vector) > 0:
-        ax.quiver(
-            rok_squad2_pos[0], rok_squad2_pos[1], 
-            rok_squad2_direction_vector[0], rok_squad2_direction_vector[1], 
-            color='cyan', scale=1, scale_units='xy', angles='xy', 
-            width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
-        )
-    if np.linalg.norm(rok_leader_direction_vector) > 0:
-        ax.quiver(
-            rok_leader_pos[0], rok_leader_pos[1], 
-            rok_leader_direction_vector[0], rok_leader_direction_vector[1], 
-            color='cyan', scale=1, scale_units='xy', angles='xy', 
-            width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
-        )
+    # if np.linalg.norm(kpa_platoon1_direction_vector) > 0:
+    #     ax.quiver(
+    #         kpa_platoon1_pos[0], kpa_platoon1_pos[1], 
+    #         kpa_platoon1_direction_vector[0], kpa_platoon1_direction_vector[1], 
+    #         color='cyan', scale=1, scale_units='xy', angles='xy', 
+    #         width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_platoon1 다음방향'
+    #     )
+    # if np.linalg.norm(kpa_platoon2_direction_vector) > 0:
+    #     ax.quiver(
+    #         kpa_platoon2_pos[0], kpa_platoon2_pos[1], 
+    #         kpa_platoon2_direction_vector[0], kpa_platoon2_direction_vector[1], 
+    #         color='cyan', scale=1, scale_units='xy', angles='xy', 
+    #         width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_platoon1 다음방향'
+    #     )
+    # if np.linalg.norm(kpa_leader_direction_vector) > 0:
+    #     ax.quiver(
+    #         kpa_leader_pos[0], kpa_leader_pos[1], 
+    #         kpa_leader_direction_vector[0], kpa_leader_direction_vector[1], 
+    #         color='cyan', scale=1, scale_units='xy', angles='xy', 
+    #         width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
+    #     )
+    # if np.linalg.norm(kpa_artillery_direction_vector) > 0:
+    #     ax.quiver(
+    #         kpa_artillery_pos[0], kpa_artillery_pos[1], 
+    #         kpa_artillery_direction_vector[0], kpa_artillery_direction_vector[1], 
+    #         color='cyan', scale=1, scale_units='xy', angles='xy', 
+    #         width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
+    #     )
+    # if np.linalg.norm(kpa_squad_direction_vector) > 0:
+    #     ax.quiver(
+    #         kpa_squad_pos[0], kpa_squad_pos[1], 
+    #         kpa_squad_direction_vector[0], kpa_squad_direction_vector[1], 
+    #         color='cyan', scale=1, scale_units='xy', angles='xy', 
+    #         width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
+    #     )
+    # if np.linalg.norm(kpa_section_direction_vector) > 0:
+    #     ax.quiver(
+    #         kpa_section_pos[0], kpa_section_pos[1], 
+    #         kpa_section_direction_vector[0], kpa_section_direction_vector[1], 
+    #         color='cyan', scale=1, scale_units='xy', angles='xy', 
+    #         width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
+    #     )
+    # if np.linalg.norm(kpa_section2_direction_vector) > 0:
+    #     ax.quiver(
+    #         kpa_section2_pos[0], kpa_section2_pos[1], 
+    #         kpa_section2_direction_vector[0], kpa_section2_direction_vector[1], 
+    #         color='cyan', scale=1, scale_units='xy', angles='xy', 
+    #         width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
+    #     )
+    # if np.linalg.norm(rok_squad_direction_vector) > 0:
+    #     ax.quiver(
+    #         rok_squad_pos[0], rok_squad_pos[1], 
+    #         rok_squad_direction_vector[0], rok_squad_direction_vector[1], 
+    #         color='cyan', scale=1, scale_units='xy', angles='xy', 
+    #         width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
+    #     )
+    # if np.linalg.norm(rok_squad2_direction_vector) > 0:
+    #     ax.quiver(
+    #         rok_squad2_pos[0], rok_squad2_pos[1], 
+    #         rok_squad2_direction_vector[0], rok_squad2_direction_vector[1], 
+    #         color='cyan', scale=1, scale_units='xy', angles='xy', 
+    #         width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
+    #     )
+    # if np.linalg.norm(rok_leader_direction_vector) > 0:
+    #     ax.quiver(
+    #         rok_leader_pos[0], rok_leader_pos[1], 
+    #         rok_leader_direction_vector[0], rok_leader_direction_vector[1], 
+    #         color='cyan', scale=1, scale_units='xy', angles='xy', 
+    #         width=ARROW_WIDTH, headwidth=HEAD_WIDTH, headlength=HEAD_LENGTH, zorder=6, label='kpa_leader 다음방향'
+    #     )
 
     # print(calculate_clockwise_angle(rok_ew_pos, rok_ew_next_pos))
     # print(calculate_clockwise_angle(rok_scouts_pos, rok_scouts_next_pos))
@@ -617,102 +641,94 @@ def plot_hardcoded_movement_at_time(current_time_offset):
 
     if current_time_offset > 3:
         rok_sq2_src = "res/rok_sq_detected.png"
+
+    if current_time_offset > 6:
+        rok_sq_src = "res/rok_sq_detected_destroy.png"
+        rok_sq2_src = "res/rok_sq_detected_destroy.png"
     
     # 현재 위치 시각화 (png파일 표시)
     add_image_marker(
         ax,
         kpa_platoon1_pos,
         image_path="res/kpa_platoon.png",
-        zoom_scale=0.10,
-        label='kpa_fs 현재위치'
+        zoom_scale=0.10,        
     )
     add_image_marker(
         ax,
         kpa_platoon2_pos,
         image_path="res/kpa_platoon.png",
-        zoom_scale=0.10,
-        label='kpa_fs 현재위치'
+        zoom_scale=0.10,        
     )
     add_image_marker(
         ax,
         kpa_leader_pos,
         image_path="res/kpa_leader.png",
-        zoom_scale=0.10,
-        label='kpa_fs 현재위치'
+        zoom_scale=0.10,        
     )
     add_image_marker(
         ax,
         kpa_artillery_pos,
         image_path="res/kpa_artillery.png",
-        zoom_scale=0.10,
-        label='kpa_fs 현재위치'
+        zoom_scale=0.10,        
     )
     add_image_marker(
         ax,
         kpa_squad_pos,
         image_path="res/kpa_squad.png",
-        zoom_scale=0.10,
-        label='kpa_fs 현재위치'
+        zoom_scale=0.10,        
     )
     add_image_marker(
         ax,
         kpa_section_pos,
         image_path="res/kpa_section.png",
-        zoom_scale=0.10,
-        label='kpa_fs 현재위치'
+        zoom_scale=0.10,        
     )
     add_image_marker(
         ax,
         kpa_section2_pos,
         image_path="res/kpa_section.png",
-        zoom_scale=0.10,
-        label='kpa_fs 현재위치'
+        zoom_scale=0.10,        
     )
     add_image_marker(
         ax,
         rok_squad_pos,
         image_path=rok_sq_src,
         zoom_scale=0.10,
-        label='rok_sq 현재위치'
     )
     add_image_marker(
         ax,
         rok_squad2_pos,
         image_path=rok_sq2_src,
         zoom_scale=0.10,
-        label='rok_sq 현재위치'
     )
     add_image_marker(
         ax,
         rok_leader_pos,
         image_path=rok_le_src,
         zoom_scale=0.10,
-        label='rok_sq 현재위치'
     )
     if current_time_offset > 5 and current_time_offset < 8:
-        ax.quiver(175, 105, 65, 10, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5, label='Arrow')
-        ax.quiver(175, 90, 70, -5, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5, label='Arrow')
-        ax.quiver(245, 120, -10, 50, angles='xy', scale_units='xy', scale=1, color='black', linestyle='-', width=0.003, headwidth=5, headlength=5, label='Arrow')
-        ax.quiver(260, 120, 3, 70, angles='xy', scale_units='xy', scale=1, color='black', linestyle='-', width=0.003, headwidth=5, headlength=5, label='Arrow')
-        ax.quiver(240, 175, 10, -54, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5, label='Arrow')
-        ax.quiver(250, 185, 30, -60, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5, label='Arrow')
-        ax.quiver(270, 195, 10, -50, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5, label='Arrow')
-        ax.quiver(280, 200, 50, -40, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5, label='Arrow')
+        ax.quiver(175, 105, 65, 10, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5)
+        ax.quiver(175, 90, 70, -5, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5)
+        ax.quiver(245, 120, -10, 50, angles='xy', scale_units='xy', scale=1, color='black', linestyle='-', width=0.003, headwidth=5, headlength=5)
+        ax.quiver(260, 120, 3, 70, angles='xy', scale_units='xy', scale=1, color='black', linestyle='-', width=0.003, headwidth=5, headlength=5)
+        ax.quiver(240, 175, 10, -54, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5)
+        ax.quiver(250, 185, 30, -60, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5)
+        ax.quiver(270, 195, 10, -50, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5)
+        ax.quiver(280, 200, 50, -40, angles='xy', scale_units='xy', scale=1, color='red', linestyle='-', width=0.003, headwidth=5, headlength=5)
         
     if current_time_offset > 6:
         add_image_marker(
             ax,
             [305.0, 160.0],
             image_path="res/destroy_bomb.png",
-            zoom_scale=0.10,
-            label='bomb'
+            zoom_scale=0.10,            
         )
         add_image_marker(
             ax,
-            [260.0, 100.0],
+            [260.0, 110.0],
             image_path="res/destroy_bomb.png",
-            zoom_scale=0.10,
-            label='bomb'
+            zoom_scale=0.10,            
         )
 
     if current_time_offset > 8:
@@ -739,22 +755,19 @@ def plot_hardcoded_movement_at_time(current_time_offset):
             ax,
             [360.0, 110.0],
             image_path="res/neutralize_bomb.png",
-            zoom_scale=0.10,
-            label='bomb'
+            zoom_scale=0.10,            
         )
         add_image_marker(
             ax,
             [290.0, 130.0],
             image_path="res/bomb.png",
-            zoom_scale=0.10,
-            label='bomb'
+            zoom_scale=0.10,            
         )
         add_image_marker(
             ax,
             [310.0, 90.0],
             image_path="res/bomb.png",
-            zoom_scale=0.10,
-            label='bomb'
+            zoom_scale=0.10,            
         )
 
     # 하드코딩된 틱 포인트를 작은 점으로 표시
@@ -766,24 +779,27 @@ def plot_hardcoded_movement_at_time(current_time_offset):
     ax.set_ylim(0, map_y_value)
     ax.set_xticks(np.arange(0, map_x_value, 20))
     ax.set_yticks(np.arange(0, map_y_value, 20))
-    ax.set_xlabel("X 좌표")
-    ax.set_ylabel("Y 좌표")
-    ax.set_title(f"적/아군 위치: 배경 맵 적용 ({current_time_offset:.1f}초 경과)")
+    # ax.set_xlabel("X 좌표")
+    # ax.set_ylabel("Y 좌표")
+    # ax.set_title(f"적/아군 위치: 배경 맵 적용 ({current_time_offset:.1f}초 경과)")
     ax.grid(True, linestyle=':', alpha=0.7)
     ax.set_aspect('equal', adjustable='box')
     
     # 범례 설정
     handles, labels = ax.get_legend_handles_labels()
     custom_handles = [
-        plt.Line2D([], [], color='blue', linestyle='--', alpha=0.7, label='아군 영향권'),
-        plt.Line2D([], [], color='green', linestyle='--', alpha=0.7, label='적군 영향권'),
-        plt.Line2D([], [], color='cyan', marker='>', linestyle='None', label='아군 방향'),
-        plt.Line2D([], [], color='magenta', marker='>', linestyle='None', label='적군 방향')
+        plt.Line2D([], [], color='yellow', linestyle='-', alpha=0.7, label='탐지범위'),
+        plt.Line2D([], [], color='red', linestyle='-', alpha=0.7, label='홍군 이동 경로'),
+        plt.Line2D([], [], color='blue', linestyle='-', alpha=0.7, label='청군 이동 경로'),
+        plt.Line2D([], [], color='red', linestyle='-', alpha=0.7, label='홍군 직접 사격선'),
+        plt.Line2D([], [], color='black', linestyle='-', alpha=0.7, label='청군 직접 사격선'),
+        plt.Line2D([], [], color='red', linestyle='--', alpha=0.7, label='홍군 간접 사격선'),
+        # plt.Line2D([], [], color='green', linestyle='--', alpha=0.7, label='적군 영향권'),
     ]
     by_label = dict(zip(labels, handles))
     by_label.update(dict(zip([h.get_label() for h in custom_handles], custom_handles)))
     
-    ax.legend(by_label.values(), by_label.keys(), loc='lower left', fontsize=9)
+    ax.legend(by_label.values(), by_label.keys(), loc='lower center', fontsize=7, ncol = 3)
     
     plt.tight_layout()
     st.pyplot(fig)
@@ -791,54 +807,89 @@ def plot_hardcoded_movement_at_time(current_time_offset):
     
     # st.info(f"현재 시간: **{current_time_offset:.1f}초** | 아군 위치: **({rok_ew_pos[0]:.1f}, {rok_ew_pos[1]:.1f})** | 적군 위치: **({kpa_platoon1[0]:.1f}, {kpa_platoon1[1]:.1f})**")
 
+def hard_code_image(current_time_offset):
+    st.cache_data.clear()
+    st.cache_resource.clear()
+
+    images = [
+        "image/0.png",
+        "image/1.png",
+        "image/2.png",
+        "image/3.png",
+        "image/4.png",
+        "image/5.png",
+        "image/6.png",
+        "image/7.png",
+        "image/8.png",
+        "image/9.png",
+        "image/10.png",
+        "image/11.png",
+        "image/12.png",
+        "image/13.png",
+        "image/14.png",
+        "image/15.png",
+    ]
+    # 세션 상태 초기화
+    if "index" not in st.session_state:
+        st.session_state.index = 0
+
+    # 현재 프레임 표시
+    st.image(images[st.session_state.index], width='stretch')
+
+    # 슬라이더 값이 바뀌면 인덱스 업데이트
+    if current_time_offset != st.session_state.index:
+        st.session_state.index = current_time_offset
+        st.rerun()  # 화면 즉시 갱신
+
 
 # --- 3. Streamlit UI 및 시뮬레이션 로직 ---
 
-st.title("🛡️ SHORAD 작전 시뮬레이터 (시나리오 3)")
-st.caption(f"기준 시간: {BASE_TIME.strftime('%Y-%m-%d %H:%M:%S')} | 시나리오: 복합 통합 공격 대응")
+# st.title("🛡️ SHORAD 작전 시뮬레이터 (시나리오 3)")
+# st.caption(f"기준 시간: {BASE_TIME.strftime('%Y-%m-%d %H:%M:%S')} | 시나리오: 복합 통합 공격 대응")
 
 # 슬라이더 설정
 max_time = df_events['time_offset'].max()
 slider_time = st.slider(
-    "시간 진행 (초)",
+    "시간 진행 (tick)",
     min_value=0,
     max_value=max_time,
     value=0,
     step=1,
-    format="%d초"
+    format="%dtick"
 )
 
 # 현재 시각 계산
-current_time = BASE_TIME + datetime.timedelta(seconds=slider_time)
-st.markdown(f"## ⏱️ 현재 시각: **{current_time.strftime('%H:%M:%S')}**")
+# current_time = BASE_TIME + datetime.timedelta(seconds=slider_time)
+# st.markdown(f"## ⏱️ 현재 시각: **{current_time.strftime('%H:%M:%S')}**")
 
 # --- A. 시각화 플롯 표시 ---
 # plot_defense_status(slider_time)
-plot_hardcoded_movement_at_time(slider_time)
+# plot_hardcoded_movement_at_time(slider_time)
+hard_code_image(slider_time)
 
 st.divider()
 
 # --- B. 실시간 로그 표시 ---
-st.subheader("작전 상황 로그")
+# st.subheader("작전 상황 로그")
 
-current_events = df_events[df_events['time_offset'] <= slider_time]
+# current_events = df_events[df_events['time_offset'] <= slider_time]
 
-if current_events.empty:
-    st.info("아직 이벤트가 발생하지 않았습니다. 시간을 진행해 주세요.")
-else:
-    # 가장 최근 이벤트를 중심으로 보여주기 위해 역순 정렬
-    current_events_sorted = current_events.sort_values(by='time_offset', ascending=False)
+# if current_events.empty:
+#     st.info("아직 이벤트가 발생하지 않았습니다. 시간을 진행해 주세요.")
+# else:
+#     # 가장 최근 이벤트를 중심으로 보여주기 위해 역순 정렬
+#     current_events_sorted = current_events.sort_values(by='time_offset', ascending=False)
     
-    # 로그를 테이블로 표시
-    st.dataframe(
-        current_events_sorted[['time_stamp', 'category', 'event', 'details']],
-        hide_index=True,
-        column_config={
-            "time_stamp": st.column_config.DatetimeColumn("시간", format="HH:mm:ss", width="small"),
-            "category": "분류",
-            "event": "주요 이벤트",
-            "details": "상세 설명 및 교리 적용"
-        }
-    )
+#     # 로그를 테이블로 표시
+#     st.dataframe(
+#         current_events_sorted[['time_stamp', 'category', 'event', 'details']],
+#         hide_index=True,
+#         column_config={
+#             "time_stamp": st.column_config.DatetimeColumn("시간", format="HH:mm:ss", width="small"),
+#             "category": "분류",
+#             "event": "주요 이벤트",
+#             "details": "상세 설명 및 교리 적용"
+#         }
+#     )
 
-st.divider()
+# st.divider()
