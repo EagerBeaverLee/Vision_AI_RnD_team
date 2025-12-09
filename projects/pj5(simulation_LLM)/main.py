@@ -152,6 +152,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.scenario_time = None
 
         self.init_local_llm()
+
+        self.ui.splitter.setSizes([900, 300])
         
 
     def init_local_llm(self):

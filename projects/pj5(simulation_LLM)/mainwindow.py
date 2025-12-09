@@ -13,21 +13,29 @@ from PlainTextEdit import mPlainTextEdit
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1196, 849)
-        MainWindow.setMinimumSize(QtCore.QSize(1160, 674))
+        MainWindow.resize(1200, 849)
+        MainWindow.setMinimumSize(QtCore.QSize(1200, 800))
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setStyleSheet("QWidget {\n"
 "    background-color: rgb(20, 20, 20); /* 원하는 색상으로 변경 */\n"
 "}")
         self.centralwidget.setObjectName("centralwidget")
-        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.centralwidget)
-        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.webEngineView = QtWebEngineWidgets.QWebEngineView(parent=self.centralwidget)
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.centralwidget)
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.splitter = QtWidgets.QSplitter(parent=self.centralwidget)
+        self.splitter.setOrientation(QtCore.Qt.Orientation.Horizontal)
+        self.splitter.setChildrenCollapsible(False)
+        self.splitter.setObjectName("splitter")
+        self.webEngineView = QtWebEngineWidgets.QWebEngineView(parent=self.splitter)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.webEngineView.sizePolicy().hasHeightForWidth())
+        self.webEngineView.setSizePolicy(sizePolicy)
         self.webEngineView.setUrl(QtCore.QUrl("about:blank"))
         self.webEngineView.setObjectName("webEngineView")
-        self.horizontalLayout_2.addWidget(self.webEngineView)
-        self.tabWidget = QtWidgets.QTabWidget(parent=self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.tabWidget = QtWidgets.QTabWidget(parent=self.splitter)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.tabWidget.sizePolicy().hasHeightForWidth())
@@ -58,12 +66,22 @@ class Ui_MainWindow(object):
 "}")
         self.tabWidget.setObjectName("tabWidget")
         self.Setting = QtWidgets.QWidget()
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.Setting.sizePolicy().hasHeightForWidth())
+        self.Setting.setSizePolicy(sizePolicy)
         self.Setting.setObjectName("Setting")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.Setting)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.label_3 = QtWidgets.QLabel(parent=self.Setting)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
+        self.label_3.setSizePolicy(sizePolicy)
         self.label_3.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
@@ -91,6 +109,11 @@ class Ui_MainWindow(object):
         self.api_key_txt.setObjectName("api_key_txt")
         self.verticalLayout_2.addWidget(self.api_key_txt)
         self.label_4 = QtWidgets.QLabel(parent=self.Setting)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_4.sizePolicy().hasHeightForWidth())
+        self.label_4.setSizePolicy(sizePolicy)
         self.label_4.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
@@ -100,7 +123,7 @@ class Ui_MainWindow(object):
         self.widget.setObjectName("widget")
         self.verticalLayout_2.addWidget(self.widget)
         self.prompt_txt = QtWidgets.QTextEdit(parent=self.Setting)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.prompt_txt.sizePolicy().hasHeightForWidth())
@@ -130,7 +153,7 @@ class Ui_MainWindow(object):
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_4.addItem(spacerItem)
         self.temp_val = QtWidgets.QLineEdit(parent=self.Setting)
-        self.temp_val.setMinimumSize(QtCore.QSize(30, 0))
+        self.temp_val.setMinimumSize(QtCore.QSize(0, 0))
         self.temp_val.setStyleSheet("QLineEdit {\n"
 "    color: rgb(184, 247, 185);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -149,7 +172,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4.setStretch(2, 1)
         self.verticalLayout_2.addLayout(self.horizontalLayout_4)
         self.temp_slider = QtWidgets.QSlider(parent=self.Setting)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.temp_slider.sizePolicy().hasHeightForWidth())
@@ -181,15 +204,25 @@ class Ui_MainWindow(object):
         self.temp_slider.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.temp_slider.setObjectName("temp_slider")
         self.verticalLayout_2.addWidget(self.temp_slider)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         self.verticalLayout_2.addItem(spacerItem1)
         self.verticalLayout_4.addLayout(self.verticalLayout_2)
         self.tabWidget.addTab(self.Setting, "")
         self.RAG = QtWidgets.QWidget()
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.RAG.sizePolicy().hasHeightForWidth())
+        self.RAG.setSizePolicy(sizePolicy)
         self.RAG.setObjectName("RAG")
         self.verticalLayout_16 = QtWidgets.QVBoxLayout(self.RAG)
         self.verticalLayout_16.setObjectName("verticalLayout_16")
         self.groupBox_6 = QtWidgets.QGroupBox(parent=self.RAG)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.groupBox_6.sizePolicy().hasHeightForWidth())
+        self.groupBox_6.setSizePolicy(sizePolicy)
         self.groupBox_6.setStyleSheet("QGroupBox {\n"
 "    color: rgb(184, 247, 185);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -201,9 +234,14 @@ class Ui_MainWindow(object):
         self.verticalLayout_13.setContentsMargins(9, 3, 9, 3)
         self.verticalLayout_13.setSpacing(1)
         self.verticalLayout_13.setObjectName("verticalLayout_13")
-        spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         self.verticalLayout_13.addItem(spacerItem2)
         self.widget_2 = QtWidgets.QWidget(parent=self.groupBox_6)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.widget_2.sizePolicy().hasHeightForWidth())
+        self.widget_2.setSizePolicy(sizePolicy)
         self.widget_2.setStyleSheet("QWidget{\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
 "}")
@@ -212,9 +250,14 @@ class Ui_MainWindow(object):
         self.horizontalLayout_20.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_20.setSpacing(0)
         self.horizontalLayout_20.setObjectName("horizontalLayout_20")
-        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_20.addItem(spacerItem3)
         self.label_14 = QtWidgets.QLabel(parent=self.widget_2)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_14.sizePolicy().hasHeightForWidth())
+        self.label_14.setSizePolicy(sizePolicy)
         self.label_14.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -228,6 +271,9 @@ class Ui_MainWindow(object):
 "}")
         self.rag_transformation.setObjectName("rag_transformation")
         self.horizontalLayout_20.addWidget(self.rag_transformation)
+        self.horizontalLayout_20.setStretch(0, 17)
+        self.horizontalLayout_20.setStretch(1, 1)
+        self.horizontalLayout_20.setStretch(2, 1)
         self.verticalLayout_13.addWidget(self.widget_2)
         self.default_generator = QtWidgets.QRadioButton(parent=self.groupBox_6)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -332,6 +378,11 @@ class Ui_MainWindow(object):
         self.verticalLayout_13.setStretch(5, 3)
         self.verticalLayout_16.addWidget(self.groupBox_6)
         self.groupBox_5 = QtWidgets.QGroupBox(parent=self.RAG)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.groupBox_5.sizePolicy().hasHeightForWidth())
+        self.groupBox_5.setSizePolicy(sizePolicy)
         self.groupBox_5.setStyleSheet("QGroupBox {\n"
 "    color: rgb(184, 247, 185);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -346,6 +397,11 @@ class Ui_MainWindow(object):
         spacerItem4 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.verticalLayout_12.addItem(spacerItem4)
         self.widget_3 = QtWidgets.QWidget(parent=self.groupBox_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.widget_3.sizePolicy().hasHeightForWidth())
+        self.widget_3.setSizePolicy(sizePolicy)
         self.widget_3.setStyleSheet("QWidget{\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
 "}")
@@ -354,20 +410,33 @@ class Ui_MainWindow(object):
         self.horizontalLayout_17.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_17.setSpacing(0)
         self.horizontalLayout_17.setObjectName("horizontalLayout_17")
-        spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_17.addItem(spacerItem5)
         self.label_12 = QtWidgets.QLabel(parent=self.widget_3)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_12.sizePolicy().hasHeightForWidth())
+        self.label_12.setSizePolicy(sizePolicy)
         self.label_12.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
         self.label_12.setObjectName("label_12")
         self.horizontalLayout_17.addWidget(self.label_12)
         self.rag_indexing = QtWidgets.QLabel(parent=self.widget_3)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.rag_indexing.sizePolicy().hasHeightForWidth())
+        self.rag_indexing.setSizePolicy(sizePolicy)
         self.rag_indexing.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
         self.rag_indexing.setObjectName("rag_indexing")
         self.horizontalLayout_17.addWidget(self.rag_indexing)
+        self.horizontalLayout_17.setStretch(0, 18)
+        self.horizontalLayout_17.setStretch(1, 1)
+        self.horizontalLayout_17.setStretch(2, 1)
         self.verticalLayout_12.addWidget(self.widget_3)
         self.default_retriever = QtWidgets.QRadioButton(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -430,9 +499,14 @@ class Ui_MainWindow(object):
         self.horizontalLayout_10 = QtWidgets.QHBoxLayout(self.widget_4)
         self.horizontalLayout_10.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_10.setObjectName("horizontalLayout_10")
-        spacerItem6 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem6 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_10.addItem(spacerItem6)
         self.groupBox = QtWidgets.QGroupBox(parent=self.widget_4)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
+        self.groupBox.setSizePolicy(sizePolicy)
         self.groupBox.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    border-radius: 5px;\n"
@@ -450,6 +524,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_11 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_11.setObjectName("horizontalLayout_11")
         self.label_8 = QtWidgets.QLabel(parent=self.groupBox)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_8.sizePolicy().hasHeightForWidth())
+        self.label_8.setSizePolicy(sizePolicy)
         self.label_8.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40);\n"
@@ -472,6 +551,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_12 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_12.setObjectName("horizontalLayout_12")
         self.label_9 = QtWidgets.QLabel(parent=self.groupBox)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
+        self.label_9.setSizePolicy(sizePolicy)
         self.label_9.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40);\n"
@@ -522,7 +606,7 @@ class Ui_MainWindow(object):
         self.summary_retriever.setObjectName("summary_retriever")
         self.verticalLayout_12.addWidget(self.summary_retriever)
         self.widget_5 = QtWidgets.QWidget(parent=self.groupBox_5)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.widget_5.sizePolicy().hasHeightForWidth())
@@ -535,9 +619,14 @@ class Ui_MainWindow(object):
         self.horizontalLayout_13.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_13.setSpacing(6)
         self.horizontalLayout_13.setObjectName("horizontalLayout_13")
-        spacerItem7 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem7 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_13.addItem(spacerItem7)
         self.groupBox_2 = QtWidgets.QGroupBox(parent=self.widget_5)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.groupBox_2.sizePolicy().hasHeightForWidth())
+        self.groupBox_2.setSizePolicy(sizePolicy)
         self.groupBox_2.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    border-radius: 5px;\n"
@@ -555,6 +644,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_14 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_14.setObjectName("horizontalLayout_14")
         self.label_10 = QtWidgets.QLabel(parent=self.groupBox_2)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_10.sizePolicy().hasHeightForWidth())
+        self.label_10.setSizePolicy(sizePolicy)
         self.label_10.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40);\n"
@@ -603,7 +697,7 @@ class Ui_MainWindow(object):
         self.hypothetical_retriever.setObjectName("hypothetical_retriever")
         self.verticalLayout_12.addWidget(self.hypothetical_retriever)
         self.widget_6 = QtWidgets.QWidget(parent=self.groupBox_5)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.widget_6.sizePolicy().hasHeightForWidth())
@@ -618,6 +712,11 @@ class Ui_MainWindow(object):
         spacerItem8 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_15.addItem(spacerItem8)
         self.groupBox_3 = QtWidgets.QGroupBox(parent=self.widget_6)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.groupBox_3.sizePolicy().hasHeightForWidth())
+        self.groupBox_3.setSizePolicy(sizePolicy)
         self.groupBox_3.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    border-radius: 5px;\n"
@@ -635,6 +734,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_16 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_16.setObjectName("horizontalLayout_16")
         self.label_11 = QtWidgets.QLabel(parent=self.groupBox_3)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_11.sizePolicy().hasHeightForWidth())
+        self.label_11.setSizePolicy(sizePolicy)
         self.label_11.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40);\n"
@@ -683,7 +787,7 @@ class Ui_MainWindow(object):
         self.granular_retriever.setObjectName("granular_retriever")
         self.verticalLayout_12.addWidget(self.granular_retriever)
         self.widget_7 = QtWidgets.QWidget(parent=self.groupBox_5)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.widget_7.sizePolicy().hasHeightForWidth())
@@ -695,9 +799,14 @@ class Ui_MainWindow(object):
         self.horizontalLayout_18 = QtWidgets.QHBoxLayout(self.widget_7)
         self.horizontalLayout_18.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_18.setObjectName("horizontalLayout_18")
-        spacerItem9 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem9 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_18.addItem(spacerItem9)
         self.groupBox_4 = QtWidgets.QGroupBox(parent=self.widget_7)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
+        self.groupBox_4.setSizePolicy(sizePolicy)
         self.groupBox_4.setStyleSheet("QGroupBox {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    border-radius: 5px;\n"
@@ -715,6 +824,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_19 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_19.setObjectName("horizontalLayout_19")
         self.label_13 = QtWidgets.QLabel(parent=self.groupBox_4)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_13.sizePolicy().hasHeightForWidth())
+        self.label_13.setSizePolicy(sizePolicy)
         self.label_13.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "    background-color: rgb(40, 40, 40);\n"
@@ -751,6 +865,11 @@ class Ui_MainWindow(object):
         self.verticalLayout_12.setStretch(10, 3)
         self.verticalLayout_16.addWidget(self.groupBox_5)
         self.groupBox_7 = QtWidgets.QGroupBox(parent=self.RAG)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.groupBox_7.sizePolicy().hasHeightForWidth())
+        self.groupBox_7.setSizePolicy(sizePolicy)
         self.groupBox_7.setStyleSheet("QGroupBox {\n"
 "    color: rgb(184, 247, 185);\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -791,6 +910,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_21.addWidget(self.rag_post_processing)
         self.verticalLayout_15.addWidget(self.widget_8)
         self.widget_10 = QtWidgets.QWidget(parent=self.groupBox_7)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.widget_10.sizePolicy().hasHeightForWidth())
+        self.widget_10.setSizePolicy(sizePolicy)
         self.widget_10.setStyleSheet("QWidget {\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
 "}")
@@ -799,7 +923,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_24.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_24.setObjectName("horizontalLayout_24")
         self.similarity_post_processor = QtWidgets.QCheckBox(parent=self.widget_10)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.similarity_post_processor.sizePolicy().hasHeightForWidth())
@@ -822,7 +946,7 @@ class Ui_MainWindow(object):
 "")
         self.similarity_post_processor.setObjectName("similarity_post_processor")
         self.horizontalLayout_24.addWidget(self.similarity_post_processor)
-        spacerItem12 = QtWidgets.QSpacerItem(78, 13, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem12 = QtWidgets.QSpacerItem(78, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_24.addItem(spacerItem12)
         self.similarity_val = QtWidgets.QLineEdit(parent=self.widget_10)
         self.similarity_val.setMinimumSize(QtCore.QSize(30, 0))
@@ -839,8 +963,8 @@ class Ui_MainWindow(object):
         self.similarity_val.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight|QtCore.Qt.AlignmentFlag.AlignTrailing|QtCore.Qt.AlignmentFlag.AlignVCenter)
         self.similarity_val.setObjectName("similarity_val")
         self.horizontalLayout_24.addWidget(self.similarity_val)
-        self.horizontalLayout_24.setStretch(0, 3)
-        self.horizontalLayout_24.setStretch(1, 3)
+        self.horizontalLayout_24.setStretch(0, 2)
+        self.horizontalLayout_24.setStretch(1, 5)
         self.horizontalLayout_24.setStretch(2, 1)
         self.verticalLayout_15.addWidget(self.widget_10)
         self.widget_11 = QtWidgets.QWidget(parent=self.groupBox_7)
@@ -1006,12 +1130,22 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.setSpacing(4)
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.label_6 = QtWidgets.QLabel(parent=self.RAG)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_6.sizePolicy().hasHeightForWidth())
+        self.label_6.setSizePolicy(sizePolicy)
         self.label_6.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
         self.label_6.setObjectName("label_6")
         self.horizontalLayout_5.addWidget(self.label_6)
         self.path = QtWidgets.QLabel(parent=self.RAG)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.path.sizePolicy().hasHeightForWidth())
+        self.path.setSizePolicy(sizePolicy)
         self.path.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
@@ -1051,12 +1185,22 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
         self.label_7 = QtWidgets.QLabel(parent=self.RAG)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_7.sizePolicy().hasHeightForWidth())
+        self.label_7.setSizePolicy(sizePolicy)
         self.label_7.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
         self.label_7.setObjectName("label_7")
         self.horizontalLayout_6.addWidget(self.label_7)
         self.Loading_bar = QtWidgets.QProgressBar(parent=self.RAG)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.Loading_bar.sizePolicy().hasHeightForWidth())
+        self.Loading_bar.setSizePolicy(sizePolicy)
         self.Loading_bar.setStyleSheet("QProgressBar {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    border-radius: 5px;\n"
@@ -1081,6 +1225,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_16.setStretch(4, 1)
         self.tabWidget.addTab(self.RAG, "")
         self.LLM = QtWidgets.QWidget()
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.LLM.sizePolicy().hasHeightForWidth())
+        self.LLM.setSizePolicy(sizePolicy)
+        self.LLM.setMinimumSize(QtCore.QSize(0, 0))
         self.LLM.setObjectName("LLM")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.LLM)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -1090,6 +1240,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_8.setSpacing(2)
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
         self.label_2 = QtWidgets.QLabel(parent=self.LLM)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
+        self.label_2.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setBold(True)
         self.label_2.setFont(font)
@@ -1102,6 +1257,11 @@ class Ui_MainWindow(object):
         spacerItem15 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_8.addItem(spacerItem15)
         self.experiment_token_bar = QtWidgets.QProgressBar(parent=self.LLM)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.experiment_token_bar.sizePolicy().hasHeightForWidth())
+        self.experiment_token_bar.setSizePolicy(sizePolicy)
         self.experiment_token_bar.setStyleSheet("QProgressBar {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    border-radius: 5px;\n"
@@ -1332,8 +1492,8 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addItem(spacerItem16, 2, 1, 1, 1)
         self.send_btn = QtWidgets.QPushButton(parent=self.LLM)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
-        sizePolicy.setHorizontalStretch(1)
-        sizePolicy.setVerticalStretch(1)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.send_btn.sizePolicy().hasHeightForWidth())
         self.send_btn.setSizePolicy(sizePolicy)
         self.send_btn.setStyleSheet("QPushButton {\n"
@@ -1376,12 +1536,10 @@ class Ui_MainWindow(object):
         self.verticalLayout.setStretch(1, 1)
         self.verticalLayout.setStretch(2, 1)
         self.tabWidget.addTab(self.LLM, "")
-        self.horizontalLayout_2.addWidget(self.tabWidget)
-        self.horizontalLayout_2.setStretch(0, 2)
-        self.horizontalLayout_2.setStretch(1, 1)
+        self.verticalLayout_3.addWidget(self.splitter)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1196, 33))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1200, 33))
         self.menubar.setObjectName("menubar")
         self.menu_Setting = QtWidgets.QMenu(parent=self.menubar)
         self.menu_Setting.setObjectName("menu_Setting")
