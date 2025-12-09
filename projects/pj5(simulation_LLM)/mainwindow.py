@@ -7,12 +7,13 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
+from PlainTextEdit import mPlainTextEdit
 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1196, 739)
+        MainWindow.resize(1196, 729)
         MainWindow.setMinimumSize(QtCore.QSize(1160, 674))
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setStyleSheet("QWidget {\n"
@@ -30,6 +31,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_5 = QtWidgets.QVBoxLayout()
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_8.setSpacing(2)
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
         self.label_2 = QtWidgets.QLabel(parent=self.centralwidget)
         font = QtGui.QFont()
@@ -65,7 +67,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.experiment_txt.sizePolicy().hasHeightForWidth())
         self.experiment_txt.setSizePolicy(sizePolicy)
-        self.experiment_txt.setMinimumSize(QtCore.QSize(300, 0))
+        self.experiment_txt.setMinimumSize(QtCore.QSize(0, 0))
         self.experiment_txt.setStyleSheet("QTextEdit {\n"
 "    color: white;\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
@@ -81,10 +83,171 @@ class Ui_MainWindow(object):
         self.experiment_txt.setObjectName("experiment_txt")
         self.verticalLayout_5.addWidget(self.experiment_txt)
         self.verticalLayout.addLayout(self.verticalLayout_5)
+        self.gridLayout = QtWidgets.QGridLayout()
+        self.gridLayout.setObjectName("gridLayout")
+        self.description_btn1 = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.description_btn1.sizePolicy().hasHeightForWidth())
+        self.description_btn1.setSizePolicy(sizePolicy)
+        self.description_btn1.setStyleSheet("QPushButton {\n"
+"    color: rgb(255, 242, 100);\n"
+"    border: 1px solid rgb(255, 242, 100); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(255, 242, 100);\n"
+"    background-color: rgb(155, 142, 0); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(255, 242, 100); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(255, 242, 100);\n"
+"    background-color: rgb(225, 212, 70); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(255, 242, 100); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.description_btn1.setAutoRepeat(False)
+        self.description_btn1.setFlat(False)
+        self.description_btn1.setObjectName("description_btn1")
+        self.gridLayout.addWidget(self.description_btn1, 0, 0, 1, 1)
+        self.description_btn2 = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.description_btn2.sizePolicy().hasHeightForWidth())
+        self.description_btn2.setSizePolicy(sizePolicy)
+        self.description_btn2.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.description_btn2.setAutoRepeat(False)
+        self.description_btn2.setFlat(False)
+        self.description_btn2.setObjectName("description_btn2")
+        self.gridLayout.addWidget(self.description_btn2, 0, 1, 1, 1)
+        self.description_btn3 = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.description_btn3.sizePolicy().hasHeightForWidth())
+        self.description_btn3.setSizePolicy(sizePolicy)
+        self.description_btn3.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.description_btn3.setAutoRepeat(False)
+        self.description_btn3.setFlat(False)
+        self.description_btn3.setObjectName("description_btn3")
+        self.gridLayout.addWidget(self.description_btn3, 1, 0, 1, 1)
+        self.description_btn4 = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.description_btn4.sizePolicy().hasHeightForWidth())
+        self.description_btn4.setSizePolicy(sizePolicy)
+        self.description_btn4.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.description_btn4.setAutoRepeat(False)
+        self.description_btn4.setFlat(False)
+        self.description_btn4.setObjectName("description_btn4")
+        self.gridLayout.addWidget(self.description_btn4, 1, 1, 1, 1)
+        self.description_btn5 = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.description_btn5.sizePolicy().hasHeightForWidth())
+        self.description_btn5.setSizePolicy(sizePolicy)
+        self.description_btn5.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.description_btn5.setAutoRepeat(False)
+        self.description_btn5.setFlat(False)
+        self.description_btn5.setObjectName("description_btn5")
+        self.gridLayout.addWidget(self.description_btn5, 2, 0, 1, 1)
+        self.description_btn6 = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.description_btn6.sizePolicy().hasHeightForWidth())
+        self.description_btn6.setSizePolicy(sizePolicy)
+        self.description_btn6.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.description_btn6.setAutoRepeat(False)
+        self.description_btn6.setFlat(False)
+        self.description_btn6.setObjectName("description_btn6")
+        self.gridLayout.addWidget(self.description_btn6, 2, 1, 1, 1)
+        self.verticalLayout.addLayout(self.gridLayout)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
-        self.horizontalLayout.setSpacing(2)
+        self.horizontalLayout.setContentsMargins(-1, 6, -1, -1)
+        self.horizontalLayout.setSpacing(4)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.input_text = QtWidgets.QPlainTextEdit(parent=self.centralwidget)
+        # self.input_text = QtWidgets.QPlainTextEdit(parent=self.centralwidget)
+        self.input_text = mPlainTextEdit(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -150,8 +313,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setStretch(0, 5)
         self.horizontalLayout.setStretch(1, 1)
         self.verticalLayout.addLayout(self.horizontalLayout)
-        self.verticalLayout.setStretch(0, 4)
+        self.verticalLayout.setStretch(0, 3)
         self.verticalLayout.setStretch(1, 1)
+        self.verticalLayout.setStretch(2, 1)
         self.horizontalLayout_2.addLayout(self.verticalLayout)
         self.tabWidget = QtWidgets.QTabWidget(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Expanding)
@@ -1205,8 +1369,8 @@ class Ui_MainWindow(object):
         self.verticalLayout_16.addItem(spacerItem20)
         self.tabWidget.addTab(self.RAG, "")
         self.horizontalLayout_2.addWidget(self.tabWidget)
-        self.horizontalLayout_2.setStretch(0, 5)
-        self.horizontalLayout_2.setStretch(1, 2)
+        self.horizontalLayout_2.setStretch(0, 3)
+        self.horizontalLayout_2.setStretch(1, 1)
         self.horizontalLayout_2.setStretch(2, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
@@ -1231,11 +1395,25 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.input_text, self.experiment_txt)
         MainWindow.setTabOrder(self.experiment_txt, self.tabWidget)
 
+        self.input_text.set_send_button(self.send_btn)
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.label_2.setText(_translate("MainWindow", "EXPERIMENT"))
         self.experiment_token_bar.setFormat(_translate("MainWindow", "used tokens: %p%"))
+        self.description_btn1.setText(_translate("MainWindow", "최근 전장상황에 대해\n"
+"묘사해주세요"))
+        self.description_btn2.setText(_translate("MainWindow", "적군의 규모는\n"
+"어느정도 인가요?"))
+        self.description_btn3.setText(_translate("MainWindow", "현재 아군의 전투력은\n"
+"어떤가요?"))
+        self.description_btn4.setText(_translate("MainWindow", "아군은 어떤 무장장비를\n"
+"보유하고 있나요?"))
+        self.description_btn5.setText(_translate("MainWindow", "현재 전장상황은\n"
+"어느쪽이 우세한가요?"))
+        self.description_btn6.setText(_translate("MainWindow", "아군의 피해현황은\n"
+"어떠한가요?"))
         self.input_text.setPlaceholderText(_translate("MainWindow", "Enter your message..."))
         self.send_btn.setText(_translate("MainWindow", "send"))
         self.label_3.setText(_translate("MainWindow", "Api-key"))

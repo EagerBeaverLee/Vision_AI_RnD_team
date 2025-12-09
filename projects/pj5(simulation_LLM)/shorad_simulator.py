@@ -839,6 +839,11 @@ def hard_code_image(current_time_offset):
     # 슬라이더 값이 바뀌면 인덱스 업데이트
     if current_time_offset != st.session_state.index:
         st.session_state.index = current_time_offset
+        try:
+            with open("time_offset.txt", "a", encoding="utf-8") as f:
+                f.write(str(current_time_offset) + "\n")
+        except IOError as e:
+            print(f"파일 쓰기 오류: {e}")
         st.rerun()  # 화면 즉시 갱신
 
 
