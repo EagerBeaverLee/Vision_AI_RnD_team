@@ -25,7 +25,7 @@
     background-color: rgb(20, 20, 20); /* 원하는 색상으로 변경 */
 }</string>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout_3">
+   <layout class="QVBoxLayout" name="verticalLayout_7">
     <item>
      <widget class="QSplitter" name="splitter">
       <property name="orientation">
@@ -34,18 +34,256 @@
       <property name="childrenCollapsible">
        <bool>false</bool>
       </property>
-      <widget class="QWebEngineView" name="webEngineView">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="url">
-        <url>
-         <string>about:blank</string>
-        </url>
-       </property>
+      <widget class="QWidget" name="">
+       <layout class="QVBoxLayout" name="verticalLayout" stretch="5,1">
+        <item>
+         <widget class="QWebEngineView" name="webEngineView">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="url">
+           <url>
+            <string>about:blank</string>
+           </url>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QPushButton" name="description_btn1">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+	color: rgb(255, 242, 100);
+    border: 1px solid rgb(255, 242, 100); /* 원하는 RGB 색상으로 변경 */
+    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
+}
+QPushButton:hover {
+	color: rgb(255, 242, 100);
+    background-color: rgb(155, 142, 0); /* 마우스 올렸을 때 더 진한 색 */
+    border: 1px solid rgb(255, 242, 100); /* 테두리도 함께 진하게 (선택 사항) */
+}
+
+QPushButton:pressed {
+	color: rgb(255, 242, 100);
+    background-color: rgb(225, 212, 70); /* 버튼 눌렀을 때 가장 진한 색 */
+    border: 1px solid rgb(255, 242, 100); /* 테두리도 함께 진하게 (선택 사항) */
+}</string>
+            </property>
+            <property name="text">
+             <string>최근 전장상황에 대해
+묘사해주세요</string>
+            </property>
+            <property name="autoRepeat">
+             <bool>false</bool>
+            </property>
+            <property name="flat">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QPushButton" name="description_btn2">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+	color: rgb(184, 247, 185);
+    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
+    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
+}
+QPushButton:hover {
+	color: rgb(184, 247, 185);
+    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}
+
+QPushButton:pressed {
+	color: rgb(184, 247, 185);
+    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}</string>
+            </property>
+            <property name="text">
+             <string>적군의 규모는
+어느정도 인가요?</string>
+            </property>
+            <property name="autoRepeat">
+             <bool>false</bool>
+            </property>
+            <property name="flat">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QPushButton" name="description_btn3">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+	color: rgb(184, 247, 185);
+    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
+    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
+}
+QPushButton:hover {
+	color: rgb(184, 247, 185);
+    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}
+
+QPushButton:pressed {
+	color: rgb(184, 247, 185);
+    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}</string>
+            </property>
+            <property name="text">
+             <string>현재 아군의 전투력은
+어떤가요?</string>
+            </property>
+            <property name="autoRepeat">
+             <bool>false</bool>
+            </property>
+            <property name="flat">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QPushButton" name="description_btn4">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+	color: rgb(184, 247, 185);
+    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
+    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
+}
+QPushButton:hover {
+	color: rgb(184, 247, 185);
+    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}
+
+QPushButton:pressed {
+	color: rgb(184, 247, 185);
+    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}</string>
+            </property>
+            <property name="text">
+             <string>아군은 어떤 무장장비를
+보유하고 있나요?</string>
+            </property>
+            <property name="autoRepeat">
+             <bool>false</bool>
+            </property>
+            <property name="flat">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QPushButton" name="description_btn5">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+	color: rgb(184, 247, 185);
+    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
+    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
+}
+QPushButton:hover {
+	color: rgb(184, 247, 185);
+    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}
+
+QPushButton:pressed {
+	color: rgb(184, 247, 185);
+    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}</string>
+            </property>
+            <property name="text">
+             <string>현재 전장상황은
+어느쪽이 우세한가요?</string>
+            </property>
+            <property name="autoRepeat">
+             <bool>false</bool>
+            </property>
+            <property name="flat">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QPushButton" name="description_btn6">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+	color: rgb(184, 247, 185);
+    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
+    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
+}
+QPushButton:hover {
+	color: rgb(184, 247, 185);
+    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}
+
+QPushButton:pressed {
+	color: rgb(184, 247, 185);
+    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}</string>
+            </property>
+            <property name="text">
+             <string>아군의 피해현황은
+어떠한가요?</string>
+            </property>
+            <property name="autoRepeat">
+             <bool>false</bool>
+            </property>
+            <property name="flat">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
       <widget class="QTabWidget" name="tabWidget">
        <property name="sizePolicy">
@@ -100,7 +338,7 @@ QTabBar::tab:selected {
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_2">
+          <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,1,1,8,1,1,10">
            <item>
             <widget class="QLabel" name="label_3">
              <property name="sizePolicy">
@@ -170,9 +408,6 @@ QLineEdit:focus {
               <string>Prompt</string>
              </property>
             </widget>
-           </item>
-           <item>
-            <widget class="QWidget" name="widget" native="true"/>
            </item>
            <item>
             <widget class="QTextEdit" name="prompt_txt">
@@ -2024,7 +2259,7 @@ QProgressBar::chunk {
         <attribute name="title">
          <string>LLM참모</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="3,1,1">
+        <layout class="QVBoxLayout" name="verticalLayout_3" stretch="4,1">
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
@@ -2106,7 +2341,7 @@ QProgressBar::chunk {
             </layout>
            </item>
            <item>
-            <widget class="QTextEdit" name="experiment_txt">
+            <widget class="QTextBrowser" name="experiment_txt">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
                <horstretch>0</horstretch>
@@ -2136,238 +2371,6 @@ QTextEdit:focus {
              </property>
              <property name="readOnly">
               <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QGridLayout" name="gridLayout">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="description_btn1">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QPushButton {
-	color: rgb(255, 242, 100);
-    border: 1px solid rgb(255, 242, 100); /* 원하는 RGB 색상으로 변경 */
-    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
-}
-QPushButton:hover {
-	color: rgb(255, 242, 100);
-    background-color: rgb(155, 142, 0); /* 마우스 올렸을 때 더 진한 색 */
-    border: 1px solid rgb(255, 242, 100); /* 테두리도 함께 진하게 (선택 사항) */
-}
-
-QPushButton:pressed {
-	color: rgb(255, 242, 100);
-    background-color: rgb(225, 212, 70); /* 버튼 눌렀을 때 가장 진한 색 */
-    border: 1px solid rgb(255, 242, 100); /* 테두리도 함께 진하게 (선택 사항) */
-}</string>
-             </property>
-             <property name="text">
-              <string>최근 전장상황에 대해
-묘사해주세요</string>
-             </property>
-             <property name="autoRepeat">
-              <bool>false</bool>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="description_btn2">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QPushButton {
-	color: rgb(184, 247, 185);
-    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
-    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
-}
-QPushButton:hover {
-	color: rgb(184, 247, 185);
-    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
-    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
-}
-
-QPushButton:pressed {
-	color: rgb(184, 247, 185);
-    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
-    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
-}</string>
-             </property>
-             <property name="text">
-              <string>적군의 규모는
-어느정도 인가요?</string>
-             </property>
-             <property name="autoRepeat">
-              <bool>false</bool>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QPushButton" name="description_btn3">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QPushButton {
-	color: rgb(184, 247, 185);
-    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
-    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
-}
-QPushButton:hover {
-	color: rgb(184, 247, 185);
-    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
-    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
-}
-
-QPushButton:pressed {
-	color: rgb(184, 247, 185);
-    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
-    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
-}</string>
-             </property>
-             <property name="text">
-              <string>현재 아군의 전투력은
-어떤가요?</string>
-             </property>
-             <property name="autoRepeat">
-              <bool>false</bool>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QPushButton" name="description_btn4">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QPushButton {
-	color: rgb(184, 247, 185);
-    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
-    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
-}
-QPushButton:hover {
-	color: rgb(184, 247, 185);
-    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
-    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
-}
-
-QPushButton:pressed {
-	color: rgb(184, 247, 185);
-    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
-    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
-}</string>
-             </property>
-             <property name="text">
-              <string>아군은 어떤 무장장비를
-보유하고 있나요?</string>
-             </property>
-             <property name="autoRepeat">
-              <bool>false</bool>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QPushButton" name="description_btn5">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QPushButton {
-	color: rgb(184, 247, 185);
-    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
-    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
-}
-QPushButton:hover {
-	color: rgb(184, 247, 185);
-    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
-    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
-}
-
-QPushButton:pressed {
-	color: rgb(184, 247, 185);
-    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
-    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
-}</string>
-             </property>
-             <property name="text">
-              <string>현재 전장상황은
-어느쪽이 우세한가요?</string>
-             </property>
-             <property name="autoRepeat">
-              <bool>false</bool>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QPushButton" name="description_btn6">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QPushButton {
-	color: rgb(184, 247, 185);
-    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
-    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
-}
-QPushButton:hover {
-	color: rgb(184, 247, 185);
-    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
-    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
-}
-
-QPushButton:pressed {
-	color: rgb(184, 247, 185);
-    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
-    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
-}</string>
-             </property>
-             <property name="text">
-              <string>아군의 피해현황은
-어떠한가요?</string>
-             </property>
-             <property name="autoRepeat">
-              <bool>false</bool>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
              </property>
             </widget>
            </item>

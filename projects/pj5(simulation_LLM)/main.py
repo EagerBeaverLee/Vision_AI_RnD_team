@@ -1,11 +1,11 @@
-import sys, os, time, copy, tiktoken, json, ast
+import sys, os, time, copy, tiktoken, json, ast, markdown
 import subprocess
 import atexit
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy, QMenu, QFileDialog
 )
 from PyQt6.QtCore import Qt, QCoreApplication, QTimer, QObject, QPoint, pyqtSignal, QThread, QUrl
-from PyQt6.QtGui import QDoubleValidator, QAction
+from PyQt6.QtGui import QDoubleValidator, QAction, QTextCursor
 from PyQt6.uic import loadUi
 
 from mainwindow import Ui_MainWindow
@@ -143,8 +143,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.rag_transformation = "Default"
         self.rag_post_processing = None
 
-        #초기값 세팅
-        # self.ui.splitter.setSizes([175, 715, 278])      #초기 프로그램 크기 조정
+        self.report_msg = ""
 
         self.ui.default_retriever.setChecked(True)
         self.ui.default_generator.setChecked(True)
@@ -153,7 +152,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.init_local_llm()
 
-        self.ui.splitter.setSizes([900, 300])
+        self.ui.splitter.setSizes([700, 500])      #초기 프로그램 크기 조정
         
 
     def init_local_llm(self):
@@ -1172,7 +1171,6 @@ class Window(QMainWindow, Ui_MainWindow):
                 if lines:
                     latest_value_str = lines[-1].strip()
                     self.scenario_time = int(latest_value_str)
-                    QMessageBox.information(self, "성공", f"값은 {self.scenario_time}입니다")
                     self.description_scenario()
                 else:
                     QMessageBox.critical(self, "오류", "기록된 값이 없습니다")
@@ -1319,6 +1317,7 @@ class Window(QMainWindow, Ui_MainWindow):
         작성할 때 각 형식에 포함되는 데이터를 바탕으로 리포트를 작성하고 **모든 내용은 데이터에 있는 내용만 가지고 작성**합니다(확대 해석불가)
         데이터를 모두 가져와서 보여줄 필요는 없고 **설명하기 위해 필요한 부분만 정리**해서 다이나믹한 전장상황을 리얼하게 묘사합니다
         **이때 표의 행과 열이 바뀌어 내용이 바뀌지 않도록 주의합니다**
+        **출력하는 모든 형식은 markdown으로 변환 가능하도록 출력하고 표는 헤더와 내용 사이에 이렇게 구분선을 넣고 헤더 다음 줄바꿈을 해서 표로 출력될 수 있도록 작성해줘**
 
         1. 요약(Summary / Executive Overview)
         - 아래 2~7번 사항을 전반적으로 종합하여 현재 전장상황 핵심 3줄(**가장 시급한 조치/결심 요청 사항** 등 명확히 포함)
@@ -1382,37 +1381,71 @@ class Window(QMainWindow, Ui_MainWindow):
 
         question = "위에 제시된 지침에 따라 상세한 군사 시나리오를 묘사해주세요"
         report = scenario_explain_chain.invoke({"question": question})
-
+        
         if report:
-            self.ui.experiment_txt.append(f"Sended Message: 최근 전장상황에 대해 묘사해주세요")
-            self.ui.experiment_txt.append("")
+            self.report_msg += "\n"
+            self.report_msg += "Sended Message: 최근 전장상황에 대해 묘사해주세요\n"
+            self.report_msg += "\n"
+
+            self.apply_markdown_report()
+
             words = report.content.split(' ')
-            self.ui.experiment_txt.append("Ai Messages: ")
+            self.report_msg += "Ai Messages: \n"
+
+            self.apply_markdown_report()
 
             #stream효과
             for i, w in enumerate(words):
-                cursor = self.ui.experiment_txt.textCursor()
-                cursor.movePosition(cursor.MoveOperation.End)
+                self.report_msg
 
                 # 마지막 단어가 아니면 공백 추가
                 if i < len(words) - 1:
-                    cursor.insertText(w + " ")
+                    self.report_msg += w + " "
                 else:
-                    cursor.insertText(w + "\n")
+                    self.report_msg += w + "\n"
                 
-                self.ui.experiment_txt.setTextCursor(cursor)
-                
-                # 텍스트가 추가될 때마다 UI 업데이트
-                QCoreApplication.processEvents()
-                
-                # 시작적 지연
-                time.sleep(0.05)
+                self.apply_markdown_report()
 
-        self.ui.experiment_txt.append("")
+                # 시작적 지연
+                time.sleep(0.02)
+
+        self.report_msg += "\n"
         self.show_status_messages("Experiment chat is ")
 
+    def apply_markdown_report(self):
 
+        text_browser = self.ui.experiment_txt
 
+        res = markdown.markdown(self.report_msg, extensions=['tables'])
+
+        css_style = """
+        <style>
+            /* 표 전체에 테두리를 설정하고, 셀 간의 간격을 없앱니다 */
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                margin-top: 10px
+            }
+            /* 헤더(th)와 데이터 셀(td)에 테두리 스타일을 적용합니다 */
+            th, td {
+                border: 1px solid white; /* 검은색 1px 실선 테두리 */
+                padding: 8px; /* 셀 내부 여백 */
+                text-align: left;
+            }
+        </style>
+        """
+        final_res = css_style + res
+
+        self.ui.experiment_txt.setHtml(final_res)
+
+        text_browser.ensurePolished() # UI 위젯 스타일/상태 업데이트 보장
+        text_browser.updateGeometry() # 위젯의 기하학적 정보(크기 등) 업데이트
+
+        text_browser.moveCursor(QTextCursor.MoveOperation.End)
+        text_browser.ensureCursorVisible()
+        
+        # 텍스트가 추가될 때마다 UI 업데이트
+        QCoreApplication.processEvents()
 
     
 
