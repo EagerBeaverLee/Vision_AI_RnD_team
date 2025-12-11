@@ -2,8 +2,9 @@ import sys, os, time, copy, tiktoken, json, ast, markdown
 import subprocess
 import atexit
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy, QMenu, QFileDialog
+    QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy, QMenu, QFileDialog, QProgressDialog
 )
+from PySide6.QtCore import QMetaType
 from PyQt6.QtCore import Qt, QCoreApplication, QTimer, QObject, QPoint, pyqtSignal, QThread, QUrl
 from PyQt6.QtGui import QDoubleValidator, QAction, QTextCursor
 from PyQt6.uic import loadUi
@@ -36,6 +37,256 @@ from typing import List
 from transformers import AutoTokenizer
 
 streamlit_process = None
+
+class GenerateResponse(QThread):
+    finished_sig = pyqtSignal(str)
+
+    def __init__(self, local_llm):
+        super().__init__()
+        self.llm = local_llm
+
+    def load_time_offset(self):
+        try:
+            with open("time_offset.txt", "r", encoding="utf-8") as f:
+                lines = f.readlines()
+                if lines:
+                    latest_value_str = lines[-1].strip()
+                    self.scenario_time = int(latest_value_str)
+                    report = self.description_scenario()
+                    return report.content
+                else:
+                    QMessageBox.critical(self, "오류", "기록된 값이 없습니다")
+
+        except (IOError, ValueError) as e:
+            QMessageBox.critical(self, "오류", f"오류 발생: {e}")
+
+    def description_scenario(self):
+
+        def generalize_to_json(data_string: str) -> str:
+            """
+            튜플 리스트 형태의 문자열 데이터를 JSON 문자열로 변환하는 일반화 함수.
+            
+            데이터 문자열은 [(헤더 튜플), (데이터 튜플), ...] 형식이어야 합니다.
+            
+            Args:
+                data_string: 변환할 문자열 데이터.
+                
+            Returns:
+                JSON 형식의 문자열. 변환 실패 시 None을 반환합니다.
+            """
+            try:
+                # 1. 문자열을 파이썬 리스트 구조로 안전하게 변환
+                # ast.literal_eval은 보안 문제 없이 파이썬 리터럴을 평가합니다.
+                data_list = ast.literal_eval(data_string)
+                
+                # 데이터가 비어 있거나 올바른 형태가 아니면 예외 처리
+                if not data_list or not isinstance(data_list, list):
+                    raise ValueError("데이터가 비어 있거나 리스트 형태가 아닙니다.")
+                    
+                # 2. 헤더(키)와 데이터 분리
+                keys = data_list[0] # 첫 번째 튜플은 헤더(키)
+                data_rows = data_list[1:] # 두 번째 튜플부터 실제 데이터 행
+                
+                if not isinstance(keys, tuple) and not isinstance(keys, list):
+                    raise ValueError("첫 번째 요소(헤더)가 튜플 또는 리스트 형태가 아닙니다.")
+
+                # 3. 각 데이터 행(튜플)을 딕셔너리(JSON 객체)로 변환
+                json_list = []
+                for row in data_rows:
+                    if len(keys) != len(row):
+                        print(f"경고: 키({len(keys)}개)와 데이터({len(row)}개)의 개수가 일치하지 않는 행이 발견되어 해당 행은 건너뜁니다.")
+                        continue
+
+                    # zip을 사용하여 키와 값을 묶어 딕셔너리 생성
+                    feature_dict = dict(zip(keys, row))
+                    
+                    # **일반화된 자료형 변환 (숫자형으로 변환 가능한 경우 시도)**
+                    # 이 부분은 데이터셋마다 달라질 수 있지만, 일반적인 숫자형 변환을 시도합니다.
+                    processed_dict = {}
+                    for k, v in feature_dict.items():
+                        try:
+                            # 정수형으로 시도
+                            processed_dict[k] = int(v)
+                        except (ValueError, TypeError):
+                            try:
+                                # 실수형으로 시도
+                                processed_dict[k] = float(v)
+                            except (ValueError, TypeError):
+                                # 실패하면 기존 값 (문자열 등) 사용
+                                processed_dict[k] = v
+                                
+                    json_list.append(processed_dict)
+                    
+                # 4. 최종 JSON 문자열로 변환 (들여쓰기 적용)
+                return json.dumps(json_list, indent=2, ensure_ascii=False)
+
+            except (ValueError, SyntaxError) as e:
+                print(f"!!! 데이터 변환 중 오류 발생: {e}")
+                return None
+            
+        start_time_tick = 0
+        end_time_tick = 0
+        db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1208.db")
+
+        inspector = inspect(db._engine)
+
+        #each table columns elements
+        friendly = inspector.get_columns('friendly')
+        blue_force_h = [col['name'] for col in friendly]
+        oppose = inspector.get_columns('oppose')
+        red_force_h = [col['name'] for col in oppose]
+        main_event = inspector.get_columns('main_event')
+        main_event_h = [col['name'] for col in main_event]
+        mission = inspector.get_columns('mission')
+        mission_h = [col['name'] for col in mission]
+        civil_elements = inspector.get_columns('civil_elements')
+        civil_elements_h = [col['name'] for col in civil_elements]
+        weather = inspector.get_columns('weather')
+        weather_h = [col['name'] for col in weather]
+
+        #transform list -> str
+        blue_force_h = str(blue_force_h)
+        red_force_h = str(red_force_h)
+        weather_h = str(weather_h)
+        main_event_h = str(main_event_h)
+        mission_h = str(mission_h)
+        civil_elements_h = str(civil_elements_h)
+
+        #transform structure
+        blue_force_h = "[("+blue_force_h[1:-1] + ")]"
+        red_force_h = "[("+red_force_h[1:-1] + ")]"
+        weather_h = "[("+weather_h[1:-1] + ")]"
+        main_event_h = "[("+main_event_h[1:-1] + ")]"
+        mission_h = "[("+mission_h[1:-1] + ")]"
+        civil_elements_h = "[("+civil_elements_h[1:-1] + ")]"
+
+        if(self.scenario_time < 4):
+            end_time_tick = self.scenario_time
+
+        else:
+            start_time_tick = self.scenario_time - 3
+            end_time_tick = self.scenario_time
+
+        #SQL query is executed
+        blue_force = db.run(f"SELECT * FROM friendly WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
+        red_force = db.run(f"SELECT * FROM oppose WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
+        terrian_civil_consideration = db.run(f"select * from civil_elements")
+        weather = db.run(f"select * from weather WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
+        main_event = db.run(f"select * from main_event WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
+        mission = db.run(f"select * from mission WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
+
+        #Combine heading and SQL query results
+        blue_force_t = blue_force_h[:-1] + ', ' + blue_force[1:]
+        red_force_t = red_force_h[:-1] + ', ' + red_force[1:]
+        weather_t = weather_h[:-1] + ', ' + weather[1:]
+        main_event_t = main_event_h[:-1] + ', ' + main_event[1:]
+        mission_t = mission_h[:-1] + ', ' + mission[1:]
+        terrian_civil_consideration_t = civil_elements_h[:-1] + ', ' + terrian_civil_consideration[1:]
+
+        blue_force_j = generalize_to_json(blue_force_t)
+        red_force_j = generalize_to_json(red_force_t)
+        mission_j = generalize_to_json(mission_t)
+        main_event_j = generalize_to_json(main_event_t)
+        weather_j = generalize_to_json(weather_t)
+        terrian_civil_consideration_j = generalize_to_json(terrian_civil_consideration_t)
+
+        scenario_explain_template = """
+        **당신은 최소 20년 경력의 군사 전술 분석 전문가**이자 **시뮬레이션 데이터 해석관**입니다.
+        당신의 임무는 제공된 테이블 형태의 시뮬레이션 데이터를 **단순한 수치 나열이 아닌**, 시간 흐름에 따른 **생생하고 전술적인 교전 상황 묘사**로 전환하는 것입니다
+
+        **다음 형식을 반드시 지켜 전장리포트를 작성하세요.**
+
+        작성할 때 각 형식에 포함되는 데이터를 바탕으로 리포트를 작성하고 **모든 내용은 데이터에 있는 내용만 가지고 작성**합니다(확대 해석불가)
+        데이터를 모두 가져와서 보여줄 필요는 없고 **설명하기 위해 필요한 부분만 정리**해서 다이나믹한 전장상황을 리얼하게 묘사합니다
+        **이때 표의 행과 열이 바뀌어 내용이 바뀌지 않도록 주의합니다**
+        **출력하는 모든 형식은 markdown으로 변환 가능하도록 출력하고 표는 헤더와 내용 사이에 이렇게 구분선을 넣고 헤더 다음 줄바꿈을 해서 표로 출력될 수 있도록 작성해줘**
+
+        1. 요약(Summary / Executive Overview)
+        - 아래 2~7번 사항을 전반적으로 종합하여 현재 전장상황 핵심 3줄(**가장 시급한 조치/결심 요청 사항** 등 명확히 포함)
+        - 지휘관이 가장 먼저 확인해야 할 결과/변화 위주로
+        - 보고서에 포함된 전체시간 때 명시(e.g. tick4 ~ tick8)
+
+        2. 아군상황(Blue Force Situation)
+        - 부대별 위치/전투력 변화
+        - 전투력 및 보급 수준
+        - 우세/열세 요소
+        아군상황 데이터: {blue_force}
+
+        3. 적군 상황(Red Force Situation)
+        - 적 추정 위치, 전력 변화
+        - 최근 활동 패턴
+        - 적 가능행동 2~3가지 요약
+        적군상황 데이터: {red_force}
+
+        4. 지형 및 민간요소(Terrian, civil consideration)
+        - 작전 결과에 영향을 주는 요소 위주로 정리(최대 2줄)
+        지형 및 민간요소 데이터: {terrian_civil_consideration}
+
+        5. 기상요소(weather)
+        - 특정 기상 요소가 현재 작전에 미치는 군사적 영향을 중심으로 요약(최대 3줄)
+        기상요소 데이터: {weather}
+
+        6. 주요 상황 및 전개(Event timeline)
+        - 발생한 대략적인 주요 사건 정리해서 설명(최대 3줄)
+        주요상황 및 전개 데이터: {main_event}
+
+        7. 임무, 지침(mission)
+        - 지휘관의 의도에 맞게 임무 달성 여부(최대 5줄)
+        임무 데이터: {mission}
+
+        {question}
+        """
+
+        explain_template = ChatPromptTemplate.from_template(scenario_explain_template)
+
+        scenario_explain_chain = (
+            # RunnablePassthrough.assign(
+            #     blue_force = lambda x: blue_force,
+            #     red_force = lambda x: red_force,
+            #     terrian_civil_consideration =  lambda x: terrian_civil_consideration,
+            #     weather = lambda x: weather,
+            #     main_event = lambda x: main_event,
+            #     mission = lambda x: mission,
+            # )
+            RunnablePassthrough.assign(
+                blue_force = lambda x: blue_force_j,
+                red_force = lambda x: red_force_j,
+                terrian_civil_consideration =  lambda x: terrian_civil_consideration_j,
+                weather = lambda x: weather_j,
+                main_event = lambda x: main_event_j,
+                mission = lambda x: mission_j,
+            )
+            | explain_template
+            | self.llm
+            # | StrOutputParser()
+        )
+
+        question = "위에 제시된 지침에 따라 상세한 군사 시나리오를 묘사해주세요"
+        report = scenario_explain_chain.invoke({"question": question})
+        
+        if report:
+            return report
+
+    def run(self):
+        print(f"[{QThread.currentThreadId()}] LLM작업 시작")
+
+        report = self.load_time_offset()
+
+        self.finished_sig.emit(report)
+
+
+class WaitingDialog(QProgressDialog):
+    def __init__(self, parent=None):
+        super().__init__("요청하신 내용을 바탕으로 최적의 답변을 준비하는 중입니다. 잠시만 기다려 주세요.",
+                         None,
+                         0, 0,
+                         parent)
+        
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint)
+        self.setWindowModality(Qt.WindowModality.WindowModal)
+        self.setMinimumDuration(0)
+    
 
 class ChatRoom:
     def __init__(self, name):
@@ -149,10 +400,11 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.default_generator.setChecked(True)
 
         self.scenario_time = None
+        self.llm_worker = None
 
         self.init_local_llm()
 
-        self.ui.splitter.setSizes([700, 500])      #초기 프로그램 크기 조정
+        self.ui.splitter.setSizes([650, 550])      #초기 프로그램 크기 조정
         
 
     def init_local_llm(self):
@@ -493,7 +745,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.keyword_txt.textChanged.connect(self.apply_keyword)
 
         #Description Buttons
-        self.ui.description_btn1.clicked.connect(self.load_time_offset)
+        self.ui.description_btn1.clicked.connect(self.start_llm_query)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -1164,251 +1416,92 @@ class Window(QMainWindow, Ui_MainWindow):
     def set_web_view(self):
         self.ui.webEngineView.setUrl(QUrl("http://localhost:8501"))
 
-    def load_time_offset(self):
-        try:
-            with open("time_offset.txt", "r", encoding="utf-8") as f:
-                lines = f.readlines()
-                if lines:
-                    latest_value_str = lines[-1].strip()
-                    self.scenario_time = int(latest_value_str)
-                    self.description_scenario()
-                else:
-                    QMessageBox.critical(self, "오류", "기록된 값이 없습니다")
-
-        except (IOError, ValueError) as e:
-            QMessageBox.critical(self, "오류", f"오류 발생: {e}")
-
-    def description_scenario(self):
-
-        def generalize_to_json(data_string: str) -> str:
-            """
-            튜플 리스트 형태의 문자열 데이터를 JSON 문자열로 변환하는 일반화 함수.
-            
-            데이터 문자열은 [(헤더 튜플), (데이터 튜플), ...] 형식이어야 합니다.
-            
-            Args:
-                data_string: 변환할 문자열 데이터.
-                
-            Returns:
-                JSON 형식의 문자열. 변환 실패 시 None을 반환합니다.
-            """
-            try:
-                # 1. 문자열을 파이썬 리스트 구조로 안전하게 변환
-                # ast.literal_eval은 보안 문제 없이 파이썬 리터럴을 평가합니다.
-                data_list = ast.literal_eval(data_string)
-                
-                # 데이터가 비어 있거나 올바른 형태가 아니면 예외 처리
-                if not data_list or not isinstance(data_list, list):
-                    raise ValueError("데이터가 비어 있거나 리스트 형태가 아닙니다.")
-                    
-                # 2. 헤더(키)와 데이터 분리
-                keys = data_list[0] # 첫 번째 튜플은 헤더(키)
-                data_rows = data_list[1:] # 두 번째 튜플부터 실제 데이터 행
-                
-                if not isinstance(keys, tuple) and not isinstance(keys, list):
-                    raise ValueError("첫 번째 요소(헤더)가 튜플 또는 리스트 형태가 아닙니다.")
-
-                # 3. 각 데이터 행(튜플)을 딕셔너리(JSON 객체)로 변환
-                json_list = []
-                for row in data_rows:
-                    if len(keys) != len(row):
-                        print(f"경고: 키({len(keys)}개)와 데이터({len(row)}개)의 개수가 일치하지 않는 행이 발견되어 해당 행은 건너뜁니다.")
-                        continue
-
-                    # zip을 사용하여 키와 값을 묶어 딕셔너리 생성
-                    feature_dict = dict(zip(keys, row))
-                    
-                    # **일반화된 자료형 변환 (숫자형으로 변환 가능한 경우 시도)**
-                    # 이 부분은 데이터셋마다 달라질 수 있지만, 일반적인 숫자형 변환을 시도합니다.
-                    processed_dict = {}
-                    for k, v in feature_dict.items():
-                        try:
-                            # 정수형으로 시도
-                            processed_dict[k] = int(v)
-                        except (ValueError, TypeError):
-                            try:
-                                # 실수형으로 시도
-                                processed_dict[k] = float(v)
-                            except (ValueError, TypeError):
-                                # 실패하면 기존 값 (문자열 등) 사용
-                                processed_dict[k] = v
-                                
-                    json_list.append(processed_dict)
-                    
-                # 4. 최종 JSON 문자열로 변환 (들여쓰기 적용)
-                return json.dumps(json_list, indent=2, ensure_ascii=False)
-
-            except (ValueError, SyntaxError) as e:
-                print(f"!!! 데이터 변환 중 오류 발생: {e}")
-                return None
-            
-        start_time_tick = 0
-        end_time_tick = 0
-        db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1208.db")
-
-        inspector = inspect(db._engine)
-
-        #each table columns elements
-        friendly = inspector.get_columns('friendly')
-        blue_force_h = [col['name'] for col in friendly]
-        oppose = inspector.get_columns('oppose')
-        red_force_h = [col['name'] for col in oppose]
-        main_event = inspector.get_columns('main_event')
-        main_event_h = [col['name'] for col in main_event]
-        mission = inspector.get_columns('mission')
-        mission_h = [col['name'] for col in mission]
-        civil_elements = inspector.get_columns('civil_elements')
-        civil_elements_h = [col['name'] for col in civil_elements]
-        weather = inspector.get_columns('weather')
-        weather_h = [col['name'] for col in weather]
-
-        #transform list -> str
-        blue_force_h = str(blue_force_h)
-        red_force_h = str(red_force_h)
-        weather_h = str(weather_h)
-        main_event_h = str(main_event_h)
-        mission_h = str(mission_h)
-        civil_elements_h = str(civil_elements_h)
-
-        #transform structure
-        blue_force_h = "[("+blue_force_h[1:-1] + ")]"
-        red_force_h = "[("+red_force_h[1:-1] + ")]"
-        weather_h = "[("+weather_h[1:-1] + ")]"
-        main_event_h = "[("+main_event_h[1:-1] + ")]"
-        mission_h = "[("+mission_h[1:-1] + ")]"
-        civil_elements_h = "[("+civil_elements_h[1:-1] + ")]"
-
-        if(self.scenario_time < 4):
-            end_time_tick = self.scenario_time
-
-        else:
-            start_time_tick = self.scenario_time - 3
-            end_time_tick = self.scenario_time
-
-        #SQL query is executed
-        blue_force = db.run(f"SELECT * FROM friendly WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
-        red_force = db.run(f"SELECT * FROM oppose WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
-        terrian_civil_consideration = db.run(f"select * from civil_elements")
-        weather = db.run(f"select * from weather WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
-        main_event = db.run(f"select * from main_event WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
-        mission = db.run(f"select * from mission WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
-
-        #Combine heading and SQL query results
-        blue_force_t = blue_force_h[:-1] + ', ' + blue_force[1:]
-        red_force_t = red_force_h[:-1] + ', ' + red_force[1:]
-        weather_t = weather_h[:-1] + ', ' + weather[1:]
-        main_event_t = main_event_h[:-1] + ', ' + main_event[1:]
-        mission_t = mission_h[:-1] + ', ' + mission[1:]
-        terrian_civil_consideration_t = civil_elements_h[:-1] + ', ' + terrian_civil_consideration[1:]
-
-        blue_force_j = generalize_to_json(blue_force_t)
-        red_force_j = generalize_to_json(red_force_t)
-        mission_j = generalize_to_json(mission_t)
-        main_event_j = generalize_to_json(main_event_t)
-        weather_j = generalize_to_json(weather_t)
-        terrian_civil_consideration_j = generalize_to_json(terrian_civil_consideration_t)
-
-        scenario_explain_template = """
-        **당신은 최소 20년 경력의 군사 전술 분석 전문가**이자 **시뮬레이션 데이터 해석관**입니다.
-        당신의 임무는 제공된 테이블 형태의 시뮬레이션 데이터를 **단순한 수치 나열이 아닌**, 시간 흐름에 따른 **생생하고 전술적인 교전 상황 묘사**로 전환하는 것입니다
-
-        **다음 형식을 반드시 지켜 전장리포트를 작성하세요.**
-
-        작성할 때 각 형식에 포함되는 데이터를 바탕으로 리포트를 작성하고 **모든 내용은 데이터에 있는 내용만 가지고 작성**합니다(확대 해석불가)
-        데이터를 모두 가져와서 보여줄 필요는 없고 **설명하기 위해 필요한 부분만 정리**해서 다이나믹한 전장상황을 리얼하게 묘사합니다
-        **이때 표의 행과 열이 바뀌어 내용이 바뀌지 않도록 주의합니다**
-        **출력하는 모든 형식은 markdown으로 변환 가능하도록 출력하고 표는 헤더와 내용 사이에 이렇게 구분선을 넣고 헤더 다음 줄바꿈을 해서 표로 출력될 수 있도록 작성해줘**
-
-        1. 요약(Summary / Executive Overview)
-        - 아래 2~7번 사항을 전반적으로 종합하여 현재 전장상황 핵심 3줄(**가장 시급한 조치/결심 요청 사항** 등 명확히 포함)
-        - 지휘관이 가장 먼저 확인해야 할 결과/변화 위주로
-        - 보고서에 포함된 전체시간 때 명시(e.g. tick4 ~ tick8)
-
-        2. 아군상황(Blue Force Situation)
-        - 부대별 위치/전투력 변화
-        - 전투력 및 보급 수준
-        - 우세/열세 요소
-        아군상황 데이터: {blue_force}
-
-        3. 적군 상황(Red Force Situation)
-        - 적 추정 위치, 전력 변화
-        - 최근 활동 패턴
-        - 적 가능행동 2~3가지 요약
-        적군상황 데이터: {red_force}
-
-        4. 지형 및 민간요소(Terrian, civil consideration)
-        - 작전 결과에 영향을 주는 요소 위주로 정리(최대 2줄)
-        지형 및 민간요소 데이터: {terrian_civil_consideration}
-
-        5. 기상요소(weather)
-        - 특정 기상 요소가 현재 작전에 미치는 군사적 영향을 중심으로 요약(최대 3줄)
-        기상요소 데이터: {weather}
-
-        6. 주요 상황 및 전개(Event timeline)
-        - 발생한 대략적인 주요 사건 정리해서 설명(최대 3줄)
-        주요상황 및 전개 데이터: {main_event}
-
-        7. 임무, 지침(mission)
-        - 지휘관의 의도에 맞게 임무 달성 여부(최대 5줄)
-        임무 데이터: {mission}
-
-        {question}
-        """
-
-        explain_template = ChatPromptTemplate.from_template(scenario_explain_template)
-
-        scenario_explain_chain = (
-            # RunnablePassthrough.assign(
-            #     blue_force = lambda x: blue_force,
-            #     red_force = lambda x: red_force,
-            #     terrian_civil_consideration =  lambda x: terrian_civil_consideration,
-            #     weather = lambda x: weather,
-            #     main_event = lambda x: main_event,
-            #     mission = lambda x: mission,
-            # )
-            RunnablePassthrough.assign(
-                blue_force = lambda x: blue_force_j,
-                red_force = lambda x: red_force_j,
-                terrian_civil_consideration =  lambda x: terrian_civil_consideration_j,
-                weather = lambda x: weather_j,
-                main_event = lambda x: main_event_j,
-                mission = lambda x: mission_j,
-            )
-            | explain_template
-            | self.local_llm
-            # | StrOutputParser()
-        )
-
-        question = "위에 제시된 지침에 따라 상세한 군사 시나리오를 묘사해주세요"
-        report = scenario_explain_chain.invoke({"question": question})
+    def start_llm_query(self):
+        if self.llm_worker and self.llm_worker.isRunning():
+            print("이전작업이 아직 실행중입니다.")
+            return
         
-        if report:
-            self.report_msg += "\n"
-            self.report_msg += "Sended Message: 최근 전장상황에 대해 묘사해주세요\n"
-            self.report_msg += "\n"
+        #버튼 비활성화
+        self.ui.description_btn1.setEnabled(False)
 
+        self.waiting_dialog = WaitingDialog(self)
+
+        style_sheet = """
+        /* 1. QProgressDialog (다이얼로그 창 배경) */
+        QProgressDialog {
+            background-color: #000000; /* 검정 배경 */
+            border: 2px solid rgb(184, 247, 185); /* 얇은 테두리 */
+        }
+
+        /* 2. 내부 QLabel (메시지 텍스트) */
+        QProgressDialog QLabel {
+            color: rgb(184, 247, 185);
+            font-size: 11pt;
+            font-weight: bold;
+            padding: 5px;
+        }
+
+        /* 3. 내부 QProgressBar (전체 배경 및 테두리) */
+        QProgressDialog QProgressBar {
+            border: 1px solid rgb(184, 247, 185);
+            border-radius: 5px;
+            background-color: rgb(40, 40, 40);
+            text-align: center;
+            color: white;
+        }
+
+        /* 4. QProgressBar::chunk (채워지는 막대) */
+        QProgressDialog QProgressBar::chunk {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(50, 120, 50), stop:1 rgb(100,180,100));
+	        border-radius: 2px;
+        }
+        """
+        
+        self.waiting_dialog.setStyleSheet(style_sheet)
+        
+        self.llm_worker = GenerateResponse(self.local_llm)
+        self.llm_worker.finished_sig.connect(self.handle_llm_response)
+        self.llm_worker.finished.connect(self.llm_worker.deleteLater)
+
+        self.llm_worker.start()
+        self.waiting_dialog.exec()
+
+    def handle_llm_response(self, response):
+        if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
+            self.waiting_dialog.accept()
+
+        self.streaming_response(response)
+        self.ui.description_btn1.setEnabled(True)
+        self.llm_worker = None
+
+    
+    def streaming_response(self, response):        
+        self.report_msg += "\n"
+        self.report_msg += "Sended Message: 최근 전장상황에 대해 묘사해주세요\n"
+        self.report_msg += "\n"
+
+        self.apply_markdown_report()
+
+        words = response.split(' ')
+        self.report_msg += "Ai Messages: \n"
+
+        self.apply_markdown_report()
+
+        #stream효과
+        for i, w in enumerate(words):
+            self.report_msg
+
+            # 마지막 단어가 아니면 공백 추가
+            if i < len(words) - 1:
+                self.report_msg += w + " "
+            else:
+                self.report_msg += w + "\n"
+            
             self.apply_markdown_report()
 
-            words = report.content.split(' ')
-            self.report_msg += "Ai Messages: \n"
-
-            self.apply_markdown_report()
-
-            #stream효과
-            for i, w in enumerate(words):
-                self.report_msg
-
-                # 마지막 단어가 아니면 공백 추가
-                if i < len(words) - 1:
-                    self.report_msg += w + " "
-                else:
-                    self.report_msg += w + "\n"
-                
-                self.apply_markdown_report()
-
-                # 시작적 지연
-                time.sleep(0.02)
-
+            # 시작적 지연
+            time.sleep(0.02)
+            
         self.report_msg += "\n"
         self.show_status_messages("Experiment chat is ")
 
