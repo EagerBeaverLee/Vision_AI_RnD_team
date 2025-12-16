@@ -62,7 +62,7 @@ class DefaultRetriever(QObject):
         
     def run(self):
         try:
-            flag = 1    #0:생성, 1:로드
+            flag = 0    #0:생성, 1:로드
             files = os.listdir(self.folder_path)
             total_files = len(files)
             # save_vector = "./test_faiss_embedding"

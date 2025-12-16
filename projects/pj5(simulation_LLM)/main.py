@@ -915,8 +915,6 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.Loading_bar.setValue(room.m_loading_bar)
         self.ui.path.setText(room.loaded_folder_path)
 
-        self.ui.default_token_bar.setFormat(f"used tokens: {self.current_chat_room.default_token:.2f}%")
-        self.ui.default_token_bar.setValue(int(self.current_chat_room.default_token))
         self.ui.experiment_token_bar.setFormat(f"used tokens: {self.current_chat_room.experiment_token:.2f}%")
         self.ui.experiment_token_bar.setValue(int(self.current_chat_room.experiment_token))
 
@@ -950,7 +948,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 return
             
             self.ui.input_text.clear()
-            self.default_llm(message)
+            # self.default_llm(message)
             self.rag_llm(message)
             # self.history_llm(message)
 
@@ -1094,8 +1092,6 @@ class Window(QMainWindow, Ui_MainWindow):
             print(response.response_metadata['token_usage']['total_tokens'])
             self.current_chat_room.default_token += response.response_metadata['token_usage']['total_tokens'] / self.MAX_TOKENS * 100
             update = f"used tokens: {self.current_chat_room.default_token:.2f}%"
-            self.ui.default_token_bar.setFormat(update)
-            self.ui.default_token_bar.setValue(int(self.current_chat_room.default_token))
             print(self.current_chat_room.default_token)
             print(self.current_chat_room.default_token * 128000)
 
@@ -1230,6 +1226,8 @@ class Window(QMainWindow, Ui_MainWindow):
                 "문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요."
                 "만약 문서에 질문에 대한 정보가 없다면, '제공된 문서에는 이 질문에 대한 정보가 없습니다.'라고 답변하세요."
                 "문서에 있는 내용만을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다."
+                ""
+                "답변은 영어로 표현된 원래 의미가 바뀌지 않도록 한글로 번역해서 응답하세요"
                 "문서 내용: {context}"),
                 ("placeholder", "{history}"),
                 ("human", "질문: {question}"),
@@ -1274,29 +1272,48 @@ class Window(QMainWindow, Ui_MainWindow):
             print(self.current_chat_room.experiment_token)
             print(self.current_chat_room.experiment_token * 128000)
 
-            self.ui.experiment_txt.append(f"Sended Message: {msg}")
-            self.ui.experiment_txt.append("")
-            self.ui.experiment_txt.append("Ai Messages: ")
+            self.report_msg += "\n"
+            self.report_msg += f"Sended Message: {msg}\n"
+            self.report_msg += "\n"
+
+            self.apply_markdown_report()
 
             words = answer.content.split(' ')
-            for i, doc in enumerate(words):
-                cursor = self.ui.experiment_txt.textCursor()
-                cursor.movePosition(cursor.MoveOperation.End)
+            self.report_msg += "Ai Messages: \n"
+            self.report_msg += "\n"
 
-                # 마지막 단어가 아니면 공백 추가
+            self.apply_markdown_report()
+            
+            # self.ui.experiment_txt.append(f"Sended Message: {msg}")
+            # self.ui.experiment_txt.append("")
+            # self.ui.experiment_txt.append("Ai Messages: ")
+
+            for i, doc in enumerate(words):
                 if i < len(words) - 1:
-                    cursor.insertText(doc + " ")
+                    self.report_msg += doc + " "
                 else:
-                    cursor.insertText(doc + "\n")
+                    self.report_msg += doc + "\n"
                 
-                self.ui.experiment_txt.setTextCursor(cursor)
+                self.apply_markdown_report()
+
+                # cursor = self.ui.experiment_txt.textCursor()
+                # cursor.movePosition(cursor.MoveOperation.End)
+
+                # # 마지막 단어가 아니면 공백 추가
+                # if i < len(words) - 1:
+                #     cursor.insertText(doc + " ")
+                # else:
+                #     cursor.insertText(doc + "\n")
+                
+                # self.ui.experiment_txt.setTextCursor(cursor)
                 
                 # 텍스트가 추가될 때마다 UI 업데이트
-                QCoreApplication.processEvents()
+                # QCoreApplication.processEvents()
                 
                 # 시작적 지연
-                time.sleep(0.05)
-            self.ui.experiment_txt.append("")
+                time.sleep(0.01)
+            # self.ui.experiment_txt.append("")
+            self.report_msg += "\n"
             self.show_status_messages("Default chat is working successful")
         else:
             print("오류")
@@ -1475,7 +1492,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.llm_worker = None
 
     
-    def streaming_response(self, response):        
+    def streaming_response(self, response):
+        # self.report_msg += self.ui.experiment_txt.toPlainText()
+
         self.report_msg += "\n"
         self.report_msg += "Sended Message: 최근 전장상황에 대해 묘사해주세요\n"
         self.report_msg += "\n"
@@ -1489,8 +1508,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
         #stream효과
         for i, w in enumerate(words):
-            self.report_msg
-
             # 마지막 단어가 아니면 공백 추가
             if i < len(words) - 1:
                 self.report_msg += w + " "
@@ -1500,15 +1517,13 @@ class Window(QMainWindow, Ui_MainWindow):
             self.apply_markdown_report()
 
             # 시작적 지연
-            time.sleep(0.02)
+            time.sleep(0.01)
             
         self.report_msg += "\n"
         self.show_status_messages("Experiment chat is ")
 
     def apply_markdown_report(self):
-
         text_browser = self.ui.experiment_txt
-
         res = markdown.markdown(self.report_msg, extensions=['tables'])
 
         css_style = """
