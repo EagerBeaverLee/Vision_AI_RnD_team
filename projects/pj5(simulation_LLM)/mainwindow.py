@@ -1578,16 +1578,16 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.description_btn1.setText(_translate("MainWindow", "최근 전장상황에 대해\n"
 "묘사해주세요"))
-        self.description_btn2.setText(_translate("MainWindow", "적군의 규모는\n"
-"어느정도 인가요?"))
+        self.description_btn2.setText(_translate("MainWindow", "적과 접촉 시 계획, 실행, 고정, 고립, 지속지원과\n"
+" 같은 하위과업들이 어떤 영향을 미치나요?"))
         self.description_btn3.setText(_translate("MainWindow", "현재 아군의 전투력은\n"
 "어떤가요?"))
-        self.description_btn4.setText(_translate("MainWindow", "아군은 어떤 무장장비를\n"
-"보유하고 있나요?"))
+        self.description_btn4.setText(_translate("MainWindow", "아군이 적 지휘소를 무력화하고 심리적으로\n"
+"고립시키기 위해 EIW와 기만전술을 어떻게 활용했나요?"))
         self.description_btn5.setText(_translate("MainWindow", "현재 전장상황은\n"
 "어느쪽이 우세한가요?"))
-        self.description_btn6.setText(_translate("MainWindow", "아군의 피해현황은\n"
-"어떠한가요?"))
+        self.description_btn6.setText(_translate("MainWindow", "아군의 화력 및 기동 훈련 주요 단계와\n"
+" RISTA 통합 요구사항은 무엇인가요?"))
         self.label_3.setText(_translate("MainWindow", "Api-key"))
         self.api_key_txt.setPlaceholderText(_translate("MainWindow", "Enter your api key..."))
         self.label_4.setText(_translate("MainWindow", "Prompt"))

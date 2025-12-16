@@ -267,6 +267,7 @@ class GenerateResponse(QThread):
         if report:
             return report
 
+
     def run(self):
         print(f"[{QThread.currentThreadId()}] LLM작업 시작")
 
@@ -745,7 +746,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.keyword_txt.textChanged.connect(self.apply_keyword)
 
         #Description Buttons
-        self.ui.description_btn1.clicked.connect(self.start_llm_query)
+        self.ui.description_btn1.clicked.connect(self.start_description1_llm_query)
+        self.ui.description_btn2.clicked.connect(self.start_description2_llm_query)
+        self.ui.description_btn4.clicked.connect(self.start_description4_llm_query)
+        self.ui.description_btn6.clicked.connect(self.start_description6_llm_query)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -1223,11 +1227,11 @@ class Window(QMainWindow, Ui_MainWindow):
             [
                 ("system", f"{self.current_chat_room.m_prompt}\n"
                 "당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다."
-                "문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요."
-                "만약 문서에 질문에 대한 정보가 없다면, '제공된 문서에는 이 질문에 대한 정보가 없습니다.'라고 답변하세요."
-                "문서에 있는 내용만을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다."
-                ""
-                "답변은 영어로 표현된 원래 의미가 바뀌지 않도록 한글로 번역해서 응답하세요"
+                "문서 내용에 기반하여 대한 답변을 제공하세요."
+                # "만약 문서에 질문에 대한 정보가 없다면, '제공된 문서에는 이 질문에 대한 정보가 없습니다.'라고 답변하세요."
+                "최대한 문서에 있는 내용을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다."
+                "답변은 영어로 표현된 원래 의미가 최대한 바뀌지 않도록 모두 한글로 번역해서 응답하세요"
+                "기존의 답변의 markdown 형식도 그대로 유지하면서 번역해주세요"
                 "문서 내용: {context}"),
                 ("placeholder", "{history}"),
                 ("human", "질문: {question}"),
@@ -1318,7 +1322,6 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             print("오류")
 
-
         # retriever = self.worker.vector_db.as_retriever()
         # res_doc = retriever = retriever.invoke(msg)
 
@@ -1348,7 +1351,141 @@ class Window(QMainWindow, Ui_MainWindow):
         # else:
         #     print("관련문서를 찾을 수 없습니다")
         # return
-    
+
+    def rag_btn_llm(self, original_msg, msg):
+        if not self.current_chat_room.m_api_key:
+            QMessageBox.critical(self, "오류", "api key를 입력해주세요")
+            return
+        
+        if not self.worker:
+            QMessageBox.critical(self, "오류", "벡터스토어가 없습니다")
+            return
+
+        generator_map = {
+            "Default": self.create_default_generator,
+            "Rewrite-Retrieve-Read Generator": self.create_rewrite_retrieve_read_generator,
+            "Multiple Questions Generator": self.create_multiple_question_generator,
+            "Step-Back Question Generator": self.create_step_back_question_generator,
+        }
+        print(self.rag_transformation)
+        generator = generator_map[self.rag_transformation]()
+
+        # prompt_template = """
+        #     당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다.
+        #     문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요.
+        #     만약 문서에 질문에 대한 정보가 없다면, "제공된 문서에는 이 질문에 대한 정보가 없습니다."라고 답변하세요.
+        #     문서에 있는 내용만을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다.
+
+        #     이전 대화:
+        #     {history}
+
+        #     문서 내용:
+        #     {context}
+
+        #     질문: {question}
+
+        #     답변:
+        #     """
+        # prompt = ChatPromptTemplate.from_template(prompt_template)
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", f"{self.current_chat_room.m_prompt}\n"
+                "당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다."
+                "문서 내용에 기반하여 대한 답변을 제공하세요."
+                # "만약 문서에 질문에 대한 정보가 없다면, '제공된 문서에는 이 질문에 대한 정보가 없습니다.'라고 답변하세요."
+                "최대한 문서에 있는 내용을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다."
+                "답변은 영어로 표현된 원래 의미가 최대한 바뀌지 않도록 모두 한글로 번역해서 응답하세요"
+                "기존의 답변의 markdown 형식도 그대로 유지하면서 번역해주세요"
+                "문서 내용: {context}"),
+                ("placeholder", "{history}"),
+                ("human", "질문: {question}"),
+            ]
+        )
+
+        # llm = ChatOpenAI(
+        #     api_key=self.current_chat_room.m_api_key,
+        #     temperature=self.current_chat_room.m_temperature,
+        # )
+        similary = None
+        keywords = None
+
+        if self.ui.similarity_post_processor.isChecked() and self.ui.similarity_post_processor.isEnabled():
+            similary = float(self.current_chat_room.m_similarity)
+        if self.ui.keywords.isChecked() and self.ui.keywords.isEnabled():
+            keyword = self.current_chat_room.m_keyword
+            split_list = keyword.split(',')
+            keywords = [item.strip() for item in split_list]
+
+        rag_chain = generator.build_rag_chain(prompt, self.worker.copy_retriever(), similary, keywords, self.ui.reciprocal_rank_fusion.isChecked())
+
+        rag_history_chain = RunnableWithMessageHistory(
+            rag_chain,
+            self.get_session_history,
+            input_messages_key="question",
+            history_messages_key="history",
+        )
+
+        answer = rag_history_chain.invoke(
+            {"question": original_msg},
+            self.current_chat_room.experiment_config,
+        )
+
+        if answer:
+            print(answer.response_metadata['token_usage'])
+            print(answer.response_metadata['token_usage']['total_tokens'])
+            self.current_chat_room.experiment_token += answer.response_metadata['token_usage']['total_tokens'] / self.MAX_TOKENS * 100
+            update = f"used tokens: {self.current_chat_room.experiment_token:.2f}%"
+            self.ui.experiment_token_bar.setFormat(update)
+            self.ui.experiment_token_bar.setValue(int(self.current_chat_room.experiment_token))
+            print(self.current_chat_room.experiment_token)
+            print(self.current_chat_room.experiment_token * 128000)
+
+            self.report_msg += "\n"
+            self.report_msg += f"Sended Message: {msg}\n"
+            self.report_msg += "\n"
+
+            self.apply_markdown_report()
+
+            words = answer.content.split(' ')
+            self.report_msg += "Ai Messages: \n"
+            self.report_msg += "\n"
+
+            self.apply_markdown_report()
+            
+            # self.ui.experiment_txt.append(f"Sended Message: {msg}")
+            # self.ui.experiment_txt.append("")
+            # self.ui.experiment_txt.append("Ai Messages: ")
+
+            for i, doc in enumerate(words):
+                if i < len(words) - 1:
+                    self.report_msg += doc + " "
+                else:
+                    self.report_msg += doc + "\n"
+                
+                self.apply_markdown_report()
+
+                # cursor = self.ui.experiment_txt.textCursor()
+                # cursor.movePosition(cursor.MoveOperation.End)
+
+                # # 마지막 단어가 아니면 공백 추가
+                # if i < len(words) - 1:
+                #     cursor.insertText(doc + " ")
+                # else:
+                #     cursor.insertText(doc + "\n")
+                
+                # self.ui.experiment_txt.setTextCursor(cursor)
+                
+                # 텍스트가 추가될 때마다 UI 업데이트
+                # QCoreApplication.processEvents()
+                
+                # 시작적 지연
+                time.sleep(0.01)
+            # self.ui.experiment_txt.append("")
+            self.report_msg += "\n"
+            self.show_status_messages("Default chat is working successful")
+        else:
+            print("오류")
     
     #tokenizer func
     def count_tokens(self, messages: List[BaseMessage]) -> int:
@@ -1433,14 +1570,23 @@ class Window(QMainWindow, Ui_MainWindow):
     def set_web_view(self):
         self.ui.webEngineView.setUrl(QUrl("http://localhost:8501"))
 
-    def start_llm_query(self):
+    def start_description1_llm_query(self):
         if self.llm_worker and self.llm_worker.isRunning():
             print("이전작업이 아직 실행중입니다.")
             return
         
         #버튼 비활성화
         self.ui.description_btn1.setEnabled(False)
+        self.exec_WaitingDialog()
 
+        self.llm_worker = GenerateResponse(self.local_llm)
+        self.llm_worker.finished_sig.connect(self.handle_llm_response)
+        self.llm_worker.finished.connect(self.llm_worker.deleteLater)
+
+        self.llm_worker.start()
+        self.waiting_dialog.exec()
+
+    def exec_WaitingDialog(self):
         self.waiting_dialog = WaitingDialog(self)
 
         style_sheet = """
@@ -1472,16 +1618,23 @@ class Window(QMainWindow, Ui_MainWindow):
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(50, 120, 50), stop:1 rgb(100,180,100));
 	        border-radius: 2px;
         }
-        """
-        
+        """        
         self.waiting_dialog.setStyleSheet(style_sheet)
-        
-        self.llm_worker = GenerateResponse(self.local_llm)
-        self.llm_worker.finished_sig.connect(self.handle_llm_response)
-        self.llm_worker.finished.connect(self.llm_worker.deleteLater)
 
-        self.llm_worker.start()
-        self.waiting_dialog.exec()
+    def start_description2_llm_query(self):
+        msg = self.ui.description_btn2.text()
+        original_msg = "How do plan, execute, fix, isolate, and continue mission subtasks collectively shape actions on contact?"
+        self.rag_btn_llm(original_msg, msg)
+
+    def start_description4_llm_query(self):
+        msg = self.ui.description_btn4.text()
+        original_msg = "Describe KPAGF's use of EIW and deception to immobilize and psychologically isolate enemy command posts."
+        self.rag_btn_llm(original_msg, msg)
+
+    def start_description6_llm_query(self):
+        msg = self.ui.description_btn6.text()
+        original_msg = "What are the main steps and RISTA integration requirements in the fire and maneuver drill for KPAGF?"
+        self.rag_btn_llm(original_msg, msg)
 
     def handle_llm_response(self, response):
         if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():

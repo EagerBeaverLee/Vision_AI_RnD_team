@@ -118,8 +118,8 @@ QPushButton:pressed {
 }</string>
             </property>
             <property name="text">
-             <string>적군의 규모는
-어느정도 인가요?</string>
+             <string>적과 접촉 시 계획, 실행, 고정, 고립, 지속지원과
+ 같은 하위과업들이 어떤 영향을 미치나요?</string>
             </property>
             <property name="autoRepeat">
              <bool>false</bool>
@@ -194,8 +194,8 @@ QPushButton:pressed {
 }</string>
             </property>
             <property name="text">
-             <string>아군은 어떤 무장장비를
-보유하고 있나요?</string>
+             <string>아군이 적 지휘소를 무력화하고 심리적으로
+고립시키기 위해 EIW와 기만전술을 어떻게 활용했나요?</string>
             </property>
             <property name="autoRepeat">
              <bool>false</bool>
@@ -270,8 +270,8 @@ QPushButton:pressed {
 }</string>
             </property>
             <property name="text">
-             <string>아군의 피해현황은
-어떠한가요?</string>
+             <string>아군의 화력 및 기동 훈련 주요 단계와
+ RISTA 통합 요구사항은 무엇인가요?</string>
             </property>
             <property name="autoRepeat">
              <bool>false</bool>
