@@ -37,7 +37,7 @@ from typing import List
 from transformers import AutoTokenizer
 
 streamlit_process = None
-selected_scenario = 2
+selected_scenario = 1
 
 class GenerateReport(QThread):
     finished_report = pyqtSignal(str)
@@ -128,7 +128,7 @@ class GenerateReport(QThread):
         end_time_tick = 0
         
         if selected_scenario == 1:
-            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1208.db")
+            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1.db")
         else:
             db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_2.db")
 
@@ -208,7 +208,7 @@ class GenerateReport(QThread):
         1. 요약(Summary / Executive Overview)
         - 아래 2~7번 사항을 전반적으로 종합하여 현재 전장상황 핵심 3줄(**가장 시급한 조치/결심 요청 사항** 등 명확히 포함)
         - 지휘관이 가장 먼저 확인해야 할 결과/변화 위주로
-        - 보고서에 포함된 전체시간 때 명시(e.g. tick4 ~ tick8)
+        - 보고서에 포함된 전체시간 때 명시(e.g. 4시 ~ 8시)
 
         2. 아군상황(Blue Force Situation)
         - 부대별 위치/전투력 변화
@@ -347,7 +347,7 @@ class GenerateSQL1Report(QThread):
                 return None
     
         if selected_scenario == 1:
-            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1208.db")
+            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1.db")
         else:
             db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_2.db")
         
@@ -367,7 +367,7 @@ class GenerateSQL1Report(QThread):
         데이터를 모두 가져와서 보여줄 필요는 없고 **설명하기 위해 필요한 부분만 정리**해서 묘사합니다
         **이때 표의 행과 열이 바뀌어 내용이 바뀌지 않도록 주의합니다**
         변화를 중심으로 지휘관이 빠르게 내용을 파악할 수 있도록 정리해서 질문의 의도에 맞게 답변합니다
-        기존의 답변의 markdown 형식도 그대로 유지하면서 번역해주세요
+        기존의 답변의 markdown 형식도 그대로 유지하면서 한글로 번역해주세요
 
         입력 데이터:{sql1_result}
 
@@ -474,7 +474,7 @@ class GenerateSQL2Report(QThread):
                 return None
     
         if selected_scenario == 1:
-            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1208.db")
+            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1.db")
         else:
             db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_2.db")
         
@@ -492,7 +492,7 @@ class GenerateSQL2Report(QThread):
         작성할 때 주어지는 데이터만 가지고 리포트를 작성하고 **모든 내용은 데이터에 있는 내용만 가지고 작성**합니다
         **이때 표의 행과 열이 바뀌어 내용이 바뀌지 않도록 주의합니다**
         입력된 데이터를 바탕으로 지휘관이 빠르게 내용을 파악할 수 있도록 상세내용을 포함하여 질문의 의도에 맞게 답변합니다
-        기존의 답변의 markdown 형식도 그대로 유지하면서 번역해주세요
+        기존의 답변의 markdown 형식도 그대로 유지하면서 한글로 번역해주세요
 
         입력 데이터:{sql2_result}
 
@@ -2209,7 +2209,10 @@ def start_streamlit():
     file_path = "time_offset.txt"
     try:
         with open(file_path, "a", encoding="utf-8") as f:
-            f.write(str(0) + "\n")
+            if selected_scenario == 1:
+                f.write(str(9) + "\n")
+            else:
+                f.write(str(5) + "\n")
     except IOError as e:
         print(f"파일 쓰기 오류: {e}")
 

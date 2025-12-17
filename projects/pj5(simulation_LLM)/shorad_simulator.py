@@ -837,8 +837,8 @@ def hard_code_image(current_time_offset):
     st.image(images[st.session_state.index], width='stretch')
 
     # 슬라이더 값이 바뀌면 인덱스 업데이트
-    if current_time_offset != st.session_state.index:
-        st.session_state.index = current_time_offset
+    if (current_time_offset - 9) != st.session_state.index:
+        st.session_state.index = current_time_offset - 9
         try:
             with open("time_offset.txt", "a", encoding="utf-8") as f:
                 f.write(str(current_time_offset) + "\n")
@@ -853,14 +853,14 @@ def hard_code_image(current_time_offset):
 # st.caption(f"기준 시간: {BASE_TIME.strftime('%Y-%m-%d %H:%M:%S')} | 시나리오: 복합 통합 공격 대응")
 
 # 슬라이더 설정
-max_time = df_events['time_offset'].max()
+max_time = 24
 slider_time = st.slider(
-    "시간 진행 (tick)",
-    min_value=0,
+    "시간 진행 (시)",
+    min_value=9,
     max_value=max_time,
-    value=0,
+    value=9,
     step=1,
-    format="%dtick"
+    format="%d시"
 )
 
 # 현재 시각 계산

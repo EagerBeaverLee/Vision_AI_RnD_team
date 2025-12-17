@@ -75,8 +75,8 @@ def hard_code_image(current_time_offset):
     st.image(images[st.session_state.index], width='stretch')
 
     # 슬라이더 값이 바뀌면 인덱스 업데이트
-    if current_time_offset != st.session_state.index:
-        st.session_state.index = current_time_offset
+    if (current_time_offset - 5) != st.session_state.index:
+        st.session_state.index = current_time_offset - 5
         try:
             with open("time_offset.txt", "a", encoding="utf-8") as f:
                 f.write(str(current_time_offset) + "\n")
@@ -87,14 +87,14 @@ def hard_code_image(current_time_offset):
 
 
 # 슬라이더 설정
-max_time = 19
+max_time = 24
 slider_time = st.slider(
-    "시간 진행 (tick)",
-    min_value=0,
+    "시간 진행 (시)",
+    min_value=5,
     max_value=max_time,
-    value=0,
+    value=5,
     step=1,
-    format="%dtick"
+    format="%d시"
 )
 
 hard_code_image(slider_time)

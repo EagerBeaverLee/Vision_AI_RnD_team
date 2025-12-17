@@ -1569,7 +1569,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu_Setting.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(2)
         self.send_btn.clicked.connect(self.input_text.setFocus) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.send_btn, self.input_text)
