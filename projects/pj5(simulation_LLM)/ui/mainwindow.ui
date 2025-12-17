@@ -156,8 +156,8 @@ QPushButton:pressed {
 }</string>
             </property>
             <property name="text">
-             <string>현재 아군의 전투력은
-어떤가요?</string>
+             <string>작전 시간 경과에 따른 아군 전체 부대의 평균 탄약보급량과
+연료보급량의 변화 추이는 어떠한가요?</string>
             </property>
             <property name="autoRepeat">
              <bool>false</bool>
@@ -232,8 +232,8 @@ QPushButton:pressed {
 }</string>
             </property>
             <property name="text">
-             <string>현재 전장상황은
-어느쪽이 우세한가요?</string>
+             <string>전투력에 치명적인 변화가 발생한 이벤트의 발생 시간과
+이 사건에 직접 관여한 아군 부대는 무엇인가요?</string>
             </property>
             <property name="autoRepeat">
              <bool>false</bool>
@@ -324,7 +324,7 @@ QTabBar::tab:selected {
 }</string>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="Setting">
         <property name="sizePolicy">
@@ -1133,6 +1133,9 @@ QRadioButton::indicator:unchecked {
                       <property name="singleStep">
                        <number>10</number>
                       </property>
+                      <property name="value">
+                       <number>0</number>
+                      </property>
                      </widget>
                     </item>
                    </layout>
@@ -1172,6 +1175,9 @@ QRadioButton::indicator:unchecked {
                       </property>
                       <property name="singleStep">
                        <number>10</number>
+                      </property>
+                      <property name="value">
+                       <number>0</number>
                       </property>
                      </widget>
                     </item>
@@ -1328,6 +1334,9 @@ QRadioButton::indicator:unchecked {
                       <property name="singleStep">
                        <number>10</number>
                       </property>
+                      <property name="value">
+                       <number>0</number>
+                      </property>
                      </widget>
                     </item>
                    </layout>
@@ -1476,6 +1485,9 @@ QRadioButton::indicator:unchecked {
                       </property>
                       <property name="singleStep">
                        <number>10</number>
+                      </property>
+                      <property name="value">
+                       <number>0</number>
                       </property>
                      </widget>
                     </item>
@@ -1628,6 +1640,9 @@ QRadioButton::indicator:unchecked {
                       </property>
                       <property name="singleStep">
                        <number>10</number>
+                      </property>
+                      <property name="value">
+                       <number>0</number>
                       </property>
                      </widget>
                     </item>

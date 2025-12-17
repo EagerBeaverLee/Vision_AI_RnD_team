@@ -714,6 +714,7 @@ class Ui_MainWindow(object):
 "}")
         self.parentretreiver_parent_chunk_size.setMaximum(100000)
         self.parentretreiver_parent_chunk_size.setSingleStep(10)
+        self.parentretreiver_parent_chunk_size.setProperty("value", 0)
         self.parentretreiver_parent_chunk_size.setObjectName("parentretreiver_parent_chunk_size")
         self.horizontalLayout_11.addWidget(self.parentretreiver_parent_chunk_size)
         self.horizontalLayout_11.setStretch(0, 6)
@@ -741,6 +742,7 @@ class Ui_MainWindow(object):
 "}")
         self.parentretreiver_child_chunk_size.setMaximum(100000)
         self.parentretreiver_child_chunk_size.setSingleStep(10)
+        self.parentretreiver_child_chunk_size.setProperty("value", 0)
         self.parentretreiver_child_chunk_size.setObjectName("parentretreiver_child_chunk_size")
         self.horizontalLayout_12.addWidget(self.parentretreiver_child_chunk_size)
         self.horizontalLayout_12.setStretch(0, 6)
@@ -834,6 +836,7 @@ class Ui_MainWindow(object):
 "}")
         self.summary_parent_chunk_size.setMaximum(100000)
         self.summary_parent_chunk_size.setSingleStep(10)
+        self.summary_parent_chunk_size.setProperty("value", 0)
         self.summary_parent_chunk_size.setObjectName("summary_parent_chunk_size")
         self.horizontalLayout_14.addWidget(self.summary_parent_chunk_size)
         self.horizontalLayout_14.setStretch(0, 6)
@@ -924,6 +927,7 @@ class Ui_MainWindow(object):
 "}")
         self.hypo_parent_chunk_size.setMaximum(100000)
         self.hypo_parent_chunk_size.setSingleStep(10)
+        self.hypo_parent_chunk_size.setProperty("value", 0)
         self.hypo_parent_chunk_size.setObjectName("hypo_parent_chunk_size")
         self.horizontalLayout_16.addWidget(self.hypo_parent_chunk_size)
         self.horizontalLayout_16.setStretch(0, 6)
@@ -1014,6 +1018,7 @@ class Ui_MainWindow(object):
 "}")
         self.granular_chunk_size.setMaximum(100000)
         self.granular_chunk_size.setSingleStep(10)
+        self.granular_chunk_size.setProperty("value", 0)
         self.granular_chunk_size.setObjectName("granular_chunk_size")
         self.horizontalLayout_19.addWidget(self.granular_chunk_size)
         self.horizontalLayout_19.setStretch(0, 6)
@@ -1564,7 +1569,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu_Setting.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(1)
         self.send_btn.clicked.connect(self.input_text.setFocus) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.send_btn, self.input_text)
@@ -1580,12 +1585,12 @@ class Ui_MainWindow(object):
 "묘사해주세요"))
         self.description_btn2.setText(_translate("MainWindow", "적과 접촉 시 계획, 실행, 고정, 고립, 지속지원과\n"
 " 같은 하위과업들이 어떤 영향을 미치나요?"))
-        self.description_btn3.setText(_translate("MainWindow", "현재 아군의 전투력은\n"
-"어떤가요?"))
+        self.description_btn3.setText(_translate("MainWindow", "작전 시간 경과에 따른 아군 전체 부대의 평균 탄약보급량과\n"
+"연료보급량의 변화 추이는 어떠한가요?"))
         self.description_btn4.setText(_translate("MainWindow", "아군이 적 지휘소를 무력화하고 심리적으로\n"
 "고립시키기 위해 EIW와 기만전술을 어떻게 활용했나요?"))
-        self.description_btn5.setText(_translate("MainWindow", "현재 전장상황은\n"
-"어느쪽이 우세한가요?"))
+        self.description_btn5.setText(_translate("MainWindow", "전투력에 치명적인 변화가 발생한 이벤트의 발생 시간과\n"
+"이 사건에 직접 관여한 아군 부대는 무엇인가요?"))
         self.description_btn6.setText(_translate("MainWindow", "아군의 화력 및 기동 훈련 주요 단계와\n"
 " RISTA 통합 요구사항은 무엇인가요?"))
         self.label_3.setText(_translate("MainWindow", "Api-key"))

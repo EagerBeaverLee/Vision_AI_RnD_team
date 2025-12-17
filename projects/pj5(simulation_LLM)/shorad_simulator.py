@@ -812,22 +812,22 @@ def hard_code_image(current_time_offset):
     st.cache_resource.clear()
 
     images = [
-        "image/0.png",
-        "image/1.png",
-        "image/2.png",
-        "image/3.png",
-        "image/4.png",
-        "image/5.png",
-        "image/6.png",
-        "image/7.png",
-        "image/8.png",
-        "image/9.png",
-        "image/10.png",
-        "image/11.png",
-        "image/12.png",
-        "image/13.png",
-        "image/14.png",
-        "image/15.png",
+        "image/scene1/0.png",
+        "image/scene1/1.png",
+        "image/scene1/2.png",
+        "image/scene1/3.png",
+        "image/scene1/4.png",
+        "image/scene1/5.png",
+        "image/scene1/6.png",
+        "image/scene1/7.png",
+        "image/scene1/8.png",
+        "image/scene1/9.png",
+        "image/scene1/10.png",
+        "image/scene1/11.png",
+        "image/scene1/12.png",
+        "image/scene1/13.png",
+        "image/scene1/14.png",
+        "image/scene1/15.png",
     ]
     # 세션 상태 초기화
     if "index" not in st.session_state:

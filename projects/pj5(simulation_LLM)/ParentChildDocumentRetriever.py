@@ -25,6 +25,10 @@ class ParentRetriverPipeline(QObject):
                 parent_chunk_size: int = 3000, child_chunk_size: int = 500, parent=None):
         super().__init__(parent)
 
+        print("parentRetriever")
+        print(parent_chunk_size)
+        print(child_chunk_size)
+
         self.folder_path = folder_path
         #Defining Splitter
         self.parent_splitter = RecursiveCharacterTextSplitter(chunk_size = parent_chunk_size)
