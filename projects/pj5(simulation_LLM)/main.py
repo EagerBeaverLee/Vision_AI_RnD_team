@@ -1,10 +1,9 @@
-import sys, os, time, copy, tiktoken, json, ast, markdown, psutil, signal
+import sys, os, time, copy, json, ast, markdown, psutil, signal
 import subprocess
 import atexit
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy, QMenu, QFileDialog, QProgressDialog
 )
-from PySide6.QtCore import QMetaType
 from PyQt6.QtCore import Qt, QCoreApplication, QTimer, QObject, QPoint, pyqtSignal, QThread, QUrl
 from PyQt6.QtGui import QDoubleValidator, QAction, QTextCursor
 from PyQt6.uic import loadUi
@@ -37,7 +36,7 @@ from typing import List
 from transformers import AutoTokenizer
 
 streamlit_process = None
-selected_scenario = 1
+selected_scenario = 2   #시나리오 선택
 
 class GenerateReport(QThread):
     finished_report = pyqtSignal(str)
@@ -649,7 +648,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.worker = None
 
         self.tokenizer = AutoTokenizer.from_pretrained("openai/gpt-oss-20b")
-        self.token_encoding = tiktoken.get_encoding("o200k_harmony")
+        # self.token_encoding = tiktoken.get_encoding("o200k_harmony")
         self.MAX_TOKENS = 128000
 
         self.local_llm = None
@@ -675,6 +674,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.waiting_dialog = None
 
         self.init_local_llm()
+        self.init_web_view()
         
         #초기 chunk값 지정
         self.ui.parentretreiver_parent_chunk_size.setValue(3000)
@@ -699,6 +699,51 @@ class Window(QMainWindow, Ui_MainWindow):
             api_key=self.current_chat_room.m_api_key,
             temperature=self.current_chat_room.m_temperature,
         )
+
+    def init_web_view(self):
+        initial_html = """
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+            <style>
+                body { 
+                    background-color: rgb(40,40,40); color: #d4d4d4; 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    line-height: 1.6; padding: 20px; 
+                }
+                table { border-collapse: collapse; width: 100%; margin: 15px 0; background: #252526; }
+                th, td { border: 1px solid #444; padding: 10px; text-align: left; }
+                th { background-color: #333; color: #b8f7b9; }
+                code { background-color: #333; padding: 2px 4px; border-radius: 4px; }
+                .cursor { 
+                    display: inline-block; width: 8px; height: 18px; 
+                    background-color: #b8f7b9; margin-left: 5px; 
+                    vertical-align: middle; animation: blink 0.8s infinite; 
+                }
+                @keyframes blink { 50% { opacity: 0; } }
+            </style>
+        </head>
+        <body>
+            <div id="content"></div>
+            <script>
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+                let fullMarkdown = ""; // 전체 문장을 저장할 변수
+        
+                function appendText(chunk) {
+                    fullMarkdown += chunk; // 새로 들어온 조각만 합침
+                    // 2. JS가 내부적으로 마크다운을 HTML로 변환 (매우 빠름)
+                    document.getElementById('content').innerHTML = marked.parse(fullMarkdown) + '<span class="cursor"></span>';
+                    window.scrollTo(0, document.body.scrollHeight);
+                }
+            </script>
+        </body>
+        </html>
+        """
+        self.ui.experiment_txt.setHtml(initial_html)
 
     def create_default_generator(self):
         return DefaultGenerator(
@@ -756,7 +801,9 @@ class Window(QMainWindow, Ui_MainWindow):
             return
         
         self.init_openai_llm()
-        path = QFileDialog.getExistingDirectory(self, "폴더 선택")
+        # path = QFileDialog.getExistingDirectory(self, "폴더 선택")
+        files, _ = QFileDialog.getOpenFileNames(self, "파일 선택")
+        folder_path = os.path.dirname(files[0])
         
         retriever_map = {
             "Default": self.create_default_retriever,
@@ -766,8 +813,8 @@ class Window(QMainWindow, Ui_MainWindow):
             "Granular": self.create_granular_retriever,
         }
 
-        if path:
-            self.ui.path.setText(f"{path}")
+        if folder_path:
+            self.ui.path.setText(f"{folder_path}")
 
             self.ui.Loading_bar.setValue(0)
             self.ui.Load_btn.setEnabled(False) #작업 중 버튼 비활성화
@@ -775,7 +822,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.threading = QThread()
 
             if self.rag_indexing in retriever_map:
-                self.worker = retriever_map[self.rag_indexing](path)
+                self.worker = retriever_map[self.rag_indexing](folder_path)
             else:
                 print(f"Error: retriever_map에 없는 키: {self.rag_indexing}")
                 return
@@ -1103,8 +1150,6 @@ class Window(QMainWindow, Ui_MainWindow):
             self.current_chat_room.m_api_key = self.ui.api_key_txt.text().strip()
             self.current_chat_room.m_prompt = self.ui.prompt_txt.toPlainText().strip()
             self.current_chat_room.m_temperature = self.ui.temp_val.text().strip()
-            self.current_chat_room.default_chat_list = self.ui.default_txt.toPlainText().strip()
-            self.current_chat_room.experiment_chat_list = self.ui.experiment_txt.toPlainText().strip()
             self.current_chat_room.user_in_txt = self.ui.input_text.toPlainText().strip()
 
             #Question Transformation
@@ -1156,8 +1201,6 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.prompt_txt.setText(room.m_prompt if room.m_prompt else "")
         self.ui.temp_val.setText(room.m_temperature)
         self.ui.temp_slider.setValue(int(float(room.m_temperature) * 100))
-        self.ui.default_txt.setText(room.default_chat_list)
-        self.ui.experiment_txt.setText(room.experiment_chat_list)
         self.ui.input_text.setPlainText(room.user_in_txt)
 
         #Question Transformations
@@ -1211,8 +1254,6 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.api_key_txt.clear()
         self.ui.prompt_txt.clear()
         self.ui.temp_val.setText("0.00") # Reset to default
-        self.ui.default_txt.clear()
-        self.ui.experiment_txt.clear()
         self.ui.input_text.clear()
         
     def load_message(self):
@@ -1266,207 +1307,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.show_status_messages(f"keyword is apply successful")
         else:
             self.current_chat_room.m_keyword = None
-        
     
-    # non-histroy llm func
-    # def default_llm(self, msg):
-    #     response = None
-    #     chat_model = ChatOpenAI(
-    #         api_key=self.current_chat_room.m_api_key,
-    #         temperature=self.current_chat_room.m_temperature,
-    #     )
-    #     prompt = ChatPromptTemplate.from_messages(
-    #         [
-    #             (
-    #                 "system",
-    #                 self.current_chat_room.m_prompt
-    #             ),
-    #             ("human", "{input}"),
-    #         ]
-    #     )
-    #     chain = prompt | chat_model
-
-    #     try:
-    #         response = chain.invoke(
-    #             {"input": msg},
-    #         )
-    #     except Exception as e:
-    #         QMessageBox.critical(self, "API 오류", f"메시지 전송 중 오류 발생: {e}")
-
-    #     if response:
-    #         self.ui.default_txt.append(f"Sended Message: {msg}")
-    #         self.ui.default_txt.append("")
-    #         words = response.content.split(' ')
-    #         self.ui.default_txt.append("Ai Messages: ")
-
-    #         #stream효과
-    #         for i, w in enumerate(words):
-    #             cursor = self.ui.default_txt.textCursor()
-    #             cursor.movePosition(cursor.MoveOperation.End)
-
-    #             # 마지막 단어가 아니면 공백 추가
-    #             if i < len(words) - 1:
-    #                 cursor.insertText(w + " ")
-    #             else:
-    #                 cursor.insertText(w + "\n")
-                
-    #             self.ui.default_txt.setTextCursor(cursor)
-                
-    #             # 텍스트가 추가될 때마다 UI 업데이트
-    #             QCoreApplication.processEvents()
-                
-    #             # 시작적 지연
-    #             time.sleep(0.05)
-
-    #     self.ui.default_txt.append("")
-
-    def default_llm(self, msg):
-        response = None
-
-        # chat_model = ChatOpenAI(
-        #     api_key=self.current_chat_room.m_api_key,
-        #     temperature=self.current_chat_room.m_temperature,
-        # )
-
-        #Local LLM applied
-        chat_model = self.local_llm
-
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    "3단락 이하로 답변해줘"
-                    # self.current_chat_room.m_prompt
-                ),
-                ("placeholder", "{chat_history}"),
-                ("human", "{input}"),
-            ]
-        )
-
-        chain = (
-            prompt
-            # | RunnableLambda(lambda x: print(x["chat history"].messages))
-            | chat_model
-        )
-
-        chain_history = RunnableWithMessageHistory(
-            chain,
-            self.get_session_history,
-            input_messages_key="input",
-            history_messages_key="chat_history",
-        )
-
-        try:
-            # self.current_chat_room.default_history.add_user_message(msg)
-            # response = chain.invoke(
-            #     {"chat_history": self.current_chat_room.default_history.messages},
-            # )
-            # self.current_chat_room.default_history.add_ai_message(response)
-
-            response = chain_history.invoke(
-                {"input": msg},
-                self.current_chat_room.default_config
-            )
-
-        except Exception as e:
-            QMessageBox.critical(self, "API 오류", f"메시지 전송 중 오류 발생: {e}")
-        
-        if response:
-            print(response.response_metadata['token_usage'])
-            print(response.response_metadata['token_usage']['total_tokens'])
-            self.current_chat_room.default_token += response.response_metadata['token_usage']['total_tokens'] / self.MAX_TOKENS * 100
-            update = f"used tokens: {self.current_chat_room.default_token:.2f}%"
-            print(self.current_chat_room.default_token)
-            print(self.current_chat_room.default_token * 128000)
-
-            self.ui.default_txt.append(f"Sended Message: {msg}")
-            self.ui.default_txt.append("")
-            words = response.content.split(' ')
-            self.ui.default_txt.append("Ai Messages: ")
-
-            #stream효과
-            for i, w in enumerate(words):
-                cursor = self.ui.default_txt.textCursor()
-                cursor.movePosition(cursor.MoveOperation.End)
-
-                # 마지막 단어가 아니면 공백 추가
-                if i < len(words) - 1:
-                    cursor.insertText(w + " ")
-                else:
-                    cursor.insertText(w + "\n")
-                
-                self.ui.default_txt.setTextCursor(cursor)
-                
-                # 텍스트가 추가될 때마다 UI 업데이트
-                QCoreApplication.processEvents()
-                
-                # 시작적 지연
-                time.sleep(0.05)
-
-        self.ui.default_txt.append("")
-        self.show_status_messages("Default chat is working successful")
-
-    def history_llm(self, msg):
-        response = None
-        chat_model = ChatOpenAI(
-            api_key=self.current_chat_room.m_api_key,
-            temperature=self.current_chat_room.m_temperature,
-        )
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    self.current_chat_room.m_prompt
-                ),
-                ("placeholder", "{chat_history}"),
-                ("human", "{input}"),
-            ]
-        )
-        chain = prompt | chat_model
-
-        chain_history = RunnableWithMessageHistory(
-            chain,
-            lambda session_id: self.current_chat_room.chat_histroy,
-            input_messages_key="input",
-            history_messages_key="chat_history",
-        )
-
-        try:
-            response = chain_history.invoke(
-                {"input": msg},
-                {"configurable": {"session_id": "unused"}},
-            )
-        except Exception as e:
-            QMessageBox.critical(self, "API 오류", f"메시지 전송 중 오류 발생: {e}")
-        
-        if response:
-            self.ui.experiment_txt.append(f"Sended Message: {msg}")
-            self.ui.experiment_txt.append("")
-            words = response.content.split(' ')
-            self.ui.experiment_txt.append("Ai Messages: ")
-
-            #stream효과
-            for i, w in enumerate(words):
-                cursor = self.ui.experiment_txt.textCursor()
-                cursor.movePosition(cursor.MoveOperation.End)
-
-                # 마지막 단어가 아니면 공백 추가
-                if i < len(words) - 1:
-                    cursor.insertText(w + " ")
-                else:
-                    cursor.insertText(w + "\n")
-                
-                self.ui.experiment_txt.setTextCursor(cursor)
-                
-                # 텍스트가 추가될 때마다 UI 업데이트
-                QCoreApplication.processEvents()
-                
-                # 시작적 지연
-                time.sleep(0.05)
-
-        self.ui.experiment_txt.append("")
-        self.show_status_messages("Experiment chat is ")
-
     def rag_llm(self, msg):
         if not self.current_chat_room.m_api_key:
             QMessageBox.critical(self, "오류", "api key를 입력해주세요")
@@ -1556,48 +1397,14 @@ class Window(QMainWindow, Ui_MainWindow):
             print(self.current_chat_room.experiment_token)
             print(self.current_chat_room.experiment_token * 128000)
 
-            self.report_msg += "\n"
-            self.report_msg += f"Sended Message: {msg}\n"
-            self.report_msg += "\n"
+            report_msg = ""
+            report_msg += f"Sended Message: {msg}\n\n"
+            report_msg += "Ai Messages: \n"
+            report_msg += answer.content
+            report_msg += "\n\n"
 
-            self.apply_markdown_report()
-
-            words = answer.content.split(' ')
-            self.report_msg += "Ai Messages: \n"
-            self.report_msg += "\n"
-
-            self.apply_markdown_report()
+            self.js_streaming(report_msg)
             
-            # self.ui.experiment_txt.append(f"Sended Message: {msg}")
-            # self.ui.experiment_txt.append("")
-            # self.ui.experiment_txt.append("Ai Messages: ")
-
-            for i, doc in enumerate(words):
-                if i < len(words) - 1:
-                    self.report_msg += doc + " "
-                else:
-                    self.report_msg += doc + "\n"
-                
-                self.apply_markdown_report()
-
-                # cursor = self.ui.experiment_txt.textCursor()
-                # cursor.movePosition(cursor.MoveOperation.End)
-
-                # # 마지막 단어가 아니면 공백 추가
-                # if i < len(words) - 1:
-                #     cursor.insertText(doc + " ")
-                # else:
-                #     cursor.insertText(doc + "\n")
-                
-                # self.ui.experiment_txt.setTextCursor(cursor)
-                
-                # 텍스트가 추가될 때마다 UI 업데이트
-                # QCoreApplication.processEvents()
-                
-                # 시작적 지연
-                time.sleep(0.01)
-            # self.ui.experiment_txt.append("")
-            self.report_msg += "\n"
             self.show_status_messages("Default chat is working successful")
         else:
             print("오류")
@@ -1721,61 +1528,26 @@ class Window(QMainWindow, Ui_MainWindow):
             print(self.current_chat_room.experiment_token)
             print(self.current_chat_room.experiment_token * 128000)
 
-            self.report_msg += "\n"
-            self.report_msg += f"Sended Message: {msg}\n"
-            self.report_msg += "\n"
+            report_msg = ""
+            report_msg += f"Sended Message: {msg}\n\n"
+            report_msg += "Ai Messages: \n"
+            report_msg += answer.content
+            report_msg += "\n\n"
 
-            self.apply_markdown_report()
-
-            words = answer.content.split(' ')
-            self.report_msg += "Ai Messages: \n"
-            self.report_msg += "\n"
-
-            self.apply_markdown_report()
-            
-            # self.ui.experiment_txt.append(f"Sended Message: {msg}")
-            # self.ui.experiment_txt.append("")
-            # self.ui.experiment_txt.append("Ai Messages: ")
-
-            for i, doc in enumerate(words):
-                if i < len(words) - 1:
-                    self.report_msg += doc + " "
-                else:
-                    self.report_msg += doc + "\n"
-                
-                self.apply_markdown_report()
-
-                # cursor = self.ui.experiment_txt.textCursor()
-                # cursor.movePosition(cursor.MoveOperation.End)
-
-                # # 마지막 단어가 아니면 공백 추가
-                # if i < len(words) - 1:
-                #     cursor.insertText(doc + " ")
-                # else:
-                #     cursor.insertText(doc + "\n")
-                
-                # self.ui.experiment_txt.setTextCursor(cursor)
-                
-                # 텍스트가 추가될 때마다 UI 업데이트
-                # QCoreApplication.processEvents()
-                
-                # 시작적 지연
-                time.sleep(0.01)
-            # self.ui.experiment_txt.append("")
-            self.report_msg += "\n"
+            self.js_streaming(report_msg)
             self.show_status_messages("Default chat is working successful")
         else:
             print("오류")
     
     #tokenizer func
-    def count_tokens(self, messages: List[BaseMessage]) -> int:
-        token_count = 0
-        # 시스템 프롬프트 토큰도 계산
-        token_count += len(self.token_encoding.encode("너는 친절한 AI 어시스턴트야. 항상 존댓말로 대답해."))
+    # def count_tokens(self, messages: List[BaseMessage]) -> int:
+    #     token_count = 0
+    #     # 시스템 프롬프트 토큰도 계산
+    #     token_count += len(self.token_encoding.encode("너는 친절한 AI 어시스턴트야. 항상 존댓말로 대답해."))
         
-        for message in messages:
-            token_count += len(self.token_encoding.encode(message.content))
-        return token_count
+    #     for message in messages:
+    #         token_count += len(self.token_encoding.encode(message.content))
+    #     return token_count
     
     def get_full_prompt_token_count(self, prompt_object) -> int:
         """
@@ -2030,33 +1802,13 @@ class Window(QMainWindow, Ui_MainWindow):
         self.llm_worker = None
 
     def streaming_response(self, response):
-        # self.report_msg += self.ui.experiment_txt.toPlainText()
-
-        self.report_msg += "\n"
-        self.report_msg += "Sended Message: 최근 전장상황에 대해 묘사해주세요\n"
-        self.report_msg += "\n"
-
-        self.apply_markdown_report()
-
-        words = response.split(' ')
-        self.report_msg += "Ai Messages: \n"
-
-        self.apply_markdown_report()
-
-        #stream효과
-        for i, w in enumerate(words):
-            # 마지막 단어가 아니면 공백 추가
-            if i < len(words) - 1:
-                self.report_msg += w + " "
-            else:
-                self.report_msg += w + "\n"
-            
-            self.apply_markdown_report()
-
-            # 시작적 지연
-            time.sleep(0.01)
-            
-        self.report_msg += "\n"
+        report_msg = ""
+        report_msg += "Sended Message: 최근 전장상황에 대해 묘사해주세요\n\n"
+        report_msg += "Ai Messages: \n"
+        report_msg += response
+        report_msg += "\n\n"
+        self.js_streaming(report_msg)
+        
         self.show_status_messages("Experiment chat is ")
 
     def handle_sql1_response(self, response):
@@ -2070,32 +1822,13 @@ class Window(QMainWindow, Ui_MainWindow):
         self.llm_worker2 = None
 
     def streaming_sql1_response(self, response):
+        report_msg = ""
+        report_msg += "Sended Message: 작전 시간 경과에 따른 아군 전체 부대의 평균 탄약보급량과 연료보급량의 변화 추이는 어떠한가요?\n\n"
+        report_msg += "Ai Messages: \n"
+        report_msg += response
+        report_msg += "\n\n"
+        self.js_streaming(report_msg)
 
-        self.report_msg += "\n"
-        self.report_msg += "Sended Message: 작전 시간 경과에 따른 아군 전체 부대의 평균 탄약보급량과 연료보급량의 변화 추이는 어떠한가요?\n"
-        self.report_msg += "\n"
-
-        self.apply_markdown_report()
-
-        words = response.split(' ')
-        self.report_msg += "Ai Messages: \n"
-
-        self.apply_markdown_report()
-
-        #stream효과
-        for i, w in enumerate(words):
-            # 마지막 단어가 아니면 공백 추가
-            if i < len(words) - 1:
-                self.report_msg += w + " "
-            else:
-                self.report_msg += w + "\n"
-            
-            self.apply_markdown_report()
-
-            # 시작적 지연
-            time.sleep(0.01)
-            
-        self.report_msg += "\n"
         self.show_status_messages("Experiment chat is ")
 
     def handle_sql2_response(self, response):
@@ -2109,66 +1842,50 @@ class Window(QMainWindow, Ui_MainWindow):
         self.llm_worker3 = None
 
     def streaming_sql2_response(self, response):
+        report_msg = ""
+        report_msg += "Sended Message: 전투력에 치명적인 변화가 발생한 이벤트의 발생 시간과 이 사건에 직접 관여한 아군 부대는 무엇이고 어떤 이벤트가 있었나요?\n\n"
+        report_msg += "Ai Messages: \n"
+        report_msg += response
+        report_msg += "\n\n"
 
-        self.report_msg += "\n"
-        self.report_msg += "Sended Message: 전투력에 치명적인 변화가 발생한 이벤트의 발생 시간과 이 사건에 직접 관여한 아군 부대는 무엇이고 어떤 이벤트가 있었나요?\n"
-        self.report_msg += "\n"
-
-        self.apply_markdown_report()
-
-        words = response.split(' ')
-        self.report_msg += "Ai Messages: \n"
-
-        self.apply_markdown_report()
-
-        #stream효과
-        for i, w in enumerate(words):
-            # 마지막 단어가 아니면 공백 추가
-            if i < len(words) - 1:
-                self.report_msg += w + " "
-            else:
-                self.report_msg += w + "\n"
-            
-            self.apply_markdown_report()
-
-            # 시작적 지연
-            time.sleep(0.01)
-            
-        self.report_msg += "\n"
+        self.js_streaming(report_msg)
+        
         self.show_status_messages("Experiment chat is ")
 
-    def apply_markdown_report(self):
-        text_browser = self.ui.experiment_txt
-        res = markdown.markdown(self.report_msg, extensions=['tables'])
+    def js_streaming(self, response):
+        words = response.split(' ')
+        word_buffer = []
 
-        css_style = """
-        <style>
-            /* 표 전체에 테두리를 설정하고, 셀 간의 간격을 없앱니다 */
-            table {
-                border-collapse: collapse;
-                width: 100%;
-                margin-top: 10px
-            }
-            /* 헤더(th)와 데이터 셀(td)에 테두리 스타일을 적용합니다 */
-            th, td {
-                border: 1px solid white; /* 검은색 1px 실선 테두리 */
-                padding: 8px; /* 셀 내부 여백 */
-                text-align: left;
-            }
-        </style>
-        """
-        final_res = css_style + res
+        for i, word in enumerate(words):
+            word_buffer.append(word + " ")
+            if len(word_buffer) >= 10 or i == len(words) - 1:
+                combined_chunk = "".join(word_buffer)
+                
+                # JS에 전달 (이제 단어 하나가 아니라 10단어 뭉치 전달)
+                safe_chunk = combined_chunk.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+                print(safe_chunk)
+                self.ui.experiment_txt.page().runJavaScript(f"appendText(`{safe_chunk}`)")
+                
+                word_buffer = [] # 버퍼 비우기
 
-        self.ui.experiment_txt.setHtml(final_res)
+            time.sleep(0.01)
+            QCoreApplication.processEvents()
 
-        text_browser.ensurePolished() # UI 위젯 스타일/상태 업데이트 보장
-        text_browser.updateGeometry() # 위젯의 기하학적 정보(크기 등) 업데이트
+    def js_streaming_short(self, response):
+        words = response.split(' ')
 
-        text_browser.moveCursor(QTextCursor.MoveOperation.End)
-        text_browser.ensureCursorVisible()
-        
-        # 텍스트가 추가될 때마다 UI 업데이트
-        QCoreApplication.processEvents()
+        for word in words:
+            chunk = word + " "
+            # 특수문자('나 \ 등)가 JS 인자로 들어갈 때 에러나지 않도록 처리
+            safe_chunk = chunk.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+
+            print(type(safe_chunk))
+            
+            # 🌟 새로 바꾼 appendText 함수 호출!
+            self.ui.webEngineView.page().runJavaScript(f"appendText('{safe_chunk}')")
+            
+            time.sleep(0.01)
+            QCoreApplication.processEvents()
 
 
 def start_streamlit():

@@ -20,8 +20,8 @@ class Ui_MainWindow(object):
 "    background-color: rgb(20, 20, 20); /* 원하는 색상으로 변경 */\n"
 "}")
         self.centralwidget.setObjectName("centralwidget")
-        self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.centralwidget)
-        self.verticalLayout_7.setObjectName("verticalLayout_7")
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.centralwidget)
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         self.splitter = QtWidgets.QSplitter(parent=self.centralwidget)
         self.splitter.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.splitter.setChildrenCollapsible(False)
@@ -1408,10 +1408,10 @@ class Ui_MainWindow(object):
         self.LLM.setSizePolicy(sizePolicy)
         self.LLM.setMinimumSize(QtCore.QSize(0, 0))
         self.LLM.setObjectName("LLM")
-        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.LLM)
-        self.verticalLayout_3.setObjectName("verticalLayout_3")
-        self.verticalLayout_5 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.LLM)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_8.setSpacing(2)
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
@@ -1455,29 +1455,14 @@ class Ui_MainWindow(object):
         self.horizontalLayout_8.setStretch(0, 2)
         self.horizontalLayout_8.setStretch(1, 10)
         self.horizontalLayout_8.setStretch(2, 3)
-        self.verticalLayout_5.addLayout(self.horizontalLayout_8)
-        self.experiment_txt = QtWidgets.QTextBrowser(parent=self.LLM)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.experiment_txt.sizePolicy().hasHeightForWidth())
-        self.experiment_txt.setSizePolicy(sizePolicy)
-        self.experiment_txt.setMinimumSize(QtCore.QSize(0, 0))
-        self.experiment_txt.setStyleSheet("QTextEdit {\n"
-"    color: white;\n"
-"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
-"    border: 1px solid rgb(255,255,255);\n"
-"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
-"}\n"
-"QTextEdit:focus {\n"
-"    border: 1px solid rgb(184, 247, 185);\n"
-"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
-"}")
-        self.experiment_txt.setInputMethodHints(QtCore.Qt.InputMethodHint.ImhMultiLine)
-        self.experiment_txt.setReadOnly(True)
+        self.verticalLayout_3.addLayout(self.horizontalLayout_8)
+        self.experiment_txt = QtWebEngineWidgets.QWebEngineView(parent=self.LLM)
+        self.experiment_txt.setUrl(QtCore.QUrl("about:blank"))
         self.experiment_txt.setObjectName("experiment_txt")
-        self.verticalLayout_5.addWidget(self.experiment_txt)
-        self.verticalLayout_3.addLayout(self.verticalLayout_5)
+        self.verticalLayout_3.addWidget(self.experiment_txt)
+        self.verticalLayout_3.setStretch(0, 1)
+        self.verticalLayout_3.setStretch(1, 20)
+        self.verticalLayout_5.addLayout(self.verticalLayout_3)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setContentsMargins(-1, 6, -1, -1)
         self.horizontalLayout.setSpacing(4)
@@ -1548,11 +1533,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addLayout(self.gridLayout_2)
         self.horizontalLayout.setStretch(0, 5)
         self.horizontalLayout.setStretch(1, 1)
-        self.verticalLayout_3.addLayout(self.horizontalLayout)
-        self.verticalLayout_3.setStretch(0, 4)
-        self.verticalLayout_3.setStretch(1, 1)
+        self.verticalLayout_5.addLayout(self.horizontalLayout)
+        self.verticalLayout_5.setStretch(0, 4)
+        self.verticalLayout_5.setStretch(1, 1)
         self.tabWidget.addTab(self.LLM, "")
-        self.verticalLayout_7.addWidget(self.splitter)
+        self.horizontalLayout_2.addWidget(self.splitter)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1200, 33))
@@ -1573,8 +1558,7 @@ class Ui_MainWindow(object):
         self.send_btn.clicked.connect(self.input_text.setFocus) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.send_btn, self.input_text)
-        MainWindow.setTabOrder(self.input_text, self.experiment_txt)
-        MainWindow.setTabOrder(self.experiment_txt, self.tabWidget)
+        MainWindow.setTabOrder(self.input_text, self.tabWidget)
 
         self.input_text.set_send_button(self.send_btn)
 

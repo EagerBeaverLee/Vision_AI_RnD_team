@@ -25,7 +25,7 @@
     background-color: rgb(20, 20, 20); /* 원하는 색상으로 변경 */
 }</string>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout_7">
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
     <item>
      <widget class="QSplitter" name="splitter">
       <property name="orientation">
@@ -2274,9 +2274,9 @@ QProgressBar::chunk {
         <attribute name="title">
          <string>LLM참모</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_3" stretch="4,1">
+        <layout class="QVBoxLayout" name="verticalLayout_5" stretch="4,1">
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_5">
+          <layout class="QVBoxLayout" name="verticalLayout_3" stretch="1,20">
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_8" stretch="2,10,3">
              <property name="spacing">
@@ -2356,36 +2356,11 @@ QProgressBar::chunk {
             </layout>
            </item>
            <item>
-            <widget class="QTextBrowser" name="experiment_txt">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QTextEdit {
-	color: white;
-    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
-	border: 1px solid rgb(255,255,255);
-	border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */
-}
-QTextEdit:focus {
-    border: 1px solid rgb(184, 247, 185);
-    outline: none;           /* 기본 포커스 아웃라인 제거 */
-}</string>
-             </property>
-             <property name="inputMethodHints">
-              <set>Qt::InputMethodHint::ImhMultiLine</set>
-             </property>
-             <property name="readOnly">
-              <bool>true</bool>
+            <widget class="QWebEngineView" name="experiment_txt">
+             <property name="url">
+              <url>
+               <string>about:blank</string>
+              </url>
              </property>
             </widget>
            </item>
@@ -2571,7 +2546,6 @@ QPushButton:pressed {
  <tabstops>
   <tabstop>send_btn</tabstop>
   <tabstop>input_text</tabstop>
-  <tabstop>experiment_txt</tabstop>
   <tabstop>tabWidget</tabstop>
  </tabstops>
  <resources/>
