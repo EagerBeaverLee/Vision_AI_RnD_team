@@ -8,10 +8,10 @@ import sys
 import asyncio
 import os # API 키를 환경 변수에서 로드하기 위해
 
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel
 )
-from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot
 
 
 # LangChain 관련 임포트
@@ -20,15 +20,6 @@ from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-# 1. LLM 응답을 시뮬레이션하는 비동기 함수 (실제 LangChain 연동으로 대체)
-# async def mock_llm_response_astream(text_to_stream):
-#     """
-#     LLM의 astream 응답을 모방하는 비동기 제너레이터입니다.
-#     각 문자마다 작은 지연을 줍니다.
-#     """
-#     for char in text_to_stream:
-#         yield char
-#         await asyncio.sleep(0.05) # 0.05초 지연
 
 # 2. LLM 응답 스트리밍을 처리할 스레드 클래스
 class LLMStreamThread(QThread):
@@ -42,7 +33,13 @@ class LLMStreamThread(QThread):
         self._running = True
         # LangChain 모델 초기화 (API 키는 환경 변수에 설정되어 있어야 합니다)
         # 예: os.environ["OPENAI_API_KEY"] = "YOUR_API_KEY"
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key="apikey 입력") # 원하는 모델로 변경 가능
+        # self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key="apikey 입력") # 원하는 모델로 변경 가능
+        self.llm = ChatOpenAI(
+            api_key="ai",
+            model="openai/gpt-oss-20b",
+            base_url="http://192.168.0.110:8000/v1",
+            temperature=0.1,
+        )
 
         # LangChain 체인 설정
         self.prompt = ChatPromptTemplate.from_template("{question}")
@@ -72,7 +69,7 @@ class LLMStreamThread(QThread):
                 # LangChain astream은 일반적으로 문자열 조각을 반환합니다.
                 self.text_chunk_received.emit(chunk)
                 # 필요에 따라 작은 지연을 추가하여 타이핑 효과를 강조할 수 있습니다.
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.01)
 
         except Exception as e:
             print(f"스트리밍 중 오류 발생: {e}")
@@ -95,12 +92,6 @@ class LLMApp(QWidget):
         self.initUI()
         self.llm_stream_thread = None
 
-        #텍스트 분할
-        self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
-        #엠베딩보델
-        embedding_model = OpenAIEmbeddings(openai_api_key="api_key")
-        #벡터스토어 생성
-        self.vector_db = Chroma("tourist_info", embedding_model)
 
     def initUI(self):
         self.setWindowTitle("LangChain LLM Astream & QTextEdit")
@@ -122,7 +113,7 @@ class LLMApp(QWidget):
         layout.addWidget(self.text_edit)
 
         self.start_button = QPushButton("스트리밍 시작 (질문 전송)")
-        self.start_button.clicked.connect(self.run)
+        self.start_button.clicked.connect(self.start_streaming)
         layout.addWidget(self.start_button)
 
         self.stop_button = QPushButton("스트리밍 중지")
@@ -243,12 +234,7 @@ class LLMApp(QWidget):
         
 
 if __name__ == '__main__':
-    # !!! 중요: OpenAI API 키를 환경 변수에 설정해야 합니다. !!!
-    # export OPENAI_API_KEY="YOUR_API_KEY_HERE"
-    # 또는 코드에서 직접 설정 (권장하지 않음, 보안상 위험)
-    # os.environ["OPENAI_API_KEY"] = "YOUR_API_KEY_HERE"
-
     app = QApplication(sys.argv)
     ex = LLMApp()
     ex.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

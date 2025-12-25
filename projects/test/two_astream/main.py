@@ -1,6 +1,8 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot, Qt
+# from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel
+# from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot, Qt
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel
+from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot, Qt
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables.history import RunnableWithMessageHistory
@@ -28,7 +30,12 @@ class LangchainWorker(QObject):
         super().__init__(parent)
         self.use_history = use_history
         self.session_id = session_id
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key="apikey") # You can choose a different model
+        self.llm = ChatOpenAI(
+            api_key="ai",
+            model="openai/gpt-oss-20b",
+            base_url="http://192.168.0.110:8000/v1",
+            temperature=0.1,
+        )
         
         prompt = ChatPromptTemplate.from_messages(
                 [
@@ -117,46 +124,38 @@ class MainWindow(QWidget):
         self.stream_button.clicked.connect(self.start_streaming)
         main_layout.addWidget(self.stream_button)
 
-        # Output QTextEdit 1 (with history)
-        self.output_label_history = QLabel("Output with Message History:")
-        main_layout.addWidget(self.output_label_history)
-        self.output_text_edit_history = QTextEdit()
-        self.output_text_edit_history.setReadOnly(True)
-        self.output_text_edit_history.setLineWrapMode(QTextEdit.WidgetWidth)
-        main_layout.addWidget(self.output_text_edit_history)
-
         # Output QTextEdit 2 (no history)
         self.output_label_no_history = QLabel("Output without Message History:")
         main_layout.addWidget(self.output_label_no_history)
         self.output_text_edit_no_history = QTextEdit()
         self.output_text_edit_no_history.setReadOnly(True)
-        self.output_text_edit_no_history.setLineWrapMode(QTextEdit.WidgetWidth)
+        self.output_text_edit_no_history.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
         main_layout.addWidget(self.output_text_edit_no_history)
 
         self.setLayout(main_layout)
 
     def setup_threads_and_workers(self):
         # --- Thread and Worker for History Stream ---
-        self.thread_history = QThread()
-        self.worker_history = LangchainWorker(use_history=True, session_id="session1")
-        self.worker_history.moveToThread(self.thread_history) # Move worker to its own thread
+        # self.thread_history = QThread()
+        # self.worker_history = LangchainWorker(use_history=True, session_id="session1")
+        # self.worker_history.moveToThread(self.thread_history) # Move worker to its own thread
 
-        # Connect signals:
-        # 1. Main window signal to worker's slot to start streaming
-        self.start_stream_history_signal.connect(self.worker_history.do_stream)
-        # 2. Worker's new text signal to Main window's slot to update text edit
-        self.worker_history.new_text_chunk.connect(self.append_text_history)
-        # 3. Worker's finished signal to Main window's slot
-        self.worker_history.stream_finished.connect(self.stream_finished_history)
-        # 4. Worker's error signal to Main window's slot
-        self.worker_history.error_occurred.connect(self.handle_error_history)
-        # 5. Thread started signal to worker's do_stream (to ensure it runs on thread)
-        #    This specific connection is removed because do_stream is explicitly called via start_stream_history_signal
+        # # Connect signals:
+        # # 1. Main window signal to worker's slot to start streaming
+        # self.start_stream_history_signal.connect(self.worker_history.do_stream)
+        # # 2. Worker's new text signal to Main window's slot to update text edit
+        # self.worker_history.new_text_chunk.connect(self.append_text_history)
+        # # 3. Worker's finished signal to Main window's slot
+        # self.worker_history.stream_finished.connect(self.stream_finished_history)
+        # # 4. Worker's error signal to Main window's slot
+        # self.worker_history.error_occurred.connect(self.handle_error_history)
+        # # 5. Thread started signal to worker's do_stream (to ensure it runs on thread)
+        # #    This specific connection is removed because do_stream is explicitly called via start_stream_history_signal
 
-        # Clean up when thread finishes (optional but good practice)
-        self.thread_history.finished.connect(self.worker_history.deleteLater)
-        self.thread_history.finished.connect(self.thread_history.deleteLater)
-        self.thread_history.start() # Start the thread (it's now ready to accept tasks)
+        # # Clean up when thread finishes (optional but good practice)
+        # self.thread_history.finished.connect(self.worker_history.deleteLater)
+        # self.thread_history.finished.connect(self.thread_history.deleteLater)
+        # self.thread_history.start() # Start the thread (it's now ready to accept tasks)
 
 
         # --- Thread and Worker for No History Stream ---
@@ -178,26 +177,17 @@ class MainWindow(QWidget):
     def start_streaming(self):
         prompt = self.input_text_edit.toPlainText()
         if not prompt:
-            self.output_text_edit_history.setText("Please enter a prompt.")
             self.output_text_edit_no_history.setText("Please enter a prompt.")
             return
 
         self.stream_button.setEnabled(False) # Disable button during streaming
         self.input_text_edit.setEnabled(False)
-        self.output_text_edit_history.clear() # Clear before starting new stream
         self.output_text_edit_no_history.clear() # Clear before starting new stream
 
         # Emit signals to start streaming on respective worker threads
         self.start_stream_history_signal.emit(prompt)
         self.start_stream_no_history_signal.emit(prompt)
 
-
-    @pyqtSlot(str)
-    def append_text_history(self, chunk: str):
-        self.output_text_edit_history.insertPlainText(chunk)
-        self.output_text_edit_history.verticalScrollBar().setValue(
-            self.output_text_edit_history.verticalScrollBar().maximum()
-        )
 
     @pyqtSlot(str)
     def append_text_no_history(self, chunk: str):
@@ -225,11 +215,7 @@ class MainWindow(QWidget):
         self.stream_button.setEnabled(True)
         self.input_text_edit.setEnabled(True)
 
-    @pyqtSlot(str)
-    def handle_error_history(self, error_message: str):
-        self.output_text_edit_history.setText(f"Error: {error_message}")
-        self.stream_finished_history() # Ensure UI re-enables on error
-
+    
     @pyqtSlot(str)
     def handle_error_no_history(self, error_message: str):
         self.output_text_edit_no_history.setText(f"Error: {error_message}")
@@ -238,13 +224,11 @@ class MainWindow(QWidget):
     def closeEvent(self, event):
         # Terminate threads gracefully when the main window closes
         print("Stopping threads...")
-        self.worker_history.stop()
+        
         self.worker_no_history.stop()
-
-        self.thread_history.quit()
+        
         self.thread_no_history.quit()
 
-        self.thread_history.wait()
         self.thread_no_history.wait()
         print("Threads stopped.")
         super().closeEvent(event)
@@ -254,4 +238,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
