@@ -3,7 +3,7 @@ import os
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader, CSVLoader, JSONLoader, DirectoryLoader
-from langchain_teddynote.document_loaders import HWPLoader
+# from langchain_teddynote.document_loaders import HWPLoader
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
@@ -42,7 +42,7 @@ class DefaultRetriever(QObject):
             'txt': TextLoader,
             'csv': CSVLoader,
             'json': JSONLoader,
-            'hwp': HWPLoader
+            # 'hwp': HWPLoader
         }
 
         _, file_extension = os.path.splitext(filename)

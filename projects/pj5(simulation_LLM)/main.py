@@ -1,4 +1,4 @@
-import sys, os, time, copy, json, ast, markdown, psutil, signal
+import sys, os, time, copy, json, ast, markdown, psutil, signal, asyncio
 import subprocess
 import atexit
 from PyQt6.QtWidgets import (
@@ -18,6 +18,7 @@ from GranularChunkExpansionRetriever import GranularChunkExpansionRetriverPipeli
 from Rewrite_Retrieve_Read_Gen import RewriteRetrieveReadQuestionGenerator
 from Step_Back_Question_Gen import StepBackQuestionGenerator
 from Multiple_Questions_Gen import MultipleQuestionGenerator
+from LLMStreamThread import LLMStreamThread
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -34,16 +35,21 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 from typing import List
 from transformers import AutoTokenizer
+from datetime import datetime
 
 streamlit_process = None
 selected_scenario = 2   #시나리오 선택
 
 class GenerateReport(QThread):
-    finished_report = pyqtSignal(str)
+    report_chunk_fin = pyqtSignal(str)
+    report_finished = pyqtSignal()
+    report_error = pyqtSignal(str)
 
     def __init__(self, local_llm):
         super().__init__()
         self.llm = local_llm
+        self.chain = None
+        self.question = "최근 전장상황에 대해 묘사해주세요"
 
     def load_time_offset(self):
         try:
@@ -52,8 +58,7 @@ class GenerateReport(QThread):
                 if lines:
                     latest_value_str = lines[-1].strip()
                     self.scenario_time = int(latest_value_str)
-                    report = self.description_scenario()
-                    return report.content
+                    self.description_scenario()
                 else:
                     QMessageBox.critical(self, "오류", "기록된 값이 없습니다")
 
@@ -127,9 +132,9 @@ class GenerateReport(QThread):
         end_time_tick = 0
         
         if selected_scenario == 1:
-            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1.db")
+            db = SQLDatabase.from_uri("sqlite:///db/scenario_1.db")
         else:
-            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_2.db")
+            db = SQLDatabase.from_uri("sqlite:///db/scenario_2.db")
 
         inspector = inspect(db._engine)
 
@@ -263,24 +268,48 @@ class GenerateReport(QThread):
             | self.llm
             # | StrOutputParser()
         )
-
-        question = "위에 제시된 지침에 따라 상세한 군사 시나리오를 묘사해주세요"
-        report = scenario_explain_chain.invoke({"question": question})
         
-        if report:
-            return report
+        self.chain = scenario_explain_chain
+        
         
     def run(self):
-        print(f"[{QThread.currentThreadId()}] LLM작업 시작")
-        report = self.load_time_offset()
-        self.finished_report.emit(report)
+        print(f"[{QThread.currentThreadId()}] LLM작업 시작 {datetime.now()}")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self._stream())
+
+    async def _stream(self):
+        self.load_time_offset()
+        try:
+            buffer = []
+            async for chunk in self.chain.astream({"question": self.question}):
+                if chunk:
+                    buffer.append(chunk.content)
+
+                if len(buffer) >= 10:
+                    self.report_chunk_fin.emit("".join(buffer))
+                    buffer.clear()
+
+            if buffer:
+                self.report_chunk_fin.emit("".join(buffer))
+
+        except Exception as e:
+            print(f"스트리밍 중 오류 발생: {e}")
+            self.report_error.emit(f"스트리밍 오류: {e}")
+        finally:
+            self.report_finished.emit()
+
+    
 
 class GenerateSQL1Report(QThread):
-    finished_response = pyqtSignal(str)
+    chunk_response = pyqtSignal(str)
+    finished_response = pyqtSignal()
 
     def __init__(self, local_llm):
         super().__init__()
         self.llm = local_llm
+        self.question = "작전 시간 경과에 따른 아군 전체 부대의 평균 탄약보급량과 연료보급량의 변화 추이는 어떠한가요?"
+        self.chain = None
 
     def description_sql1(self):
         def generalize_to_json(data_string: str) -> str:
@@ -346,9 +375,9 @@ class GenerateSQL1Report(QThread):
                 return None
     
         if selected_scenario == 1:
-            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1.db")
+            db = SQLDatabase.from_uri("sqlite:///db/scenario_1.db")
         else:
-            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_2.db")
+            db = SQLDatabase.from_uri("sqlite:///db/scenario_2.db")
         
         blue_force_h = "[('시간', '평균탄약보급량', '평균연료보급량')]"
 
@@ -357,8 +386,6 @@ class GenerateSQL1Report(QThread):
         blue_force_t = blue_force_h[:-1] + ', ' + blue_force[1:]
 
         blue_force_j = generalize_to_json(blue_force_t)
-
-        print(blue_force_j)
 
         sql_explain_template = """
         **다음 형식을 반드시 지켜 간단한 리포트를 작성하세요.**
@@ -390,24 +417,44 @@ class GenerateSQL1Report(QThread):
             | explain_template
             | self.llm
             # | StrOutputParser()
-        )
-        question = "작전 시간 경과에 따른 아군 전체 부대의 평균 탄약보급량과 연료보급량의 변화 추이는 어떠한가요?"
-        report = scenario_explain_chain.invoke({"question": question})
+        )        
+        self.chain = scenario_explain_chain
         
-        if report:
-            return report.content
 
     def run(self):
-        print(f"[{QThread.currentThreadId()}] LLM작업 시작")
-        report = self.description_sql1()
-        self.finished_response.emit(report)
+        print(f"[{QThread.currentThreadId()}] LLM작업 시작 {datetime.now()}")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self._stream())
+
+    async def _stream(self):
+        self.description_sql1()
+        try:
+            buffer = []
+            async for chunk in self.chain.astream({"question": self.question}):
+                if chunk:
+                    buffer.append(chunk.content)
+
+                if len(buffer) >= 10:
+                    self.chunk_response.emit("".join(buffer))
+                    buffer.clear()
+            if buffer:
+                self.chunk_response.emit("".join(buffer))
+        except Exception as e:
+            print(f"스트리밍 중 오류 발생: {e}")
+            # self.report_error.emit(f"스트리밍 오류: {e}")
+        finally:
+            self.finished_response.emit()
 
 class GenerateSQL2Report(QThread):
-    finished_response = pyqtSignal(str)
+    chunk_response = pyqtSignal(str)
+    finished_response = pyqtSignal()
 
     def __init__(self, local_llm):
         super().__init__()
         self.llm = local_llm
+        self.chain = None
+        self.question = "전투력에 치명적인 변화가 발생한 이벤트의 발생 시간과 이 사건에 직접 관여한 아군 부대는 무엇이고 어떤 이벤트가 있었나요?"
 
     def description_sql2(self):
         def generalize_to_json(data_string: str) -> str:
@@ -473,9 +520,9 @@ class GenerateSQL2Report(QThread):
                 return None
     
         if selected_scenario == 1:
-            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_1.db")
+            db = SQLDatabase.from_uri("sqlite:///db/scenario_1.db")
         else:
-            db = SQLDatabase.from_uri("sqlite:///D:/AI_team/github/Vision_AI_RnD_team/projects/pj6(createDB)/DB/sqlLite/scenario_2.db")
+            db = SQLDatabase.from_uri("sqlite:///db/scenario_2.db")
         
         event_h = "[('시간', '종류', '관련부대', '상세내용', '중요도')]"
 
@@ -484,7 +531,6 @@ class GenerateSQL2Report(QThread):
         event_t = event_h[:-1] + ', ' + event[1:]
 
         event_j = generalize_to_json(event_t)
-        print(event_j)
 
         sql2_explain_template = """
         **다음 형식을 반드시 지켜 간단한 리포트를 작성하세요.**
@@ -516,18 +562,32 @@ class GenerateSQL2Report(QThread):
             | self.llm
             # | StrOutputParser()
         )
-        # question = "주요 이벤트의 발생 시간과 이 사건에 직접 관여한 아군 부대는 무엇인가요?"
-        question = "전투력에 치명적인 변화가 발생한 이벤트의 발생 시간과 이 사건에 직접 관여한 아군 부대는 무엇이고 어떤 이벤트가 있었나요?"
-        report = scenario_explain_chain.invoke({"question": question})
-        
-        if report:
-            return report.content
-
+        self.chain = scenario_explain_chain
 
     def run(self):
-        print(f"[{QThread.currentThreadId()}] LLM작업 시작")
-        report = self.description_sql2()
-        self.finished_response.emit(report)
+        print(f"[{QThread.currentThreadId()}] LLM작업 시작 {datetime.now()}")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self._stream())
+
+    async def _stream(self):
+        self.description_sql2()
+        try:
+            buffer = []
+            async for chunk in self.chain.astream({"question": self.question}):
+                if chunk:
+                    buffer.append(chunk.content)
+
+                if len(buffer) >= 10:
+                    self.chunk_response.emit("".join(buffer))
+                    buffer.clear()
+            if buffer:
+                self.chunk_response.emit("".join(buffer))
+        except Exception as e:
+            print(f"스트리밍 중 오류 발생: {e}")
+            # self.report_error.emit(f"스트리밍 오류: {e}")
+        finally:
+            self.finished_response.emit()
 
 class WaitingDialog(QProgressDialog):
     def __init__(self, parent=None):
@@ -668,7 +728,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.llm_worker = None
         self.llm_worker2 = None
         self.llm_worker3 = None
-        
+        self.stream_worker = None
 
         #쓰레드 기다리는 창
         self.waiting_dialog = None
@@ -687,10 +747,17 @@ class Window(QMainWindow, Ui_MainWindow):
         
 
     def init_local_llm(self):
+        # self.local_llm = ChatOpenAI(
+        #     api_key="ai",
+        #     model="openai/gpt-oss-20b",
+        #     base_url="http://192.168.0.110:8000/v1",
+        #     temperature=self.current_chat_room.m_temperature,
+        #     # max_tokens = 6000
+        # )
         self.local_llm = ChatOpenAI(
             api_key="ai",
             model="openai/gpt-oss-20b",
-            base_url="http://192.168.0.110:8000/v1",
+            base_url="http://49.174.2.3:8000/v1",
             temperature=self.current_chat_room.m_temperature,
             # max_tokens = 6000
         )
@@ -1359,10 +1426,6 @@ class Window(QMainWindow, Ui_MainWindow):
             ]
         )
 
-        # llm = ChatOpenAI(
-        #     api_key=self.current_chat_room.m_api_key,
-        #     temperature=self.current_chat_room.m_temperature,
-        # )
         similary = None
         keywords = None
 
@@ -1447,6 +1510,10 @@ class Window(QMainWindow, Ui_MainWindow):
         if not self.worker:
             QMessageBox.critical(self, "오류", "벡터스토어가 없습니다")
             return
+        
+        if self.stream_worker is not None:
+            QMessageBox.critical(self, "오류", "이전작업이 아직 실행중입니다.")
+            return
 
         generator_map = {
             "Default": self.create_default_generator,
@@ -1513,31 +1580,65 @@ class Window(QMainWindow, Ui_MainWindow):
             history_messages_key="history",
         )
 
-        answer = rag_history_chain.invoke(
-            {"question": original_msg},
-            self.current_chat_room.experiment_config,
-        )
+        self.stream_worker = LLMStreamThread(original_msg, self.local_llm, rag_history_chain)
+        self.stream_worker.text_chunk_received.connect(self.handle_rag_response)
+        self.stream_worker.stream_finished.connect(self.handle_rag_response_finished)
+        self.stream_worker.finished.connect(self.stream_worker.deleteLater)
 
-        if answer:
-            print(answer.response_metadata['token_usage'])
-            print(answer.response_metadata['token_usage']['total_tokens'])
-            self.current_chat_room.experiment_token += answer.response_metadata['token_usage']['total_tokens'] / self.MAX_TOKENS * 100
-            update = f"used tokens: {self.current_chat_room.experiment_token:.2f}%"
-            self.ui.experiment_token_bar.setFormat(update)
-            self.ui.experiment_token_bar.setValue(int(self.current_chat_room.experiment_token))
-            print(self.current_chat_room.experiment_token)
-            print(self.current_chat_room.experiment_token * 128000)
+        self.DisableStreamButtons()
+        self.waiting_dialog = WaitingDialog(self)
+        self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
 
-            report_msg = ""
-            report_msg += f"Sended Message: {msg}\n\n"
-            report_msg += "Ai Messages: \n"
-            report_msg += answer.content
-            report_msg += "\n\n"
-
-            self.js_streaming(report_msg)
-            self.show_status_messages("Default chat is working successful")
+        if self.stream_worker and self.stream_worker.isRunning():
+            print("아직 작업 중입니다.")
         else:
-            print("오류")
+            # 새로 생성하거나 기존 게 끝난 걸 확인 후 실행
+            self.stream_worker.start()
+            self.waiting_dialog.exec()
+
+    def handle_rag_response(self, chunk):
+        try:
+            if self.isEnabled() == False:
+                self.setEnabled(True)
+            if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
+                self.waiting_dialog.accept()
+
+            self.js_streaming_chunk(chunk)
+        except Exception as e:
+            print(f"{e}")
+
+
+    def handle_rag_response_finished(self):
+        if self.stream_worker:
+            self.stream_worker.deleteLater()
+            self.stream_worker = None
+        QTimer.singleShot(5000, self.EnableStreamButtons)
+
+        # answer = rag_history_chain.invoke(
+        #     {"question": original_msg},
+        #     self.current_chat_room.experiment_config,
+        # )
+
+        # if answer:
+        #     print(answer.response_metadata['token_usage'])
+        #     print(answer.response_metadata['token_usage']['total_tokens'])
+        #     self.current_chat_room.experiment_token += answer.response_metadata['token_usage']['total_tokens'] / self.MAX_TOKENS * 100
+        #     update = f"used tokens: {self.current_chat_room.experiment_token:.2f}%"
+        #     self.ui.experiment_token_bar.setFormat(update)
+        #     self.ui.experiment_token_bar.setValue(int(self.current_chat_room.experiment_token))
+        #     print(self.current_chat_room.experiment_token)
+        #     print(self.current_chat_room.experiment_token * 128000)
+
+        #     report_msg = ""
+        #     report_msg += f"Sended Message: {msg}\n\n"
+        #     report_msg += "Ai Messages: \n"
+        #     report_msg += answer.content
+        #     report_msg += "\n\n"
+
+        #     self.js_streaming(report_msg)
+        #     self.show_status_messages("Default chat is working successful")
+        # else:
+        #     print("오류")
     
     #tokenizer func
     # def count_tokens(self, messages: List[BaseMessage]) -> int:
@@ -1625,22 +1726,8 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             self.ui.webEngineView.setUrl(QUrl("http://localhost:8502"))
 
-    def start_description1_llm_query(self):
-        if self.llm_worker and self.llm_worker.isRunning():
-            print("이전작업이 아직 실행중입니다.")
-            return
-        
-        self.setEnabled(False)
-        
-        self.llm_worker = GenerateReport(self.local_llm)
-        self.llm_worker.finished_report.connect(self.handle_llm_response)
-        self.llm_worker.finished.connect(self.llm_worker.deleteLater)
-
-        #버튼 비활성화
-        self.ui.description_btn1.setEnabled(False)
-        self.waiting_dialog = WaitingDialog(self)
-
-        style_sheet = """
+    def GetStyleSheetTemplate(self):
+        return """
         /* 1. QProgressDialog (다이얼로그 창 배경) */
         QProgressDialog {
             background-color: #000000; /* 검정 배경 */
@@ -1669,11 +1756,36 @@ class Window(QMainWindow, Ui_MainWindow):
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(50, 120, 50), stop:1 rgb(100,180,100));
             border-radius: 2px;
         }
-        """        
-        self.waiting_dialog.setStyleSheet(style_sheet)
+        """
 
-        self.llm_worker.start()
-        self.waiting_dialog.exec()
+    def start_description1_llm_query(self):
+        if self.llm_worker is not None:
+            print("이전작업이 아직 실행중입니다.")
+            return
+        
+        self.setEnabled(False)
+        self.llm_worker = GenerateReport(self.local_llm)
+        self.llm_worker.report_chunk_fin.connect(self.handle_llm_response)
+        self.llm_worker.report_finished.connect(self.handle_finished)
+        self.llm_worker.report_error.connect(self.handle_error)
+        self.llm_worker.finished.connect(self.llm_worker.deleteLater)
+
+        #버튼 비활성화
+        self.DisableStreamButtons()
+        self.waiting_dialog = WaitingDialog(self)
+        self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
+
+        report_msg = ""
+        report_msg += "\n\nSended Message: 최근 전장상황에 대해 묘사해주세요\n\n"
+        report_msg += "Ai Messages: \n"
+        self.js_streaming_header(report_msg)
+
+        if self.llm_worker and self.llm_worker.isRunning():
+            print("아직 작업 중입니다.")
+        else:
+            # 새로 생성하거나 기존 게 끝난 걸 확인 후 실행
+            self.llm_worker.start()
+            self.waiting_dialog.exec()
 
     def start_description3_llm_query(self):
         if self.llm_worker2 and self.llm_worker2.isRunning():
@@ -1683,47 +1795,26 @@ class Window(QMainWindow, Ui_MainWindow):
         self.setEnabled(False)
 
         self.llm_worker2 = GenerateSQL1Report(self.local_llm)
-        self.llm_worker2.finished_response.connect(self.handle_sql1_response)
+        self.llm_worker2.chunk_response.connect(self.handle_sql1_response)
+        self.llm_worker2.finished_response.connect(self.handle_sql1_finished)
         self.llm_worker2.finished.connect(self.llm_worker2.deleteLater)
 
         #버튼 비활성화
-        self.ui.description_btn3.setEnabled(False)
+        self.DisableStreamButtons()
         self.waiting_dialog = WaitingDialog(self)
+        self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
 
-        style_sheet = """
-        /* 1. QProgressDialog (다이얼로그 창 배경) */
-        QProgressDialog {
-            background-color: #000000; /* 검정 배경 */
-            border: 2px solid rgb(184, 247, 185); /* 얇은 테두리 */
-        }
+        report_msg = ""
+        report_msg += "\n\nSended Message: 작전 시간 경과에 따른 아군 전체 부대의 평균 탄약보급량과 연료보급량의 변화 추이는 어떠한가요?\n\n"
+        report_msg += "Ai Messages: \n"
+        self.js_streaming_header(report_msg)
 
-        /* 2. 내부 QLabel (메시지 텍스트) */
-        QProgressDialog QLabel {
-            color: rgb(184, 247, 185);
-            font-size: 11pt;
-            font-weight: bold;
-            padding: 5px;
-        }
-
-        /* 3. 내부 QProgressBar (전체 배경 및 테두리) */
-        QProgressDialog QProgressBar {
-            border: 1px solid rgb(184, 247, 185);
-            border-radius: 5px;
-            background-color: rgb(40, 40, 40);
-            text-align: center;
-            color: white;
-        }
-
-        /* 4. QProgressBar::chunk (채워지는 막대) */
-        QProgressDialog QProgressBar::chunk {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(50, 120, 50), stop:1 rgb(100,180,100));
-            border-radius: 2px;
-        }
-        """        
-        self.waiting_dialog.setStyleSheet(style_sheet)
-
-        self.llm_worker2.start()
-        self.waiting_dialog.exec()
+        if self.llm_worker2 and self.llm_worker2.isRunning():
+            print("아직 작업 중입니다.")
+        else:
+            # 새로 생성하거나 기존 게 끝난 걸 확인 후 실행
+            self.llm_worker2.start()
+            self.waiting_dialog.exec()
 
     def start_description5_llm_query(self):
         if self.llm_worker3 and self.llm_worker3.isRunning():
@@ -1733,48 +1824,26 @@ class Window(QMainWindow, Ui_MainWindow):
         self.setEnabled(False)
 
         self.llm_worker3 = GenerateSQL2Report(self.local_llm)
-        self.llm_worker3.finished_response.connect(self.handle_sql2_response)
+        self.llm_worker3.chunk_response.connect(self.handle_sql2_response)
+        self.llm_worker3.finished_response.connect(self.handle_sql2_finished)
         self.llm_worker3.finished.connect(self.llm_worker3.deleteLater)
         
         #버튼 비활성화
-        self.ui.description_btn5.setEnabled(False)
+        self.DisableStreamButtons()
         self.waiting_dialog = WaitingDialog(self)
+        self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
 
-        style_sheet = """
-        /* 1. QProgressDialog (다이얼로그 창 배경) */
-        QProgressDialog {
-            background-color: #000000; /* 검정 배경 */
-            border: 2px solid rgb(184, 247, 185); /* 얇은 테두리 */
-        }
+        report_msg = ""
+        report_msg += "\n\nSended Message: 전투력에 치명적인 변화가 발생한 이벤트의 발생 시간과 이 사건에 직접 관여한 아군 부대는 무엇이고 어떤 이벤트가 있었나요?\n\n"
+        report_msg += "Ai Messages: \n"
+        self.js_streaming_header(report_msg)
 
-        /* 2. 내부 QLabel (메시지 텍스트) */
-        QProgressDialog QLabel {
-            color: rgb(184, 247, 185);
-            font-size: 11pt;
-            font-weight: bold;
-            padding: 5px;
-        }
-
-        /* 3. 내부 QProgressBar (전체 배경 및 테두리) */
-        QProgressDialog QProgressBar {
-            border: 1px solid rgb(184, 247, 185);
-            border-radius: 5px;
-            background-color: rgb(40, 40, 40);
-            text-align: center;
-            color: white;
-        }
-
-        /* 4. QProgressBar::chunk (채워지는 막대) */
-        QProgressDialog QProgressBar::chunk {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(50, 120, 50), stop:1 rgb(100,180,100));
-            border-radius: 2px;
-        }
-        """        
-        self.waiting_dialog.setStyleSheet(style_sheet)
-
-        self.llm_worker3.start()
-        self.waiting_dialog.exec()
-        
+        if self.llm_worker3 and self.llm_worker3.isRunning():
+            print("아직 작업 중입니다.")
+        else:
+            # 새로 생성하거나 기존 게 끝난 걸 확인 후 실행
+            self.llm_worker3.start()
+            self.waiting_dialog.exec()
 
     def start_description2_llm_query(self):
         msg = self.ui.description_btn2.text()
@@ -1791,65 +1860,60 @@ class Window(QMainWindow, Ui_MainWindow):
         original_msg = "What are the main steps and RISTA integration requirements in the fire and maneuver drill for KPAGF?"
         self.rag_btn_llm(original_msg, msg)
 
-    def handle_llm_response(self, response):
-        self.setEnabled(True)
-        if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
-            self.waiting_dialog.accept()
-            self.waiting_dialog = None
-
-        self.streaming_response(response)
-        self.ui.description_btn1.setEnabled(True)
-        self.llm_worker = None
-
-    def streaming_response(self, response):
-        report_msg = ""
-        report_msg += "Sended Message: 최근 전장상황에 대해 묘사해주세요\n\n"
-        report_msg += "Ai Messages: \n"
-        report_msg += response
-        report_msg += "\n\n"
-        self.js_streaming(report_msg)
+    def handle_llm_response(self, chunk):
         
+        self.streaming_response(chunk)
+
+    def streaming_response(self, chunk):
+        self.js_streaming_chunk(chunk)
         self.show_status_messages("Experiment chat is ")
 
-    def handle_sql1_response(self, response):
-        self.setEnabled(True)
+    def handle_error(self, msg):
+        if self.isEnabled() == False:
+            self.setEnabled(True)
         if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
             self.waiting_dialog.accept()
-            self.waiting_dialog = None
 
-        self.streaming_sql1_response(response)
-        self.ui.description_btn3.setEnabled(True)
-        self.llm_worker2 = None
+        QMessageBox.critical(self, "오류", f"{msg}")
 
-    def streaming_sql1_response(self, response):
-        report_msg = ""
-        report_msg += "Sended Message: 작전 시간 경과에 따른 아군 전체 부대의 평균 탄약보급량과 연료보급량의 변화 추이는 어떠한가요?\n\n"
-        report_msg += "Ai Messages: \n"
-        report_msg += response
-        report_msg += "\n\n"
-        self.js_streaming(report_msg)
+    def handle_finished(self):
+        if self.llm_worker:
+            self.llm_worker.deleteLater()
+            self.llm_worker = None
+        QTimer.singleShot(5000, self.EnableStreamButtons)
+        
+    def handle_sql1_response(self, chunk):
+        if self.isEnabled() == False:
+            self.setEnabled(True)
+        if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
+            self.waiting_dialog.accept()
+        self.streaming_sql1_response(chunk)
+        
+    def handle_sql1_finished(self):
+        if self.llm_worker2:
+            self.llm_worker2.deleteLater()
+            self.llm_worker2 = None
+        QTimer.singleShot(5000, self.EnableStreamButtons)
 
+    def streaming_sql1_response(self, chunk):
+        self.js_streaming_chunk(chunk)
         self.show_status_messages("Experiment chat is ")
 
-    def handle_sql2_response(self, response):
-        self.setEnabled(True)
+    def handle_sql2_response(self, chunk):
+        if self.isEnabled() == False:
+            self.setEnabled(True)
         if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
             self.waiting_dialog.accept()
-            self.waiting_dialog = None
-
-        self.streaming_sql2_response(response)
-        self.ui.description_btn5.setEnabled(True)
-        self.llm_worker3 = None
-
-    def streaming_sql2_response(self, response):
-        report_msg = ""
-        report_msg += "Sended Message: 전투력에 치명적인 변화가 발생한 이벤트의 발생 시간과 이 사건에 직접 관여한 아군 부대는 무엇이고 어떤 이벤트가 있었나요?\n\n"
-        report_msg += "Ai Messages: \n"
-        report_msg += response
-        report_msg += "\n\n"
-
-        self.js_streaming(report_msg)
+        self.streaming_sql2_response(chunk)
         
+    def handle_sql2_finished(self):
+        if self.llm_worker3:
+            self.llm_worker3.deleteLater()
+            self.llm_worker3 = None
+        QTimer.singleShot(5000, self.EnableStreamButtons)
+
+    def streaming_sql2_response(self, chunk):
+        self.js_streaming_chunk(chunk)
         self.show_status_messages("Experiment chat is ")
 
     def js_streaming(self, response):
@@ -1871,21 +1935,37 @@ class Window(QMainWindow, Ui_MainWindow):
             time.sleep(0.01)
             QCoreApplication.processEvents()
 
-    def js_streaming_short(self, response):
-        words = response.split(' ')
+    def js_streaming_header(self, header):
+        safe_chunk = json.dumps(header)
+        self.ui.experiment_txt.page().runJavaScript(f"appendText({safe_chunk})")
 
-        for word in words:
-            chunk = word + " "
-            # 특수문자('나 \ 등)가 JS 인자로 들어갈 때 에러나지 않도록 처리
-            safe_chunk = chunk.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+    def js_streaming_chunk(self, chunk):
+        if self.isEnabled() == False:
+            self.setEnabled(True)
+        if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
+            self.waiting_dialog.accept()
 
-            print(type(safe_chunk))
-            
-            # 🌟 새로 바꾼 appendText 함수 호출!
-            self.ui.webEngineView.page().runJavaScript(f"appendText('{safe_chunk}')")
-            
-            time.sleep(0.01)
-            QCoreApplication.processEvents()
+        try:
+            safe_chunk = json.dumps(chunk)
+            self.ui.experiment_txt.page().runJavaScript(f"appendText({safe_chunk})")
+        except Exception as e:
+            print(f"{e}")
+        
+    def EnableStreamButtons(self):
+        self.ui.description_btn1.setEnabled(True)
+        self.ui.description_btn2.setEnabled(True)
+        self.ui.description_btn3.setEnabled(True)
+        self.ui.description_btn4.setEnabled(True)
+        self.ui.description_btn5.setEnabled(True)
+        self.ui.description_btn6.setEnabled(True)
+
+    def DisableStreamButtons(self):
+        self.ui.description_btn1.setEnabled(False)
+        self.ui.description_btn2.setEnabled(False)
+        self.ui.description_btn3.setEnabled(False)
+        self.ui.description_btn4.setEnabled(False)
+        self.ui.description_btn5.setEnabled(False)
+        self.ui.description_btn6.setEnabled(False)
 
 
 def start_streamlit():

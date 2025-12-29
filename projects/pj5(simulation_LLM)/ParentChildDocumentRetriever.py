@@ -13,7 +13,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader, CSVLoader, JSONLoader, DirectoryLoader
-from langchain_teddynote.document_loaders import HWPLoader
+# from langchain_teddynote.document_loaders import HWPLoader
 
 class ParentRetriverPipeline(QObject):
     finished = pyqtSignal()
@@ -59,7 +59,7 @@ class ParentRetriverPipeline(QObject):
             'txt': TextLoader,
             'csv': CSVLoader,
             'json': JSONLoader,
-            'hwp': HWPLoader
+            # 'hwp': HWPLoader
         }
      
     def remove_dummy_doc(self):
