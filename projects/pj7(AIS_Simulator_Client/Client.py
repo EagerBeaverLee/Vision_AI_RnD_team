@@ -1,11 +1,37 @@
 import sys
 import socket
+import sqlite3
+import json
+import struct
 from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QPushButton, QLabel, QLineEdit, QTextBrowser, QMessageBox)
 from PyQt6.QtCore import QThread, pyqtSignal
 
+# DB 핸들링 함수
+def init_db():
+    conn = sqlite3.connect("ships.db")
+    cursor = conn.cursor()
+    # 테이블이 없으면 생성
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ship_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ShipType TEXT,
+            ShipName TEXT,
+            mmsi INTEGER,
+            timestamp TEXT,
+            course INTEGER,
+            speed REAL,
+            longitude REAL,
+            latitude REAL,
+            higher_types TEXT,
+            radius INTEGER
+        )
+    """)
+    conn.commit()
+    conn.close()
+
 class ReceiveThread(QThread):
-    msg_signal = pyqtSignal(str)
+    log_signal = pyqtSignal(str)
     disconnect_signal = pyqtSignal()
 
     def __init__(self, socket):
@@ -13,16 +39,64 @@ class ReceiveThread(QThread):
         self.socket = socket
         self.running = True
 
+    def recv_all(self, length):
+        data = b''
+        while len(data) < length:
+            packet = self.socket.recv(length - len(data))
+            if not packet: return None
+            data += packet
+        return data
+
     def run(self):
+        # 스레드 내에서 DB 연결 (SQLite는 스레드 간 연결 공유 불가 원칙)
+        conn = sqlite3.connect("ships.db")
+        cursor = conn.cursor()
+
         while self.running:
             try:
-                data = self.socket.recv(1024)
-                if not data:
+                # 1. 헤더(4바이트) 읽기
+                header = self.recv_all(4)
+                if not header:
                     self.disconnect_signal.emit()
                     break
-                msg = data.decode('utf-8')
-                self.msg_signal.emit(msg)
-            except:
+                
+                # 2. 데이터 길이 파악
+                data_len = struct.unpack('>I', header)[0]
+                
+                # 3. 본문 읽기
+                body_bytes = self.recv_all(data_len)
+                if not body_bytes:
+                    break
+
+                # 4. JSON 파싱
+                json_str = body_bytes.decode('utf-8')
+                data_list = json.loads(json_str) # List of Dictionaries
+
+                # 5. DB Insert (Bulk)
+                # 딕셔너리 리스트를 튜플 리스트로 변환 (SQL 파라미터용)
+                db_tuples = []
+                for item in data_list:
+                    db_tuples.append((
+                        item.get("ShipType"), item.get("ShipName"), item.get("mmsi"),
+                        item.get("timestamp"), item.get("course"), item.get("speed"),
+                        item.get("longitude"), item.get("latitude"), 
+                        item.get("higher_types"), item.get("radius")
+                    ))
+
+                print(db_tuples)
+                
+                # 고속 저장
+                query = """
+                    INSERT INTO ship_logs 
+                    (ShipType, ShipName, mmsi, timestamp, course, speed, longitude, latitude, higher_types, radius)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """
+                cursor.executemany(query, db_tuples)
+                conn.commit() # 트랜잭션 확정
+
+                self.log_signal.emit(f"DB 저장 완료: {len(data_list)} 행")
+            except Exception as e:
+                self.log_signal.emit(f"에러 발생: {e}")
                 self.disconnect_signal.emit()
                 break
 
@@ -99,7 +173,7 @@ class ClientWindow(QWidget):
             self.toggle_ui(True)
 
             self.recv_thread = ReceiveThread(self.socket)
-            self.recv_thread.msg_signal.connect(self.update_msg)
+            self.recv_thread.log_signal.connect(self.update_log)
             self.recv_thread.disconnect_signal.connect(self.on_disconnected)
             self.recv_thread.start()
 
@@ -112,15 +186,19 @@ class ClientWindow(QWidget):
             return
         
         try:
-            self.socket.sendall(text.encode('utf-8'))
+            text_bytes = text.encode('utf-8')
+            data_len = len(text_bytes)
+            header = struct.pack('>I', data_len)
+
+            self.socket.sendall(header + text_bytes)
             self.text_display.append(f"[Me]: {text}") # 내가 보낸 것도 화면에 표시
             self.msg_input.clear()
         except Exception as e:
             self.text_display.append(f"[Error] 전송 실패: {e}")
             self.on_disconnected()
 
-    def update_msg(self, msg):
-        self.text_display.append(f"[Server]: {msg}")
+    def update_log(self, msg):
+        self.text_display.append(msg)
 
     def on_disconnected(self):
         self.text_display.append("[System] Disconnected from server.")

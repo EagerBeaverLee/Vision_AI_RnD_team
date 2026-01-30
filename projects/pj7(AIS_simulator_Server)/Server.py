@@ -1,6 +1,7 @@
 import sys
 import socket
 import time
+import struct
 from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QPushButton, QLabel, QLineEdit, QTextBrowser, QTextEdit, 
                              QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox, QMainWindow)
@@ -18,14 +19,35 @@ class ClientHandler(QThread):
         self.addr = addr
         self.running = True
 
+    def recv_all(self, length):
+        data = b''
+        while len(data) < length:
+            packet = self.client_socket.recv(length - len(data))
+            if not packet: return None
+            data += packet
+        return data
+
     def run(self):
         while self.running:
             try:
-                # 클라이언트로부터 데이터 수신 대기
-                data = self.client_socket.recv(1024)
-                if not data:
+                header = self.recv_all(4)
+                if not header:
+                    self.disconnected.emit()
                     break
-                msg = data.decode('utf-8')
+
+                data_len = struct.unpack('>I', header)[0]
+
+                body_bytes = self.recv_all(data_len)
+                if not body_bytes:
+                    break
+                    
+                msg = body_bytes.decode('utf-8')
+
+                # 클라이언트로부터 데이터 수신 대기
+                # data = self.client_socket.recv(1024)
+                # if not data:
+                #     break
+                # msg = data.decode('utf-8')
                 self.msg_received.emit(self.client_socket, msg)
             except:
                 break
@@ -172,7 +194,11 @@ class Window(QMainWindow, Ui_MainWindow):
         status_item = self.ui.client_table.item(row, 1)
 
         try:
-            client_socket.sendall(text.encode('utf-8'))
+            text_bytes = text.encode('utf-8')
+            data_len = len(text_bytes)
+            header = struct.pack('>I', data_len)
+
+            client_socket.sendall(header + text_bytes)
             
             # [수정] 2. 전송중 표시 후 2초 뒤 복귀
             status_item.setText("데이터 전송중...")
