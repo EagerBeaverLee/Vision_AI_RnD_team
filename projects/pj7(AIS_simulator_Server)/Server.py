@@ -1,10 +1,10 @@
-import sys
+import sys, os, csv, json
 import socket
 import time
 import struct
 from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QPushButton, QLabel, QLineEdit, QTextBrowser, QTextEdit, 
-                             QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox, QMainWindow)
+                             QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox, QMainWindow, QFileDialog)
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer
 from Server_UI import Ui_MainWindow
 
@@ -98,13 +98,26 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.connectSignalsSlots()
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.send_packet)
         # self.init_ui()
 
+        self.csv_path = None        # 파일 경로 저장
+        self.file_handle = None     # 파일 객체 (open 상태 유지)
+        self.csv_reader = None      # CSV Reader 객체
+        self.current_line_count = 0 # 현재까지 보낸 라인 수 (로그 표시용)
+
     def connectSignalsSlots(self):
+        self.ui.btn_select_file.clicked.connect(self.select_csv_file)
         self.ui.btn_start.clicked.connect(self.start_server)
         self.ui.btn_stop.clicked.connect(self.stop_server)
         self.ui.btn_disconnect.clicked.connect(self.disconnect_selected_client)
         self.ui.btn_send.clicked.connect(self.send_message)
+        self.ui.btn_send_packet.clicked.connect(self.start_sending)
+        self.ui.btn_pause_packet.clicked.connect(self.stop_sending)
+        self.ui.btn_send_packet.setEnabled(False)
+        self.ui.btn_pause_packet.setEnabled(False)
 
     def start_server(self):
         self.server_thread = ServerThread(9999)
@@ -181,6 +194,27 @@ class Window(QMainWindow, Ui_MainWindow):
             item = self.ui.client_table.item(row, 0)
             sock = item.data(Qt.ItemDataRole.UserRole)
             if sock: sock.close()
+            
+    def select_csv_file(self):
+        """CSV 파일 경로만 저장하고, 실제 데이터는 읽지 않음 (메모리 절약)"""
+        fname, _ = QFileDialog.getOpenFileName(self, 'CSV 파일 선택', '', 'CSV Files (*.csv)')
+        if not fname:
+            return
+
+        self.csv_path = fname
+        self.ui.selected_file.setText(f"{os.path.basename(fname)}")
+        self.ui.log_browser.append(f"[System] 파일 경로 설정 완료: {fname}")
+        
+        # 파일이 정상적인지 헤더만 살짝 읽어보기
+        try:
+            with open(self.csv_path, 'r', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                headers = reader.fieldnames
+                self.ui.log_browser.append(f"[Check] 컬럼 확인: {headers}")
+                self.ui.btn_send_packet.setEnabled(True)
+        except Exception as e:
+            QMessageBox.critical(self, "파일 오류", f"파일을 읽을 수 없습니다: {e}")
+            self.csv_path = None
 
     def send_message(self):
         row = self.ui.client_table.currentRow()
@@ -195,10 +229,14 @@ class Window(QMainWindow, Ui_MainWindow):
 
         try:
             text_bytes = text.encode('utf-8')
-            data_len = len(text_bytes)
-            header = struct.pack('>I', data_len)
+            
+            DATA_TYPE = 0   # 메세지는 0, DB형식은 1
+
+            header = struct.pack('>BI', DATA_TYPE, len(text_bytes))
 
             client_socket.sendall(header + text_bytes)
+
+            self.ui.msg_edit.clear()
             
             # [수정] 2. 전송중 표시 후 2초 뒤 복귀
             status_item.setText("데이터 전송중...")
@@ -208,6 +246,90 @@ class Window(QMainWindow, Ui_MainWindow):
         except Exception as e:
             status_item.setText("전송 실패")
             self.ui.log_browser.append(f"[오류] 전송 실패: {e}")
+
+    def send_packet(self):
+        row = self.ui.client_table.currentRow()
+        if row < 0 or not self.csv_path:
+            QMessageBox.warning(self, "알림", "대상을 선택하고 csv파일을 로드하세요.")
+            return
+        
+        item = self.ui.client_table.item(row, 0)
+        client_socket = item.data(Qt.ItemDataRole.UserRole)
+
+        if not client_socket:
+            self.stop_sending()
+            return
+        
+        batch_size = self.ui.sending_size.value()
+        data_chunk = []
+
+        try:
+            for _ in range(batch_size):
+                try:
+                    # iterator에서 다음 줄 가져오기
+                    row = next(self.csv_reader)
+                    data_chunk.append(row)
+                    self.current_line_count += 1
+                except StopIteration:
+                    # 파일 끝에 도달하면 파일 닫고 다시 열기 (Loop)
+                    self.log_browser.append("[System] 파일 끝 도달 스트리밍 종료")
+                    self.file_handle.close()
+                    self.stop_sending()
+                    break
+        except Exception as e:
+            self.ui.log_browser.append(f"[Read Error] {e}")
+            self.stop_sending()
+            return
+        
+        if not data_chunk:
+            return
+        
+        # 데이터 전송 (프로토콜: 헤더(길이) + JSON바디)
+        try:
+            json_str = json.dumps(data_chunk)
+            json_bytes = json_str.encode('utf-8')
+
+            DATA_TYPE = 1   # 메세지는 0, DB형식은 1
+            
+            # 헤더: 데이터 길이 (4바이트 Big Endian)
+            header = struct.pack('>BI', DATA_TYPE, len(json_bytes))
+            
+            client_socket.sendall(header + json_bytes)
+            
+            # 로그 출력 (너무 자주 찍히지 않게)
+            if self.current_line_count % (batch_size * 5) == 0 or self.current_line_count < batch_size * 2:
+                self.ui.log_browser.append(f"[Send] {len(data_chunk)}건 전송 (누적: {self.current_line_count})")
+            else:
+                self.ui.log_browser.append(f"[Send] {len(data_chunk)}건 전송")
+                
+        except Exception as e:
+            self.ui.log_browser.append(f"[Socket Error] {e}")
+            self.stop_sending()
+
+    def start_sending(self):
+        if not self.csv_path:
+            QMessageBox.warning(self, "경고", "CSV 파일이 선택되지 않았습니다.")
+            return
+        
+        # 전송 시작 시 파일 열기 (Streaming 시작)
+        try:
+            if self.file_handle is None:
+                self.file_handle = open(self.csv_path, 'r', encoding='utf-8-sig')
+                self.csv_reader = csv.DictReader(self.file_handle)
+                self.current_line_count = 0
+                self.ui.log_browser.append("[Streaming] 파일 스트림 오픈")
+        except Exception as e:
+            QMessageBox.critical(self, "오류", f"파일 열기 실패: {e}")
+            return
+
+        self.ui.btn_send_packet.setEnabled(False)
+        self.ui.btn_pause_packet.setEnabled(True)
+        self.timer.start(1000) # 0.1초 간격 전송
+
+    def stop_sending(self):
+        self.timer.stop()
+        self.ui.btn_send_packet.setEnabled(True)
+        self.ui.btn_pause_packet.setEnabled(False)
 
     def reset_status(self, item):
         # 아이템이 삭제되지 않고 존재할 때만 텍스트 변경

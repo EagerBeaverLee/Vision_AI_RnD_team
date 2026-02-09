@@ -7,20 +7,218 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtWidgets import QHeaderView, QTableWidget
 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(504, 653)
+        MainWindow.resize(687, 729)
         MainWindow.setMinimumSize(QtCore.QSize(300, 400))
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setStyleSheet("QWidget {\n"
 "    background-color: rgb(20, 20, 20); /* 원하는 색상으로 변경 */\n"
 "}")
         self.centralwidget.setObjectName("centralwidget")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.centralwidget)
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_4.addItem(spacerItem)
+        self.label_3 = QtWidgets.QLabel(parent=self.centralwidget)
+        font = QtGui.QFont()
+        font.setBold(True)
+        self.label_3.setFont(font)
+        self.label_3.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.label_3.setScaledContents(False)
+        self.label_3.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.label_3.setObjectName("label_3")
+        self.horizontalLayout_4.addWidget(self.label_3)
+        self.selected_file = QtWidgets.QLabel(parent=self.centralwidget)
+        font = QtGui.QFont()
+        font.setBold(True)
+        self.selected_file.setFont(font)
+        self.selected_file.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.selected_file.setScaledContents(False)
+        self.selected_file.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.selected_file.setObjectName("selected_file")
+        self.horizontalLayout_4.addWidget(self.selected_file)
+        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_4.addItem(spacerItem1)
+        self.btn_select_file = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.btn_select_file.sizePolicy().hasHeightForWidth())
+        self.btn_select_file.setSizePolicy(sizePolicy)
+        self.btn_select_file.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.btn_select_file.setAutoDefault(False)
+        self.btn_select_file.setFlat(False)
+        self.btn_select_file.setObjectName("btn_select_file")
+        self.horizontalLayout_4.addWidget(self.btn_select_file)
+        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_4.addItem(spacerItem2)
+        self.horizontalLayout_4.setStretch(0, 1)
+        self.horizontalLayout_4.setStretch(1, 1)
+        self.horizontalLayout_4.setStretch(2, 1)
+        self.horizontalLayout_4.setStretch(3, 1)
+        self.horizontalLayout_4.setStretch(4, 1)
+        self.horizontalLayout_4.setStretch(5, 1)
+        self.verticalLayout_3.addLayout(self.horizontalLayout_4)
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_5.addItem(spacerItem3)
+        self.label_5 = QtWidgets.QLabel(parent=self.centralwidget)
+        font = QtGui.QFont()
+        font.setBold(True)
+        self.label_5.setFont(font)
+        self.label_5.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.label_5.setScaledContents(False)
+        self.label_5.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.label_5.setObjectName("label_5")
+        self.horizontalLayout_5.addWidget(self.label_5)
+        spacerItem4 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_5.addItem(spacerItem4)
+        self.sending_size = QtWidgets.QSpinBox(parent=self.centralwidget)
+        self.sending_size.setStyleSheet("QSpinBox {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    text-align: center;\n"
+"    color: White;\n"
+"}")
+        self.sending_size.setMinimum(100)
+        self.sending_size.setMaximum(5000)
+        self.sending_size.setSingleStep(100)
+        self.sending_size.setProperty("value", 100)
+        self.sending_size.setObjectName("sending_size")
+        self.horizontalLayout_5.addWidget(self.sending_size)
+        spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_5.addItem(spacerItem5)
+        self.horizontalLayout_5.setStretch(0, 1)
+        self.horizontalLayout_5.setStretch(1, 1)
+        self.horizontalLayout_5.setStretch(2, 1)
+        self.horizontalLayout_5.setStretch(3, 1)
+        self.horizontalLayout_5.setStretch(4, 1)
+        self.verticalLayout_3.addLayout(self.horizontalLayout_5)
+        self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_6.setObjectName("horizontalLayout_6")
+        self.btn_send_packet = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.btn_send_packet.sizePolicy().hasHeightForWidth())
+        self.btn_send_packet.setSizePolicy(sizePolicy)
+        self.btn_send_packet.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.btn_send_packet.setAutoDefault(False)
+        self.btn_send_packet.setFlat(False)
+        self.btn_send_packet.setObjectName("btn_send_packet")
+        self.horizontalLayout_6.addWidget(self.btn_send_packet)
+        self.btn_pause_packet = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.btn_pause_packet.sizePolicy().hasHeightForWidth())
+        self.btn_pause_packet.setSizePolicy(sizePolicy)
+        self.btn_pause_packet.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.btn_pause_packet.setAutoDefault(False)
+        self.btn_pause_packet.setFlat(False)
+        self.btn_pause_packet.setObjectName("btn_pause_packet")
+        self.horizontalLayout_6.addWidget(self.btn_pause_packet)
+        self.verticalLayout_3.addLayout(self.horizontalLayout_6)
+        self.horizontalLayout_7 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_7.setObjectName("horizontalLayout_7")
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.label = QtWidgets.QLabel(parent=self.centralwidget)
+        font = QtGui.QFont()
+        font.setBold(True)
+        self.label.setFont(font)
+        self.label.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.label.setScaledContents(False)
+        self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.label.setObjectName("label")
+        self.horizontalLayout.addWidget(self.label)
+        spacerItem6 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout.addItem(spacerItem6)
+        self.verticalLayout_2.addLayout(self.horizontalLayout)
+        self.log_browser = QtWidgets.QTextBrowser(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.log_browser.sizePolicy().hasHeightForWidth())
+        self.log_browser.setSizePolicy(sizePolicy)
+        self.log_browser.setMinimumSize(QtCore.QSize(0, 0))
+        self.log_browser.setStyleSheet("QTextEdit {\n"
+"    color: white;\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"    border: 1px solid rgb(255,255,255);\n"
+"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
+"}\n"
+"QTextEdit:focus {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
+"}")
+        self.log_browser.setInputMethodHints(QtCore.Qt.InputMethodHint.ImhMultiLine)
+        self.log_browser.setReadOnly(True)
+        self.log_browser.setObjectName("log_browser")
+        self.verticalLayout_2.addWidget(self.log_browser)
+        self.horizontalLayout_7.addLayout(self.verticalLayout_2)
+        self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setObjectName("verticalLayout")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
@@ -78,8 +276,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.addWidget(self.btn_stop)
         self.verticalLayout.addLayout(self.horizontalLayout_2)
         self.client_table = QtWidgets.QTableWidget(parent=self.centralwidget)
-        self.client_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.client_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.client_table.setStyleSheet("QTableWidget{\n"
 "    color: rgb(166, 217, 171);\n"
 "    border: 1px solid white;\n"
@@ -146,43 +342,6 @@ class Ui_MainWindow(object):
         self.btn_disconnect.setFlat(False)
         self.btn_disconnect.setObjectName("btn_disconnect")
         self.verticalLayout.addWidget(self.btn_disconnect)
-        self.horizontalLayout = QtWidgets.QHBoxLayout()
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        self.label = QtWidgets.QLabel(parent=self.centralwidget)
-        font = QtGui.QFont()
-        font.setBold(True)
-        self.label.setFont(font)
-        self.label.setStyleSheet("QLabel {\n"
-"    color: rgb(166, 217, 171);\n"
-"}")
-        self.label.setScaledContents(False)
-        self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.label.setObjectName("label")
-        self.horizontalLayout.addWidget(self.label)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
-        self.verticalLayout.addLayout(self.horizontalLayout)
-        self.log_browser = QtWidgets.QTextBrowser(parent=self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.log_browser.sizePolicy().hasHeightForWidth())
-        self.log_browser.setSizePolicy(sizePolicy)
-        self.log_browser.setMinimumSize(QtCore.QSize(0, 0))
-        self.log_browser.setStyleSheet("QTextEdit {\n"
-"    color: white;\n"
-"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
-"    border: 1px solid rgb(255,255,255);\n"
-"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
-"}\n"
-"QTextEdit:focus {\n"
-"    border: 1px solid rgb(184, 247, 185);\n"
-"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
-"}")
-        self.log_browser.setInputMethodHints(QtCore.Qt.InputMethodHint.ImhMultiLine)
-        self.log_browser.setReadOnly(True)
-        self.log_browser.setObjectName("log_browser")
-        self.verticalLayout.addWidget(self.log_browser)
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.label_2 = QtWidgets.QLabel(parent=self.centralwidget)
@@ -196,29 +355,8 @@ class Ui_MainWindow(object):
         self.label_2.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.label_2.setObjectName("label_2")
         self.horizontalLayout_3.addWidget(self.label_2)
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_3.addItem(spacerItem1)
-        self.verticalLayout.addLayout(self.horizontalLayout_3)
-        self.msg_edit = QtWidgets.QPlainTextEdit(parent=self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.msg_edit.sizePolicy().hasHeightForWidth())
-        self.msg_edit.setSizePolicy(sizePolicy)
-        self.msg_edit.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
-        self.msg_edit.setStyleSheet("QPlainTextEdit {\n"
-"    color: white;\n"
-"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
-"    border: 1px solid rgb(255,255,255);\n"
-"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
-"}\n"
-"QPlainTextEdit:focus {\n"
-"    border: 1px solid rgb(184, 247, 185);\n"
-"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
-"}")
-        self.msg_edit.setPlainText("")
-        self.msg_edit.setObjectName("msg_edit")
-        self.verticalLayout.addWidget(self.msg_edit)
+        spacerItem7 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_3.addItem(spacerItem7)
         self.btn_send = QtWidgets.QPushButton(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -244,18 +382,33 @@ class Ui_MainWindow(object):
         self.btn_send.setAutoDefault(False)
         self.btn_send.setFlat(False)
         self.btn_send.setObjectName("btn_send")
-        self.verticalLayout.addWidget(self.btn_send)
-        self.verticalLayout.setStretch(0, 1)
-        self.verticalLayout.setStretch(1, 7)
-        self.verticalLayout.setStretch(2, 1)
-        self.verticalLayout.setStretch(3, 1)
-        self.verticalLayout.setStretch(4, 7)
-        self.verticalLayout.setStretch(5, 1)
-        self.verticalLayout.setStretch(6, 4)
-        self.verticalLayout.setStretch(7, 1)
+        self.horizontalLayout_3.addWidget(self.btn_send)
+        self.verticalLayout.addLayout(self.horizontalLayout_3)
+        self.msg_edit = QtWidgets.QPlainTextEdit(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.msg_edit.sizePolicy().hasHeightForWidth())
+        self.msg_edit.setSizePolicy(sizePolicy)
+        self.msg_edit.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.msg_edit.setStyleSheet("QPlainTextEdit {\n"
+"    color: white;\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"    border: 1px solid rgb(255,255,255);\n"
+"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
+"}\n"
+"QPlainTextEdit:focus {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
+"}")
+        self.msg_edit.setPlainText("")
+        self.msg_edit.setObjectName("msg_edit")
+        self.verticalLayout.addWidget(self.msg_edit)
+        self.horizontalLayout_7.addLayout(self.verticalLayout)
+        self.verticalLayout_3.addLayout(self.horizontalLayout_7)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 504, 33))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 687, 33))
         self.menubar.setObjectName("menubar")
         self.menu_Setting = QtWidgets.QMenu(parent=self.menubar)
         self.menu_Setting.setObjectName("menu_Setting")
@@ -277,6 +430,13 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.label_3.setText(_translate("MainWindow", "파일: "))
+        self.selected_file.setText(_translate("MainWindow", "filename"))
+        self.btn_select_file.setText(_translate("MainWindow", "Big Data 파일선택"))
+        self.label_5.setText(_translate("MainWindow", "전송단위:"))
+        self.btn_send_packet.setText(_translate("MainWindow", "전송 시작"))
+        self.btn_pause_packet.setText(_translate("MainWindow", "일지정지"))
+        self.label.setText(_translate("MainWindow", "수신된 로그"))
         self.btn_start.setText(_translate("MainWindow", "서버 시작"))
         self.btn_stop.setText(_translate("MainWindow", "서버 종료"))
         item = self.client_table.horizontalHeaderItem(0)
@@ -284,9 +444,8 @@ class Ui_MainWindow(object):
         item = self.client_table.horizontalHeaderItem(1)
         item.setText(_translate("MainWindow", "Status"))
         self.btn_disconnect.setText(_translate("MainWindow", "선택한 클라이언트 강제 접속 해제"))
-        self.label.setText(_translate("MainWindow", "수신된 로그"))
         self.label_2.setText(_translate("MainWindow", "클라이언트로 전송할 메세지:"))
-        self.msg_edit.setPlaceholderText(_translate("MainWindow", "Enter your message..."))
         self.btn_send.setText(_translate("MainWindow", "send"))
+        self.msg_edit.setPlaceholderText(_translate("MainWindow", "Enter your message..."))
         self.menu_Setting.setTitle(_translate("MainWindow", "&Setting"))
         self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))

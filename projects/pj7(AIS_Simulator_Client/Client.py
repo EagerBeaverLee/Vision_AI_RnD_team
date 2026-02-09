@@ -1,4 +1,4 @@
-import sys
+import sys, os
 import socket
 import sqlite3
 import json
@@ -9,8 +9,17 @@ from PyQt6.QtCore import QThread, pyqtSignal
 
 # DB 핸들링 함수
 def init_db():
-    conn = sqlite3.connect("ships.db")
+    db_path = "ships.db"
+
+    if os.path.exists(db_path):
+        os.remove(db_path)
+        print(f"{db_path} 파일이 삭제되었습니다.")
+    else:
+        print("삭제할 DB 파일이 존재하지 않습니다.")
+
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+
     # 테이블이 없으면 생성
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS ship_logs (
@@ -33,6 +42,7 @@ def init_db():
 class ReceiveThread(QThread):
     log_signal = pyqtSignal(str)
     disconnect_signal = pyqtSignal()
+    msg_received = pyqtSignal(str)
 
     def __init__(self, socket):
         super().__init__()
@@ -42,9 +52,12 @@ class ReceiveThread(QThread):
     def recv_all(self, length):
         data = b''
         while len(data) < length:
-            packet = self.socket.recv(length - len(data))
-            if not packet: return None
-            data += packet
+            try:
+                packet = self.socket.recv(length - len(data))
+                if not packet: return None
+                data += packet
+            except:
+                return None
         return data
 
     def run(self):
@@ -55,46 +68,58 @@ class ReceiveThread(QThread):
         while self.running:
             try:
                 # 1. 헤더(4바이트) 읽기
-                header = self.recv_all(4)
+                header = self.recv_all(5)
                 if not header:
                     self.disconnect_signal.emit()
                     break
                 
                 # 2. 데이터 길이 파악
-                data_len = struct.unpack('>I', header)[0]
+                data_type, data_len = struct.unpack('>BI', header)
                 
-                # 3. 본문 읽기
-                body_bytes = self.recv_all(data_len)
-                if not body_bytes:
-                    break
+                if data_type == 0:
+                    # 3. 본문 읽기
+                    body_bytes = self.recv_all(data_len)
+                    if not body_bytes:
+                        break
 
-                # 4. JSON 파싱
-                json_str = body_bytes.decode('utf-8')
-                data_list = json.loads(json_str) # List of Dictionaries
+                    msg = body_bytes.decode('utf-8')
 
-                # 5. DB Insert (Bulk)
-                # 딕셔너리 리스트를 튜플 리스트로 변환 (SQL 파라미터용)
-                db_tuples = []
-                for item in data_list:
-                    db_tuples.append((
-                        item.get("ShipType"), item.get("ShipName"), item.get("mmsi"),
-                        item.get("timestamp"), item.get("course"), item.get("speed"),
-                        item.get("longitude"), item.get("latitude"), 
-                        item.get("higher_types"), item.get("radius")
-                    ))
+                    self.msg_received.emit(msg)
 
-                print(db_tuples)
-                
-                # 고속 저장
-                query = """
-                    INSERT INTO ship_logs 
-                    (ShipType, ShipName, mmsi, timestamp, course, speed, longitude, latitude, higher_types, radius)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """
-                cursor.executemany(query, db_tuples)
-                conn.commit() # 트랜잭션 확정
+                else:
+                    body_bytes = self.recv_all(data_len)
+                    if not body_bytes:
+                        break
+                    # 4. JSON 파싱
+                    json_str = body_bytes.decode('utf-8')
+                    data_list = json.loads(json_str) # List of Dictionaries
 
-                self.log_signal.emit(f"DB 저장 완료: {len(data_list)} 행")
+                    if not data_list:
+                        continue
+
+                    # 5. DB Insert (Bulk)
+                    # 딕셔너리 리스트를 튜플 리스트로 변환 (SQL 파라미터용)
+                    db_tuples = []
+                    for item in data_list:
+                        db_tuples.append((
+                            item.get("ShipType"), item.get("ShipName"), item.get("mmsi"),
+                            item.get("timestamp"), item.get("course"), item.get("speed"),
+                            item.get("longitude"), item.get("latitude"), 
+                            item.get("higher_types"), item.get("radius")
+                        ))
+
+                    print(db_tuples)
+                    
+                    # 고속 저장
+                    query = """
+                        INSERT INTO ship_logs 
+                        (ShipType, ShipName, mmsi, timestamp, course, speed, longitude, latitude, higher_types, radius)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """
+                    cursor.executemany(query, db_tuples)
+                    conn.commit() # 트랜잭션 확정
+
+                    self.log_signal.emit(f"DB 저장 완료: {len(data_list)} 행")
             except Exception as e:
                 self.log_signal.emit(f"에러 발생: {e}")
                 self.disconnect_signal.emit()
@@ -106,6 +131,7 @@ class ReceiveThread(QThread):
 class ClientWindow(QWidget):
     def __init__(self):
         super().__init__()
+        init_db()
         self.socket = None
         self.recv_thread = None
         self.init_ui()
@@ -118,7 +144,7 @@ class ClientWindow(QWidget):
 
         # 1. 접속 정보
         conn_layout = QHBoxLayout()
-        self.ip_input = QLineEdit("127.0.0.1")
+        self.ip_input = QLineEdit("192.168.0.109")
         self.port_input = QLineEdit("9999")
         self.btn_connect = QPushButton("서버 접속")
         self.btn_connect.clicked.connect(self.connect_server)
@@ -173,6 +199,7 @@ class ClientWindow(QWidget):
             self.toggle_ui(True)
 
             self.recv_thread = ReceiveThread(self.socket)
+            self.recv_thread.msg_received.connect(self.process_server_message)
             self.recv_thread.log_signal.connect(self.update_log)
             self.recv_thread.disconnect_signal.connect(self.on_disconnected)
             self.recv_thread.start()
@@ -212,6 +239,9 @@ class ClientWindow(QWidget):
         if self.socket:
             self.socket.close()
         event.accept()
+
+    def process_server_message(self, msg):
+        self.text_display.append(f"[Server]: {msg}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
