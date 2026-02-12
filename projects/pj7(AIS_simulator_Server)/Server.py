@@ -1,11 +1,14 @@
 import sys, os, csv, json
+import pandas as pd
 import socket
 import time
 import struct
+from datetime import datetime, timedelta
 from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QPushButton, QLabel, QLineEdit, QTextBrowser, QTextEdit, 
                              QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox, QMainWindow, QFileDialog)
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer
+from PyQt6.QtGui import QIntValidator
 from Server_UI import Ui_MainWindow
 
 # [수정] 각 클라이언트의 수신을 담당하는 개별 스레드
@@ -98,15 +101,30 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.connectSignalsSlots()
+        self.ui.speed_factor_val.setValidator(QIntValidator(1,2000))
+
+        self.is_paused = False
 
         self.timer = QTimer()
-        self.timer.timeout.connect(self.send_packet)
+        # self.timer.timeout.connect(self.send_packet)
+        # self.timer.timeout.connect(self.send_packet_by_time)
+        self.timer.timeout.connect(self.on_timer_timeout)
         # self.init_ui()
 
         self.csv_path = None        # 파일 경로 저장
         self.file_handle = None     # 파일 객체 (open 상태 유지)
         self.csv_reader = None      # CSV Reader 객체
         self.current_line_count = 0 # 현재까지 보낸 라인 수 (로그 표시용)
+
+        # 시뮬레이션 관련 변수들 초기화
+        self.reader = None
+        self.next_row = None
+        self.sim_current_time = None
+        self.real_last_tick = None
+        self.speed_factor = 1
+
+        self.ui.speed_factor_val.setText("1")
+
 
     def connectSignalsSlots(self):
         self.ui.btn_select_file.clicked.connect(self.select_csv_file)
@@ -115,9 +133,31 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.btn_disconnect.clicked.connect(self.disconnect_selected_client)
         self.ui.btn_send.clicked.connect(self.send_message)
         self.ui.btn_send_packet.clicked.connect(self.start_sending)
-        self.ui.btn_pause_packet.clicked.connect(self.stop_sending)
+        self.ui.btn_pause_packet.clicked.connect(self.toggle_pause)
         self.ui.btn_send_packet.setEnabled(False)
         self.ui.btn_pause_packet.setEnabled(False)
+        self.ui.speed_factor_slider.valueChanged.connect(self.slider_speed_factor_value)
+        self.ui.speed_factor_val.textChanged.connect(self.text_speed_factor_value)
+        
+
+    def toggle_pause(self):
+        if not self.reader:
+            return
+        if not self.is_paused:
+            # --- 일시정지 시점 ---
+            self.ui.btn_pause_packet.setText("다시시작")
+            self.timer.stop()
+            self.is_paused = True
+            print("시뮬레이션 일시정지")
+        else:
+            self.ui.btn_pause_packet.setText("일시정지")
+            # --- 재개 시점 ---
+            # 중요: 재개하는 순간의 실제 시간을 기록해야 
+            # 일시정지 동안 흘러간 시간이 시뮬레이션에 더해지지 않음
+            self.real_last_tick = datetime.now() 
+            self.timer.start(200)
+            self.is_paused = False
+            print("시뮬레이션 재개")
 
     def start_server(self):
         self.server_thread = ServerThread(9999)
@@ -216,6 +256,117 @@ class Window(QMainWindow, Ui_MainWindow):
             QMessageBox.critical(self, "파일 오류", f"파일을 읽을 수 없습니다: {e}")
             self.csv_path = None
 
+    def prepare_simulation(self, speed_factor):
+        # 2. 기존 타이머가 돌고 있다면 중지
+        self.timer.stop()
+        
+        try:
+            # 대용량 처리를 위한 iterator 설정
+            self.reader = pd.read_csv(self.csv_path, chunksize=1, iterator=True)
+            self.speed_factor = speed_factor
+            
+            # 첫 번째 데이터 읽기
+            first_row_df = next(self.reader)
+            self.next_row = first_row_df.iloc[0]
+            
+            # 시뮬레이션 시작 시각을 첫 데이터 시간으로 설정
+            self.sim_current_time = pd.to_datetime(self.next_row['timestamp'], format='mixed', utc=True)
+            
+            # 실제 현재 물리 시각 기록
+            self.real_last_tick = datetime.now()
+            
+            # 3. 타이머 시작
+            self.timer.start(200) 
+            print(f"시뮬레이션 시작: {self.sim_current_time}")
+            
+        except StopIteration:
+            print("CSV 파일에 데이터가 없습니다.")
+        except Exception as e:
+            print(f"준비 중 오류 발생: {e}")
+
+    def on_timer_timeout(self):
+        if not self.csv_path:
+            QMessageBox.warning(self, "알림", "csv파일을 로드하세요.")
+            self.stop_sending()
+            return
+        
+        # 1. 타이머가 불린 사이 실제 현실에서 흐른 물리적 시간(dt) 계산
+        now = datetime.now()
+        real_delta_seconds = (now - self.real_last_tick).total_seconds()
+        self.real_last_tick = now # 다음 계산을 위해 업데이트
+        
+        # 2. 시뮬레이션 시간 업데이트 (실제 흐른 시간 * 배속)
+        # 예: 현실에서 0.1초 흘렀고 10배속이면, 시뮬레이션 시간은 1초 전진
+        self.sim_current_time += timedelta(seconds=real_delta_seconds * self.speed_factor)
+
+        time_str = self.sim_current_time.strftime('%Y-%m-%d %H:%M:%S')
+        self.ui.sim_current_time.setText(f"현재 시뮬레이션 시간: {time_str}")
+        
+        data_chunk = []
+        
+        try:
+            # 3. '업데이트된 시뮬레이션 시간'보다 이전에 발생한 모든 데이터 추출
+            while self.next_row is not None:
+                # 다음 행의 시간 데이터 확인
+                row_time = pd.to_datetime(self.next_row['timestamp'], format='mixed', utc=True)
+                
+                if row_time <= self.sim_current_time:
+                    # 조건에 맞으면 전송 목록에 추가
+                    data_chunk.append(self.next_row.to_dict())
+                    self.current_line_count += 1
+
+                    # 다음 행 미리 읽어오기
+                    try:
+                        next_df = next(self.reader)
+                        self.next_row = next_df.iloc[0]
+                    except StopIteration:
+                        self.next_row = None
+                        self.timer.stop()
+                        print("모든 CSV 데이터 전송 완료.")
+                        break
+                else:
+                    # 다음 데이터의 시간이 아직 시뮬레이션 시간에 도달하지 않았으면 중단
+                    break
+                    
+        except Exception as e:
+            print(f"시뮬레이션 중 오류: {e}")
+
+        if not data_chunk:
+            print("데이터가 없습니다")
+            return       
+        
+        # 연결된 모든 소켓에게 패킷을 전송하도록 변경
+         # 1. 테이블의 전체 행 수 확인
+        row_count = self.ui.client_table.rowCount()
+
+        for i in range(row_count):
+            item = self.ui.client_table.item(i, 0)
+
+            if item:
+                client_socket = item.data(Qt.ItemDataRole.UserRole)
+        
+                try:
+                    if client_socket:
+                        # 데이터 전송 (프로토콜: 헤더(길이) + JSON바디)
+                        json_str = json.dumps(data_chunk)
+                        json_bytes = json_str.encode('utf-8')
+                        
+                        DATA_TYPE = 1   # 메세지는 0, DB형식은 1
+
+                        # 헤더
+                        # field1: 데이터타입 (메세지는 0, DB형식은 1)
+                        # field2: 데이터 길이 (4바이트 Big Endian)
+                        header = struct.pack('>BI', DATA_TYPE, len(json_bytes))
+                        
+                        client_socket.sendall(header + json_bytes)
+                        
+                        self.ui.log_browser.append(f"[Send] {len(data_chunk)}건 전송 (누적: {self.current_line_count})")
+
+                except Exception as e:
+                    self.ui.log_browser.append(f"[Socket Error] {e}")
+                    self.stop_sending()
+            
+
     def send_message(self):
         row = self.ui.client_table.currentRow()
         text = self.ui.msg_edit.toPlainText()
@@ -251,6 +402,7 @@ class Window(QMainWindow, Ui_MainWindow):
         row = self.ui.client_table.currentRow()
         if row < 0 or not self.csv_path:
             QMessageBox.warning(self, "알림", "대상을 선택하고 csv파일을 로드하세요.")
+            self.stop_sending()
             return
         
         item = self.ui.client_table.item(row, 0)
@@ -272,7 +424,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     self.current_line_count += 1
                 except StopIteration:
                     # 파일 끝에 도달하면 파일 닫고 다시 열기 (Loop)
-                    self.log_browser.append("[System] 파일 끝 도달 스트리밍 종료")
+                    self.ui.log_browser.append("[System] 파일 끝 도달 스트리밍 종료")
                     self.file_handle.close()
                     self.stop_sending()
                     break
@@ -282,6 +434,7 @@ class Window(QMainWindow, Ui_MainWindow):
             return
         
         if not data_chunk:
+            print("데이터가 없습니다")
             return
         
         # 데이터 전송 (프로토콜: 헤더(길이) + JSON바디)
@@ -291,7 +444,9 @@ class Window(QMainWindow, Ui_MainWindow):
 
             DATA_TYPE = 1   # 메세지는 0, DB형식은 1
             
-            # 헤더: 데이터 길이 (4바이트 Big Endian)
+            # 헤더
+            # field1: 데이터타입 (메세지는 0, DB형식은 1)
+            # field2: 데이터 길이 (4바이트 Big Endian)
             header = struct.pack('>BI', DATA_TYPE, len(json_bytes))
             
             client_socket.sendall(header + json_bytes)
@@ -306,6 +461,9 @@ class Window(QMainWindow, Ui_MainWindow):
             self.ui.log_browser.append(f"[Socket Error] {e}")
             self.stop_sending()
 
+    def send_packet_by_time(self):
+        return
+
     def start_sending(self):
         if not self.csv_path:
             QMessageBox.warning(self, "경고", "CSV 파일이 선택되지 않았습니다.")
@@ -318,13 +476,14 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.csv_reader = csv.DictReader(self.file_handle)
                 self.current_line_count = 0
                 self.ui.log_browser.append("[Streaming] 파일 스트림 오픈")
+            self.prepare_simulation(self.speed_factor)
         except Exception as e:
             QMessageBox.critical(self, "오류", f"파일 열기 실패: {e}")
             return
 
         self.ui.btn_send_packet.setEnabled(False)
         self.ui.btn_pause_packet.setEnabled(True)
-        self.timer.start(1000) # 0.1초 간격 전송
+        # self.timer.start(1000) # 0.1초 간격 전송
 
     def stop_sending(self):
         self.timer.stop()
@@ -350,6 +509,30 @@ class Window(QMainWindow, Ui_MainWindow):
                 break
         
         self.ui.log_browser.append(f"[{sender_ip}]: {msg}")
+
+    # 시간배속 싱크
+    def slider_speed_factor_value(self):
+        float_val = self.ui.speed_factor_slider.value()
+        if float_val == self.speed_factor:
+            return
+        self.speed_factor = float_val
+        self.sync_speed_factor_value()
+
+    def text_speed_factor_value(self):
+        float_val = self.ui.speed_factor_val.text().strip()
+        if float_val == "":
+            return
+        if int(float_val) == self.speed_factor:
+            return
+        self.speed_factor = int(float_val)
+        self.sync_speed_factor_value()
+
+    def sync_speed_factor_value(self):
+        final_val = self.speed_factor
+        if self.ui.speed_factor_slider.value() != final_val:
+            self.ui.speed_factor_slider.setValue(int(final_val))
+        if self.ui.speed_factor_val.text().strip() != str(final_val):
+            self.ui.speed_factor_val.setText(str(final_val))
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

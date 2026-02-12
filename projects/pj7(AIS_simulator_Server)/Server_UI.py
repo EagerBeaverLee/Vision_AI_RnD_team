@@ -19,8 +19,8 @@ class Ui_MainWindow(object):
 "    background-color: rgb(20, 20, 20); /* 원하는 색상으로 변경 */\n"
 "}")
         self.centralwidget.setObjectName("centralwidget")
-        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.centralwidget)
-        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.centralwidget)
+        self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -83,44 +83,22 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4.setStretch(3, 1)
         self.horizontalLayout_4.setStretch(4, 1)
         self.horizontalLayout_4.setStretch(5, 1)
-        self.verticalLayout_3.addLayout(self.horizontalLayout_4)
+        self.verticalLayout_5.addLayout(self.horizontalLayout_4)
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_5.addItem(spacerItem3)
-        self.label_5 = QtWidgets.QLabel(parent=self.centralwidget)
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
+        self.sim_current_time = QtWidgets.QLabel(parent=self.centralwidget)
         font = QtGui.QFont()
+        font.setPointSize(12)
         font.setBold(True)
-        self.label_5.setFont(font)
-        self.label_5.setStyleSheet("QLabel {\n"
+        self.sim_current_time.setFont(font)
+        self.sim_current_time.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
-        self.label_5.setScaledContents(False)
-        self.label_5.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.label_5.setObjectName("label_5")
-        self.horizontalLayout_5.addWidget(self.label_5)
-        spacerItem4 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_5.addItem(spacerItem4)
-        self.sending_size = QtWidgets.QSpinBox(parent=self.centralwidget)
-        self.sending_size.setStyleSheet("QSpinBox {\n"
-"    border: 1px solid rgb(184, 247, 185);\n"
-"    text-align: center;\n"
-"    color: White;\n"
-"}")
-        self.sending_size.setMinimum(100)
-        self.sending_size.setMaximum(5000)
-        self.sending_size.setSingleStep(100)
-        self.sending_size.setProperty("value", 100)
-        self.sending_size.setObjectName("sending_size")
-        self.horizontalLayout_5.addWidget(self.sending_size)
-        spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_5.addItem(spacerItem5)
-        self.horizontalLayout_5.setStretch(0, 1)
-        self.horizontalLayout_5.setStretch(1, 1)
-        self.horizontalLayout_5.setStretch(2, 1)
-        self.horizontalLayout_5.setStretch(3, 1)
-        self.horizontalLayout_5.setStretch(4, 1)
-        self.verticalLayout_3.addLayout(self.horizontalLayout_5)
+        self.sim_current_time.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.sim_current_time.setObjectName("sim_current_time")
+        self.verticalLayout_4.addWidget(self.sim_current_time)
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
         self.btn_send_packet = QtWidgets.QPushButton(parent=self.centralwidget)
@@ -175,7 +153,83 @@ class Ui_MainWindow(object):
         self.btn_pause_packet.setFlat(False)
         self.btn_pause_packet.setObjectName("btn_pause_packet")
         self.horizontalLayout_6.addWidget(self.btn_pause_packet)
-        self.verticalLayout_3.addLayout(self.horizontalLayout_6)
+        self.verticalLayout_4.addLayout(self.horizontalLayout_6)
+        self.verticalLayout_4.setStretch(0, 2)
+        self.verticalLayout_4.setStretch(1, 1)
+        self.horizontalLayout_5.addLayout(self.verticalLayout_4)
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_8.setObjectName("horizontalLayout_8")
+        self.label_6 = QtWidgets.QLabel(parent=self.centralwidget)
+        font = QtGui.QFont()
+        font.setBold(True)
+        self.label_6.setFont(font)
+        self.label_6.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"}")
+        self.label_6.setObjectName("label_6")
+        self.horizontalLayout_8.addWidget(self.label_6)
+        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_8.addItem(spacerItem3)
+        self.speed_factor_val = QtWidgets.QLineEdit(parent=self.centralwidget)
+        self.speed_factor_val.setMinimumSize(QtCore.QSize(0, 0))
+        self.speed_factor_val.setStyleSheet("QLineEdit {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
+"    border: 1px solid rgb(255,255,255);\n"
+"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
+"}\n"
+"QLineEdit:focus {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
+"}")
+        self.speed_factor_val.setMaxLength(2000)
+        self.speed_factor_val.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight|QtCore.Qt.AlignmentFlag.AlignTrailing|QtCore.Qt.AlignmentFlag.AlignVCenter)
+        self.speed_factor_val.setObjectName("speed_factor_val")
+        self.horizontalLayout_8.addWidget(self.speed_factor_val)
+        self.horizontalLayout_8.setStretch(0, 1)
+        self.horizontalLayout_8.setStretch(1, 3)
+        self.horizontalLayout_8.setStretch(2, 1)
+        self.verticalLayout_3.addLayout(self.horizontalLayout_8)
+        self.speed_factor_slider = QtWidgets.QSlider(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.speed_factor_slider.sizePolicy().hasHeightForWidth())
+        self.speed_factor_slider.setSizePolicy(sizePolicy)
+        self.speed_factor_slider.setStyleSheet("QSlider::groove {\n"
+"    background-color: rgb(80,80,80);\n"
+"    height: 4px;\n"
+"}\n"
+"QSlider::handle {\n"
+"    background-color: rgb(166, 217, 171);\n"
+"    border: 1px solid rgb(50,120,50);\n"
+"    width: 10px;\n"
+"    height: 20px;\n"
+"    margin: -20px 0;\n"
+"}\n"
+"\n"
+"QSlider::handle:horizontal:hover{\n"
+"    background: rgb(100,170,100);\n"
+"}\n"
+"QSlider::handle:horizontal:pressed{\n"
+"    background: rgb(50,120,50);\n"
+"}\n"
+"QSlider::sub-page {\n"
+"    background-color: rgb(166, 217, 171);\n"
+"}")
+        self.speed_factor_slider.setMinimum(1)
+        self.speed_factor_slider.setMaximum(2000)
+        self.speed_factor_slider.setSingleStep(1)
+        self.speed_factor_slider.setProperty("value", 1)
+        self.speed_factor_slider.setOrientation(QtCore.Qt.Orientation.Horizontal)
+        self.speed_factor_slider.setObjectName("speed_factor_slider")
+        self.verticalLayout_3.addWidget(self.speed_factor_slider)
+        self.horizontalLayout_5.addLayout(self.verticalLayout_3)
+        self.horizontalLayout_5.setStretch(0, 1)
+        self.horizontalLayout_5.setStretch(1, 1)
+        self.verticalLayout_5.addLayout(self.horizontalLayout_5)
         self.horizontalLayout_7 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_7.setObjectName("horizontalLayout_7")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
@@ -193,8 +247,8 @@ class Ui_MainWindow(object):
         self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
-        spacerItem6 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout.addItem(spacerItem6)
+        spacerItem4 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout.addItem(spacerItem4)
         self.verticalLayout_2.addLayout(self.horizontalLayout)
         self.log_browser = QtWidgets.QTextBrowser(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
@@ -355,8 +409,8 @@ class Ui_MainWindow(object):
         self.label_2.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.label_2.setObjectName("label_2")
         self.horizontalLayout_3.addWidget(self.label_2)
-        spacerItem7 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_3.addItem(spacerItem7)
+        spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_3.addItem(spacerItem5)
         self.btn_send = QtWidgets.QPushButton(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -404,8 +458,16 @@ class Ui_MainWindow(object):
         self.msg_edit.setPlainText("")
         self.msg_edit.setObjectName("msg_edit")
         self.verticalLayout.addWidget(self.msg_edit)
+        self.verticalLayout.setStretch(0, 1)
+        self.verticalLayout.setStretch(1, 7)
+        self.verticalLayout.setStretch(2, 1)
+        self.verticalLayout.setStretch(3, 1)
+        self.verticalLayout.setStretch(4, 7)
         self.horizontalLayout_7.addLayout(self.verticalLayout)
-        self.verticalLayout_3.addLayout(self.horizontalLayout_7)
+        self.verticalLayout_5.addLayout(self.horizontalLayout_7)
+        self.verticalLayout_5.setStretch(0, 1)
+        self.verticalLayout_5.setStretch(1, 2)
+        self.verticalLayout_5.setStretch(2, 18)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 687, 33))
@@ -433,9 +495,11 @@ class Ui_MainWindow(object):
         self.label_3.setText(_translate("MainWindow", "파일: "))
         self.selected_file.setText(_translate("MainWindow", "filename"))
         self.btn_select_file.setText(_translate("MainWindow", "Big Data 파일선택"))
-        self.label_5.setText(_translate("MainWindow", "전송단위:"))
+        self.sim_current_time.setText(_translate("MainWindow", "TextLabel"))
         self.btn_send_packet.setText(_translate("MainWindow", "전송 시작"))
         self.btn_pause_packet.setText(_translate("MainWindow", "일지정지"))
+        self.label_6.setText(_translate("MainWindow", "시간배속"))
+        self.speed_factor_val.setText(_translate("MainWindow", "0"))
         self.label.setText(_translate("MainWindow", "수신된 로그"))
         self.btn_start.setText(_translate("MainWindow", "서버 시작"))
         self.btn_stop.setText(_translate("MainWindow", "서버 종료"))

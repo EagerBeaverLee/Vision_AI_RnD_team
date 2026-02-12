@@ -12,8 +12,12 @@ def init_db():
     db_path = "ships.db"
 
     if os.path.exists(db_path):
-        os.remove(db_path)
-        print(f"{db_path} 파일이 삭제되었습니다.")
+        try:
+            os.remove(db_path)
+            print(f"{db_path} 파일이 삭제되었습니다.")
+        except Exception as e:
+            # QMessageBox.critical("오류", f"{e}")
+            print(f"{e}")
     else:
         print("삭제할 DB 파일이 존재하지 않습니다.")
 
@@ -41,6 +45,7 @@ def init_db():
 
 class ReceiveThread(QThread):
     log_signal = pyqtSignal(str)
+    log_packet = pyqtSignal(int, list)
     disconnect_signal = pyqtSignal()
     msg_received = pyqtSignal(str)
 
@@ -48,6 +53,7 @@ class ReceiveThread(QThread):
         super().__init__()
         self.socket = socket
         self.running = True
+        self.packet_cnt = 0
 
     def recv_all(self, length):
         data = b''
@@ -101,14 +107,18 @@ class ReceiveThread(QThread):
                     # 딕셔너리 리스트를 튜플 리스트로 변환 (SQL 파라미터용)
                     db_tuples = []
                     for item in data_list:
-                        db_tuples.append((
+                        # print(item)
+                        res = (
                             item.get("ShipType"), item.get("ShipName"), item.get("mmsi"),
                             item.get("timestamp"), item.get("course"), item.get("speed"),
                             item.get("longitude"), item.get("latitude"), 
                             item.get("higher_types"), item.get("radius")
-                        ))
+                        )
+                        db_tuples.append(res)
+                        self.packet_cnt += 1
+                        self.log_packet.emit(self.packet_cnt, res)
 
-                    print(db_tuples)
+                    # print(db_tuples)
                     
                     # 고속 저장
                     query = """
@@ -119,7 +129,8 @@ class ReceiveThread(QThread):
                     cursor.executemany(query, db_tuples)
                     conn.commit() # 트랜잭션 확정
 
-                    self.log_signal.emit(f"DB 저장 완료: {len(data_list)} 행")
+                    # self.log_signal.emit(f"DB 저장 완료: {len(data_list)} 행")
+                    print(f"DB 저장 완료: {len(data_list)} 행")
             except Exception as e:
                 self.log_signal.emit(f"에러 발생: {e}")
                 self.disconnect_signal.emit()
@@ -201,6 +212,7 @@ class ClientWindow(QWidget):
             self.recv_thread = ReceiveThread(self.socket)
             self.recv_thread.msg_received.connect(self.process_server_message)
             self.recv_thread.log_signal.connect(self.update_log)
+            self.recv_thread.log_packet.connect(self.update_packet_log)
             self.recv_thread.disconnect_signal.connect(self.on_disconnected)
             self.recv_thread.start()
 
@@ -226,6 +238,11 @@ class ClientWindow(QWidget):
 
     def update_log(self, msg):
         self.text_display.append(msg)
+
+    def update_packet_log(self, i, packet):
+        # print(f"Packet[{i}]" + str(packet))
+        display_text = f"[{i}] Packet: {' | '.join(map(str, packet))} |"
+        self.text_display.append(display_text)
 
     def on_disconnected(self):
         self.text_display.append("[System] Disconnected from server.")
