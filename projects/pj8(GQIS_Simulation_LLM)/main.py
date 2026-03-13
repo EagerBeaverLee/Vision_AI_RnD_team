@@ -813,20 +813,20 @@ class Window(QMainWindow, Ui_MainWindow):
             print("레이어 로드 실패")
 
     def init_local_llm(self):
-        # self.local_llm = ChatOpenAI(
-        #     api_key="ai",
-        #     model="openai/gpt-oss-20b",
-        #     base_url="http://192.168.0.110:8000/v1",
-        #     temperature=self.current_chat_room.m_temperature,
-        #     # max_tokens = 6000
-        # )
         self.local_llm = ChatOpenAI(
             api_key="ai",
             model="openai/gpt-oss-20b",
-            base_url="http://49.174.2.3:8000/v1",
+            base_url="http://192.168.0.110:8000/v1",
             temperature=self.current_chat_room.m_temperature,
             # max_tokens = 6000
         )
+        # self.local_llm = ChatOpenAI(
+        #     api_key="ai",
+        #     model="openai/gpt-oss-20b",
+        #     base_url="http://49.174.2.3:8000/v1",
+        #     temperature=self.current_chat_room.m_temperature,
+        #     # max_tokens = 6000
+        # )
     def init_openai_llm(self):
         self.openai_llm = ChatOpenAI(
             api_key=self.current_chat_room.m_api_key,
