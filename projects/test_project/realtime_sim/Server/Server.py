@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QLabel, QSpinBox, QTextBrowser, QMessageBox, QFileDialog)
 from PyQt6.QtCore import QTimer
 
+
 class ServerWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -194,6 +195,8 @@ class ServerWindow(QWidget):
             # 로그 출력 (너무 자주 찍히지 않게)
             if self.current_line_count % (batch_size * 5) == 0 or self.current_line_count < batch_size * 2:
                 self.log_browser.append(f"[Send] {len(data_chunk)}건 전송 (누적: {self.current_line_count})")
+            else:
+                self.log_browser.append(f"[Send] {len(data_chunk)}건 전송")
                 
         except Exception as e:
             self.log_browser.append(f"[Socket Error] {e}")
