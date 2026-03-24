@@ -872,7 +872,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.hypo_parent_chunk_size.setValue(3000)
         self.ui.granular_chunk_size.setValue(3000)
 
-        self.ui.splitter.setSizes([650, 550])      #초기 프로그램 크기 조정
+        #전체화면 실행
+        self.showMaximized()
+
+        self.ui.splitter.setSizes([1207, 690])      #초기 프로그램 크기 조정
 
         #DB초기설정
         init_db()
@@ -1099,6 +1102,10 @@ class Window(QMainWindow, Ui_MainWindow):
             self.chat_rooms.append(duplicate_room)
             self.update_chat_room_list()
 
+    def splitter_logging(self):
+        curr_size = self.ui.splitter.sizes()
+        print(f"현재 사이즈: {curr_size}")
+
     def toggle_left_animation(self):
         cur_sizes = self.ui.splitter.sizes()
         left_panel = cur_sizes[0]
@@ -1135,6 +1142,7 @@ class Window(QMainWindow, Ui_MainWindow):
             int(self.start_sizes[1] - (self.end_sizes[0] - self.start_sizes[0]) * progress),
             int(self.start_sizes[2])
         ]
+        # 스플리터 크기 디버깅
         # print(current_sizes)
         self.ui.splitter.setSizes(current_sizes)
 
@@ -1254,6 +1262,7 @@ class Window(QMainWindow, Ui_MainWindow):
         # self.ui.left_split_btn.clicked.connect(self.toggle_left_animation)
         # self.ui.right_split_btn.clicked.connect(self.toggle_right_animation)
         self.ui.Load_btn.clicked.connect(self.load_folder)
+        self.ui.splitter.splitterMoved.connect(self.splitter_logging)
 
         #Question Transformations
         self.ui.default_generator.toggled.connect(self.apply_rag_transformation)
@@ -1277,14 +1286,6 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.similarity_slider.valueChanged.connect(self.slider_score_value)
         self.ui.similarity_val.textChanged.connect(self.text_score_value)
         self.ui.keyword_txt.textChanged.connect(self.apply_keyword)
-
-        #Description Buttons
-        self.ui.description_btn1.clicked.connect(self.start_description1_llm_query)
-        self.ui.description_btn2.clicked.connect(self.start_description2_llm_query)
-        self.ui.description_btn3.clicked.connect(self.start_description3_llm_query)
-        self.ui.description_btn4.clicked.connect(self.start_description4_llm_query)
-        self.ui.description_btn5.clicked.connect(self.start_description5_llm_query)
-        self.ui.description_btn6.clicked.connect(self.start_description6_llm_query)
 
         #Client_func
         self.ui.btn_server_connect.clicked.connect(self.connect_server)
@@ -1987,21 +1988,6 @@ class Window(QMainWindow, Ui_MainWindow):
             self.llm_worker3.start()
             self.waiting_dialog.exec()
 
-    def start_description2_llm_query(self):
-        msg = self.ui.description_btn2.text()
-        original_msg = "How do plan, execute, fix, isolate, and continue mission subtasks collectively shape actions on contact?"
-        self.rag_btn_llm(original_msg, msg)
-
-    def start_description4_llm_query(self):
-        msg = self.ui.description_btn4.text()
-        original_msg = "Describe KPAGF's use of EIW and deception to immobilize and psychologically isolate enemy command posts."
-        self.rag_btn_llm(original_msg, msg)
-
-    def start_description6_llm_query(self):
-        msg = self.ui.description_btn6.text()
-        original_msg = "What are the main steps and RISTA integration requirements in the fire and maneuver drill for KPAGF?"
-        self.rag_btn_llm(original_msg, msg)
-
     def handle_llm_response(self, chunk):
         
         self.streaming_response(chunk)
@@ -2093,22 +2079,6 @@ class Window(QMainWindow, Ui_MainWindow):
         except Exception as e:
             print(f"{e}")
         
-    def EnableStreamButtons(self):
-        self.ui.description_btn1.setEnabled(True)
-        self.ui.description_btn2.setEnabled(True)
-        self.ui.description_btn3.setEnabled(True)
-        self.ui.description_btn4.setEnabled(True)
-        self.ui.description_btn5.setEnabled(True)
-        self.ui.description_btn6.setEnabled(True)
-
-    def DisableStreamButtons(self):
-        self.ui.description_btn1.setEnabled(False)
-        self.ui.description_btn2.setEnabled(False)
-        self.ui.description_btn3.setEnabled(False)
-        self.ui.description_btn4.setEnabled(False)
-        self.ui.description_btn5.setEnabled(False)
-        self.ui.description_btn6.setEnabled(False)
-
     def connect_server(self):
         ip = self.ui.ip_input.text()
         try:
@@ -2222,8 +2192,7 @@ class Window(QMainWindow, Ui_MainWindow):
                         b.지점명,
                         b.latitude, 
                         b.longitude, 
-                        w."기온(°C)",
-                        w."습도(%)"
+                        w.*
                     FROM 
                         weather_buoy AS w
                     JOIN 
@@ -2239,17 +2208,31 @@ class Window(QMainWindow, Ui_MainWindow):
                 
                 # 4. 데이터 출력 및 처리
                 if rows:
-                    url = "http://localhost:8600/update"
+                    # 2. Pandas 데이터프레임으로 로드
+                    col_names = [desc[0] for desc in self.weather_cursor.description]
+                    df = pd.DataFrame(rows, columns=col_names)
 
-                    value_data = []
-                    for name, lat, lon, temp, hum in rows:
-                        value_data.append({
-                            "지점명": name,
-                            "latitude": lat,
-                            "longitude": lon,
-                            "temp": temp,
-                            "hum": hum
-                        })
+                    # 3. 컬럼 슬라이싱 (Pandas에서 처리)
+                    # 앞의 3개(지점명, lat, lon)와 w의 3번째 컬럼(인덱스로는 5번 이후) 조립
+                    # 예: 지점명(0), lat(1), lon(2), 지점(3), 일시(4), 기온(5), 습도(6)...
+                    # 만약 w 테이블의 3번째 컬럼부터 끝까지를 원하신다면:
+                    target_cols = [0, 1, 2] + list(range(5, len(df.columns)))
+                    final_df = df.iloc[:, target_cols]
+
+                    #변환된 테이블 확인
+                    # print("\n" + "="*50)
+                    # print("전송 데이터 샘플 (상위 2행)")
+                    # print("-"*50)
+                    # print(final_df.head(2)) # 또는 final_df.iloc[:2]
+                    # print("="*50 + "\n")
+
+                    # 4. JSON으로 변환 (리스트-딕셔너리 형태)
+                    # orient='records'를 쓰면 수만 줄의 데이터도 순식간에 변환됩니다.
+                    # replace를 사용하여 모든 NaN 값을 None으로 바꿉니다.
+                    # value_data = final_df.where(pd.notnull(final_df), None).to_dict(orient='records')
+                    value_data = final_df.fillna(0).to_dict(orient='records')
+
+                    url = "http://localhost:8600/update"
                     try:
                         r = requests.post(url, json=value_data)
                         print(f"상태 코드: {r.status_code}")
