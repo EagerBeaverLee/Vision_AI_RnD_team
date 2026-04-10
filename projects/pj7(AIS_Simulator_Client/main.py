@@ -20,6 +20,7 @@ from Rewrite_Retrieve_Read_Gen import RewriteRetrieveReadQuestionGenerator
 from Step_Back_Question_Gen import StepBackQuestionGenerator
 from Multiple_Questions_Gen import MultipleQuestionGenerator
 from LLMStreamThread import LLMStreamThread
+from AIS_Trajectory_compression import GenerateAISReport
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -66,7 +67,7 @@ def init_db():
             ShipName TEXT,
             mmsi INTEGER,
             timestamp TEXT,
-            course INTEGER,
+            course REAL,
             speed REAL,
             longitude REAL,
             latitude REAL,
@@ -103,6 +104,7 @@ class ReceiveThread(QThread):
     def run(self):
         # 스레드 내에서 DB 연결 (SQLite는 스레드 간 연결 공유 불가 원칙)
         conn = sqlite3.connect("ships.db")
+        # conn.execute("PRAGMA journal_mode=WAL;") # 이 줄을 반드시 추가하세요!
         cursor = conn.cursor()
 
         while self.running:
@@ -890,6 +892,12 @@ class Window(QMainWindow, Ui_MainWindow):
         self.weather_cursor = conn.cursor()
         self.last_queried_hour = None
 
+        #날씨데이터 저장
+        # [ {'col1': 1, 'col2': 'a'}, {'col1': 2, 'col2': 'b'} ]
+        self.weather_data = None
+
+        self.ship_count = {}
+
     def init_local_llm(self):
         self.local_llm = ChatOpenAI(
             api_key="ai",
@@ -1289,6 +1297,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
         #Client_func
         self.ui.btn_server_connect.clicked.connect(self.connect_server)
+
+        self.ui.ship_btn.clicked.connect(self.start_ais_llm_query)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -1901,6 +1911,56 @@ class Window(QMainWindow, Ui_MainWindow):
         }
         """
 
+    def start_ais_llm_query(self):
+        if self.llm_worker is not None:
+            print("이전작업이 아직 실행중입니다.")
+            return
+        
+        question = "전체 항적에 대해 묘사해줘"
+        
+        self.llm_worker = GenerateAISReport(self.local_llm, self.weather_data)
+        self.llm_worker.report_chunk_fin.connect(self.handle_ais_response)
+        self.llm_worker.report_finished.connect(self.handle_ais_finished)
+        self.llm_worker.report_error.connect(self.handle_ais_error)
+        self.llm_worker.finished.connect(self.llm_worker.deleteLater)
+
+        # 기다리는 창
+        self.waiting_dialog  = WaitingDialog(self)
+        self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
+
+        report_msg = ""
+        report_msg += "\n\n" + question + "\n\n"
+        report_msg += "Ai Messages: \n"
+        self.js_streaming_header(report_msg)
+
+        if self.llm_worker and self.llm_worker.isRunning():
+            print("아직 작업 중입니다.")
+        else:
+            # 새로 생성하거나 기존 게 끝난 걸 확인 후 실행
+            self.llm_worker.start()
+            self.waiting_dialog.exec()
+
+    def handle_ais_response(self, chunk):
+        if self.isEnabled() == False:
+            self.setEnabled(True)
+        if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
+            self.waiting_dialog.accept()
+        self.js_streaming_chunk(chunk)
+
+    def handle_ais_finished(self):
+        if self.llm_worker:
+            self.llm_worker.deleteLater()
+            self.llm_worker = None
+
+    def handle_ais_error(self, msg):
+        if self.isEnabled() == False:
+            self.setEnabled(True)
+        if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
+            self.waiting_dialog.accept()
+        QMessageBox.critical(self, "오류", f"{msg}")
+        
+
+    
     def start_description1_llm_query(self):
         if self.llm_worker is not None:
             print("이전작업이 아직 실행중입니다.")
@@ -1988,8 +2048,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.llm_worker3.start()
             self.waiting_dialog.exec()
 
-    def handle_llm_response(self, chunk):
-        
+    def handle_llm_response(self, chunk):        
         self.streaming_response(chunk)
 
     def streaming_response(self, chunk):
@@ -2107,13 +2166,13 @@ class Window(QMainWindow, Ui_MainWindow):
     def update_log(self, msg):
         self.ui.text_server_log.append(msg)
 
-    def update_packet_log(self, i, packet):
-        # print(f"Packet[{i}]" + str(packet))
-
+    def update_packet_log(self, i, packet):        
         time = packet[3]
-        # self.fetch_weather_updates(time)
         self.fetch_weather_and_position(time)
         self.curr_server_time = time
+
+        #현재 구역안에 있는 배 개수 계산
+        self.counting_current_ship(packet)
 
         #시뮬레이션 시간 출력
         if isinstance(time, str) and len(time) >= 19:
@@ -2132,43 +2191,24 @@ class Window(QMainWindow, Ui_MainWindow):
         display_text = f"[{i}] Packet: {' | '.join(map(str, packet))} |"
         self.ui.text_server_log.append(display_text)
 
-    def fetch_weather_updates(self, curr_time):
-        # 1. 연도 계산 (3년 더하기)
-        year_plus_3 = str(int(curr_time[:4]) + 3)
+    def counting_current_ship(self, packet):
+        # packet[2]: MMSI, packet[6]: 경도, packet[7]: 위도
+        mmsi = packet[2]
+        lon = packet[6]
+        lat = packet[7]
 
-        # 2. 월-일 부분 (예: '-12-10 ')
-        month_day = curr_time[4:11]
+        # 1. 운항 구역(Boundary) 내에 있는지 먼저 판단
+        is_inside = (125.6 <= lon <= 131.2) and (lat <= 36)
 
-        # 3. '시' 부분만 추출해서 0 제거 (예: '03' -> 3 -> '3')
-        # 인덱스 11:13은 'HH' 부분을 의미합니다.
-        hour_int = int(curr_time[11:13])
-        hour_str = str(hour_int)
-
-        # 4. 최종 DB 포맷 조립 (예: '2025-12-10 3')
-        current_hour_str = f"{year_plus_3}{month_day}{hour_str}"
-
-        if self.last_queried_hour != current_hour_str:
-            try:
-                query = """
-                    SELECT round(avg("기온(°C)"), 3) FROM weather_table 
-                    WHERE 일시 LIKE ?
-                """
-
-                # 3. 쿼리 실행
-                search_param = f"{current_hour_str}:%"
-                self.weather_cursor.execute(query, (search_param,))
-                rows = self.weather_cursor.fetchall()
-                
-                # 4. 데이터 출력 및 처리
-                if rows:
-                    print(f"🔔 [시간 변경 감지] {current_hour_str}시 기상 데이터 갱신")
-                    print(rows[0][0])
-                    # for row in rows:
-                    #     print(row)
-                # 3. 조회가 완료되면 마지막 조회 시간을 현재 '시'로 업데이트
-                self.last_queried_hour = current_hour_str
-            except Exception as e:
-                print(f"DB 조회 중 오류 발생: {e}")
+        # 2. 상태에 따른 딕셔너리 조작
+        if is_inside:
+            # 영역 안에 있고 아직 등록되지 않았다면 추가 (이미 있다면 무시하거나 업데이트)
+            if mmsi not in self.ship_count:
+                self.ship_count[mmsi] = packet
+        else:
+            # 영역 밖에 있고 리스트에 존재한다면 삭제
+            # pop(key, None)은 키가 없어도 에러를 내지 않으므로 if 체크 없이 한 줄로 가능합니다.
+            self.ship_count.pop(mmsi, None)
 
     def fetch_weather_and_position(self, curr_time):
         # 1. 연도 계산 (3년 더하기)
@@ -2218,6 +2258,10 @@ class Window(QMainWindow, Ui_MainWindow):
                     # 만약 w 테이블의 3번째 컬럼부터 끝까지를 원하신다면:
                     target_cols = [0, 1, 2] + list(range(5, len(df.columns)))
                     final_df = df.iloc[:, target_cols]
+
+                    # 날씨데이터를 llm에서 활용하기 위해 글로벌 변수에 저장 후 init 시 같이 넘기기 위함
+                    # df형태로 저장
+                    self.weather_data = final_df
 
                     #변환된 테이블 확인
                     # print("\n" + "="*50)

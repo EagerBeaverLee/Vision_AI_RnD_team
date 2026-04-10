@@ -171,13 +171,15 @@ def run_simulation_loop():
                 if not mmsi: continue
 
                 if packet.get('longitude') < 125.6 or packet.get('longitude') > 131.2:
-                    print("lon out")
-                    st.session_state.ship_states[mmsi] = None
+                    # 디버깅 로그
+                    # print("lon out")
+                    st.session_state.ship_states.pop(mmsi, None)
                     continue
 
                 if packet.get('latitude') > 36:
-                    print("lat out")
-                    st.session_state.ship_states[mmsi] = None
+                    # 디버깅 로그
+                    # print("lat out")
+                    st.session_state.ship_states.pop(mmsi, None)
                     continue
                 
                 # 상태 업데이트
