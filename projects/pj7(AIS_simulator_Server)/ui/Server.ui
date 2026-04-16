@@ -671,6 +671,31 @@ QPushButton:pressed {
            </spacer>
           </item>
           <item>
+           <widget class="QPushButton" name="reset_program">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+	color: rgb(184, 247, 185);
+    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
+    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
+}
+QPushButton:hover {
+	color: rgb(184, 247, 185);
+    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}
+
+QPushButton:pressed {
+	color: rgb(184, 247, 185);
+    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}</string>
+            </property>
+            <property name="text">
+             <string>reset</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="btn_send">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">

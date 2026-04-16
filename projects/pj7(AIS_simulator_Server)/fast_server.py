@@ -144,6 +144,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.btn_pause_packet.setEnabled(False)
         self.ui.speed_factor_slider.valueChanged.connect(self.slider_speed_factor_value)
         self.ui.speed_factor_val.textChanged.connect(self.text_speed_factor_value)
+
+        #program restart
+        self.ui.reset_program.clicked.connect(self.restart_program)
         
 
     def toggle_pause(self):
@@ -560,6 +563,17 @@ class Window(QMainWindow, Ui_MainWindow):
             self.ui.speed_factor_slider.setValue(int(final_val))
         if self.ui.speed_factor_val.text().strip() != str(final_val):
             self.ui.speed_factor_val.setText(str(final_val))
+
+    def restart_program(self):
+        """현재 프로그램을 종료하고 다시 시작합니다."""
+        print("프로그램을 재시작합니다...")
+        
+        # 1. 현재 실행 중인 파이썬 인터프리터 경로 가져오기 (python.exe 등)
+        python = sys.executable
+        
+        # 2. 실행 중인 스크립트 파일과 인자값 유지
+        # os.execv는 현재 프로세스를 새로 시작하는 프로세스로 완전히 대체합니다.
+        os.execv(python, [python] + sys.argv)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
