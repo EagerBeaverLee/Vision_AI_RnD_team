@@ -41,6 +41,7 @@ from datetime import datetime
 
 sitmap_streamlit_process = None
 dashboard_streamlit_process = None
+geo_dashboard_streamlit_process = None
 
 # DB 핸들링 함수
 def init_db():
@@ -51,7 +52,7 @@ def init_db():
             os.remove(db_path)
             print(f"{db_path} 파일이 삭제되었습니다.")
         except Exception as e:
-            # QMessageBox.critical("오류", f"{e}")
+            QMessageBox.critical(None, "오류", f"db가 다른 프로그램에서 실행중이라면 종료해주세요")
             print(f"오류: {e}")
     else:
         print("삭제할 DB 파일이 존재하지 않습니다.")
@@ -175,551 +176,6 @@ class ReceiveThread(QThread):
     def stop(self):
         self.running = False
 
-
-class GenerateReport(QThread):
-    report_chunk_fin = pyqtSignal(str)
-    report_finished = pyqtSignal()
-    report_error = pyqtSignal(str)
-
-    def __init__(self, local_llm):
-        super().__init__()
-        self.llm = local_llm
-        self.chain = None
-        self.question = "최근 전장상황에 대해 묘사해주세요"
-
-    def load_time_offset(self):
-        try:
-            with open("time_offset.txt", "r", encoding="utf-8") as f:
-                lines = f.readlines()
-                if lines:
-                    latest_value_str = lines[-1].strip()
-                    self.scenario_time = int(latest_value_str)
-                    self.description_scenario()
-                else:
-                    QMessageBox.critical(self, "오류", "기록된 값이 없습니다")
-
-        except (IOError, ValueError) as e:
-            QMessageBox.critical(self, "오류", f"오류 발생: {e}")
-
-    def description_scenario(self):
-        def generalize_to_json(data_string: str) -> str:
-            """
-            튜플 리스트 형태의 문자열 데이터를 JSON 문자열로 변환하는 일반화 함수.
-            
-            데이터 문자열은 [(헤더 튜플), (데이터 튜플), ...] 형식이어야 합니다.
-            
-            Args:
-                data_string: 변환할 문자열 데이터.
-                
-            Returns:
-                JSON 형식의 문자열. 변환 실패 시 None을 반환합니다.
-            """
-            try:
-                # 1. 문자열을 파이썬 리스트 구조로 안전하게 변환
-                # ast.literal_eval은 보안 문제 없이 파이썬 리터럴을 평가합니다.
-                data_list = ast.literal_eval(data_string)
-                
-                # 데이터가 비어 있거나 올바른 형태가 아니면 예외 처리
-                if not data_list or not isinstance(data_list, list):
-                    raise ValueError("데이터가 비어 있거나 리스트 형태가 아닙니다.")
-                    
-                # 2. 헤더(키)와 데이터 분리
-                keys = data_list[0] # 첫 번째 튜플은 헤더(키)
-                data_rows = data_list[1:] # 두 번째 튜플부터 실제 데이터 행
-                
-                if not isinstance(keys, tuple) and not isinstance(keys, list):
-                    raise ValueError("첫 번째 요소(헤더)가 튜플 또는 리스트 형태가 아닙니다.")
-
-                # 3. 각 데이터 행(튜플)을 딕셔너리(JSON 객체)로 변환
-                json_list = []
-                for row in data_rows:
-                    if len(keys) != len(row):
-                        print(f"경고: 키({len(keys)}개)와 데이터({len(row)}개)의 개수가 일치하지 않는 행이 발견되어 해당 행은 건너뜁니다.")
-                        continue
-
-                    # zip을 사용하여 키와 값을 묶어 딕셔너리 생성
-                    feature_dict = dict(zip(keys, row))
-                    
-                    # **일반화된 자료형 변환 (숫자형으로 변환 가능한 경우 시도)**
-                    # 이 부분은 데이터셋마다 달라질 수 있지만, 일반적인 숫자형 변환을 시도합니다.
-                    processed_dict = {}
-                    for k, v in feature_dict.items():
-                        try:
-                            # 정수형으로 시도
-                            processed_dict[k] = int(v)
-                        except (ValueError, TypeError):
-                            try:
-                                # 실수형으로 시도
-                                processed_dict[k] = float(v)
-                            except (ValueError, TypeError):
-                                # 실패하면 기존 값 (문자열 등) 사용
-                                processed_dict[k] = v
-                                
-                    json_list.append(processed_dict)
-                    
-                # 4. 최종 JSON 문자열로 변환 (들여쓰기 적용)
-                return json.dumps(json_list, indent=2, ensure_ascii=False)
-
-            except (ValueError, SyntaxError) as e:
-                print(f"!!! 데이터 변환 중 오류 발생: {e}")
-                return None
-            
-        start_time_tick = 0
-        end_time_tick = 0
-        
-        #수정필요
-        db = SQLDatabase.from_uri("sqlite:///db/scenario_1.db")
-        
-
-        inspector = inspect(db._engine)
-
-        #each table columns elements
-        friendly = inspector.get_columns('friendly')
-        blue_force_h = [col['name'] for col in friendly]
-        oppose = inspector.get_columns('oppose')
-        red_force_h = [col['name'] for col in oppose]
-        main_event = inspector.get_columns('main_event')
-        main_event_h = [col['name'] for col in main_event]
-        mission = inspector.get_columns('mission')
-        mission_h = [col['name'] for col in mission]
-        civil_elements = inspector.get_columns('civil_elements')
-        civil_elements_h = [col['name'] for col in civil_elements]
-        weather = inspector.get_columns('weather')
-        weather_h = [col['name'] for col in weather]
-
-        #transform list -> str
-        blue_force_h = str(blue_force_h)
-        red_force_h = str(red_force_h)
-        weather_h = str(weather_h)
-        main_event_h = str(main_event_h)
-        mission_h = str(mission_h)
-        civil_elements_h = str(civil_elements_h)
-
-        #transform structure
-        blue_force_h = "[("+blue_force_h[1:-1] + ")]"
-        red_force_h = "[("+red_force_h[1:-1] + ")]"
-        weather_h = "[("+weather_h[1:-1] + ")]"
-        main_event_h = "[("+main_event_h[1:-1] + ")]"
-        mission_h = "[("+mission_h[1:-1] + ")]"
-        civil_elements_h = "[("+civil_elements_h[1:-1] + ")]"
-
-        if(self.scenario_time < 4):
-            end_time_tick = self.scenario_time
-
-        else:
-            start_time_tick = self.scenario_time - 3
-            end_time_tick = self.scenario_time
-
-        #SQL query is executed
-        blue_force = db.run(f"SELECT * FROM friendly WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
-        red_force = db.run(f"SELECT * FROM oppose WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
-        terrian_civil_consideration = db.run(f"select * from civil_elements")
-        weather = db.run(f"select * from weather WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
-        main_event = db.run(f"select * from main_event WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
-        mission = db.run(f"select * from mission WHERE 시간 BETWEEN {start_time_tick} AND {end_time_tick};")
-
-        #Combine heading and SQL query results
-        blue_force_t = blue_force_h[:-1] + ', ' + blue_force[1:]
-        red_force_t = red_force_h[:-1] + ', ' + red_force[1:]
-        weather_t = weather_h[:-1] + ', ' + weather[1:]
-        main_event_t = main_event_h[:-1] + ', ' + main_event[1:]
-        mission_t = mission_h[:-1] + ', ' + mission[1:]
-        terrian_civil_consideration_t = civil_elements_h[:-1] + ', ' + terrian_civil_consideration[1:]
-
-        blue_force_j = generalize_to_json(blue_force_t)
-        red_force_j = generalize_to_json(red_force_t)
-        mission_j = generalize_to_json(mission_t)
-        main_event_j = generalize_to_json(main_event_t)
-        weather_j = generalize_to_json(weather_t)
-        terrian_civil_consideration_j = generalize_to_json(terrian_civil_consideration_t)
-
-        scenario_explain_template = """
-        **당신은 최소 20년 경력의 군사 전술 분석 전문가**이자 **시뮬레이션 데이터 해석관**입니다.
-        당신의 임무는 제공된 테이블 형태의 시뮬레이션 데이터를 **단순한 수치 나열이 아닌**, 시간 흐름에 따른 **생생하고 전술적인 교전 상황 묘사**로 전환하는 것입니다
-
-        **다음 형식을 반드시 지켜 전장리포트를 작성하세요.**
-
-        작성할 때 각 형식에 포함되는 데이터를 바탕으로 리포트를 작성하고 **모든 내용은 데이터에 있는 내용만 가지고 작성**합니다(확대 해석불가)
-        데이터를 모두 가져와서 보여줄 필요는 없고 **설명하기 위해 필요한 부분만 정리**해서 다이나믹한 전장상황을 리얼하게 묘사합니다
-        **이때 표의 행과 열이 바뀌어 내용이 바뀌지 않도록 주의합니다**
-        **출력하는 모든 형식은 markdown으로 변환 가능하도록 출력하고 표는 헤더와 내용 사이에 이렇게 구분선을 넣고 헤더 다음 줄바꿈을 해서 표로 출력될 수 있도록 작성해줘**
-
-        1. 요약(Summary / Executive Overview)
-        - 아래 2~7번 사항을 전반적으로 종합하여 현재 전장상황 핵심 3줄(**가장 시급한 조치/결심 요청 사항** 등 명확히 포함)
-        - 지휘관이 가장 먼저 확인해야 할 결과/변화 위주로
-        - 보고서에 포함된 전체시간 때 명시(e.g. 4시 ~ 8시)
-
-        2. 아군상황(Blue Force Situation)
-        - 부대별 위치/전투력 변화
-        - 전투력 및 보급 수준
-        - 우세/열세 요소
-        아군상황 데이터: {blue_force}
-
-        3. 적군 상황(Red Force Situation)
-        - 적 추정 위치, 전력 변화
-        - 최근 활동 패턴
-        - 적 가능행동 2~3가지 요약
-        적군상황 데이터: {red_force}
-
-        4. 지형 및 민간요소(Terrian, civil consideration)
-        - 작전 결과에 영향을 주는 요소 위주로 정리(최대 2줄)
-        지형 및 민간요소 데이터: {terrian_civil_consideration}
-
-        5. 기상요소(weather)
-        - 특정 기상 요소가 현재 작전에 미치는 군사적 영향을 중심으로 요약(최대 3줄)
-        기상요소 데이터: {weather}
-
-        6. 주요 상황 및 전개(Event timeline)
-        - 발생한 대략적인 주요 사건 정리해서 설명(최대 3줄)
-        주요상황 및 전개 데이터: {main_event}
-
-        7. 임무, 지침(mission)
-        - 지휘관의 의도에 맞게 임무 달성 여부(최대 5줄)
-        임무 데이터: {mission}
-
-        {question}
-        """
-
-        explain_template = ChatPromptTemplate.from_template(scenario_explain_template)
-
-        scenario_explain_chain = (
-            # RunnablePassthrough.assign(
-            #     blue_force = lambda x: blue_force,
-            #     red_force = lambda x: red_force,
-            #     terrian_civil_consideration =  lambda x: terrian_civil_consideration,
-            #     weather = lambda x: weather,
-            #     main_event = lambda x: main_event,
-            #     mission = lambda x: mission,
-            # )
-            RunnablePassthrough.assign(
-                blue_force = lambda x: blue_force_j,
-                red_force = lambda x: red_force_j,
-                terrian_civil_consideration =  lambda x: terrian_civil_consideration_j,
-                weather = lambda x: weather_j,
-                main_event = lambda x: main_event_j,
-                mission = lambda x: mission_j,
-            )
-            | explain_template
-            | self.llm
-            # | StrOutputParser()
-        )
-        
-        self.chain = scenario_explain_chain
-        
-        
-    def run(self):
-        print(f"[{QThread.currentThreadId()}] LLM작업 시작 {datetime.now()}")
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self._stream())
-
-    async def _stream(self):
-        self.load_time_offset()
-        try:
-            buffer = []
-            async for chunk in self.chain.astream({"question": self.question}):
-                if chunk:
-                    buffer.append(chunk.content)
-
-                if len(buffer) >= 10:
-                    self.report_chunk_fin.emit("".join(buffer))
-                    buffer.clear()
-
-            if buffer:
-                self.report_chunk_fin.emit("".join(buffer))
-
-        except Exception as e:
-            print(f"스트리밍 중 오류 발생: {e}")
-            self.report_error.emit(f"스트리밍 오류: {e}")
-        finally:
-            self.report_finished.emit()
-
-    
-
-class GenerateSQL1Report(QThread):
-    chunk_response = pyqtSignal(str)
-    finished_response = pyqtSignal()
-
-    def __init__(self, local_llm):
-        super().__init__()
-        self.llm = local_llm
-        self.question = "작전 시간 경과에 따른 아군 전체 부대의 평균 탄약보급량과 연료보급량의 변화 추이는 어떠한가요?"
-        self.chain = None
-
-    def description_sql1(self):
-        def generalize_to_json(data_string: str) -> str:
-            """
-            튜플 리스트 형태의 문자열 데이터를 JSON 문자열로 변환하는 일반화 함수.
-            
-            데이터 문자열은 [(헤더 튜플), (데이터 튜플), ...] 형식이어야 합니다.
-            
-            Args:
-                data_string: 변환할 문자열 데이터.
-                
-            Returns:
-                JSON 형식의 문자열. 변환 실패 시 None을 반환합니다.
-            """
-            try:
-                # 1. 문자열을 파이썬 리스트 구조로 안전하게 변환
-                # ast.literal_eval은 보안 문제 없이 파이썬 리터럴을 평가합니다.
-                data_list = ast.literal_eval(data_string)
-                
-                # 데이터가 비어 있거나 올바른 형태가 아니면 예외 처리
-                if not data_list or not isinstance(data_list, list):
-                    raise ValueError("데이터가 비어 있거나 리스트 형태가 아닙니다.")
-                    
-                # 2. 헤더(키)와 데이터 분리
-                keys = data_list[0] # 첫 번째 튜플은 헤더(키)
-                data_rows = data_list[1:] # 두 번째 튜플부터 실제 데이터 행
-                
-                if not isinstance(keys, tuple) and not isinstance(keys, list):
-                    raise ValueError("첫 번째 요소(헤더)가 튜플 또는 리스트 형태가 아닙니다.")
-
-                # 3. 각 데이터 행(튜플)을 딕셔너리(JSON 객체)로 변환
-                json_list = []
-                for row in data_rows:
-                    if len(keys) != len(row):
-                        print(f"경고: 키({len(keys)}개)와 데이터({len(row)}개)의 개수가 일치하지 않는 행이 발견되어 해당 행은 건너뜁니다.")
-                        continue
-
-                    # zip을 사용하여 키와 값을 묶어 딕셔너리 생성
-                    feature_dict = dict(zip(keys, row))
-                    
-                    # **일반화된 자료형 변환 (숫자형으로 변환 가능한 경우 시도)**
-                    # 이 부분은 데이터셋마다 달라질 수 있지만, 일반적인 숫자형 변환을 시도합니다.
-                    processed_dict = {}
-                    for k, v in feature_dict.items():
-                        try:
-                            # 정수형으로 시도
-                            processed_dict[k] = int(v)
-                        except (ValueError, TypeError):
-                            try:
-                                # 실수형으로 시도
-                                processed_dict[k] = float(v)
-                            except (ValueError, TypeError):
-                                # 실패하면 기존 값 (문자열 등) 사용
-                                processed_dict[k] = v
-                                
-                    json_list.append(processed_dict)
-                    
-                # 4. 최종 JSON 문자열로 변환 (들여쓰기 적용)
-                return json.dumps(json_list, indent=2, ensure_ascii=False)
-
-            except (ValueError, SyntaxError) as e:
-                print(f"!!! 데이터 변환 중 오류 발생: {e}")
-                return None
-    
-        #수정필요
-        db = SQLDatabase.from_uri("sqlite:///db/scenario_1.db")
-                
-        blue_force_h = "[('시간', '평균탄약보급량', '평균연료보급량')]"
-
-        blue_force = db.run("SELECT 시간, AVG(탄약보급량), AVG(연료보급량) FROM friendly GROUP BY 시간 ORDER BY 시간")
-        
-        blue_force_t = blue_force_h[:-1] + ', ' + blue_force[1:]
-
-        blue_force_j = generalize_to_json(blue_force_t)
-
-        sql_explain_template = """
-        **다음 형식을 반드시 지켜 간단한 리포트를 작성하세요.**
-        작성할 때 주어지는 데이터만 가지고 리포트를 작성하고 **모든 내용은 데이터에 있는 내용만 가지고 작성**합니다(수치 묘사 시 정확한지 검증)
-        데이터를 모두 가져와서 보여줄 필요는 없고 **설명하기 위해 필요한 부분만 정리**해서 묘사합니다
-        **이때 표의 행과 열이 바뀌어 내용이 바뀌지 않도록 주의합니다**
-        변화를 중심으로 지휘관이 빠르게 내용을 파악할 수 있도록 정리해서 질문의 의도에 맞게 답변합니다
-        기존의 답변의 markdown 형식도 그대로 유지하면서 한글로 번역해주세요
-
-        입력 데이터:{sql1_result}
-
-        질문: {question}
-        """
-
-        explain_template = ChatPromptTemplate.from_template(sql_explain_template)
-
-        scenario_explain_chain = (
-            # RunnablePassthrough.assign(
-            #     blue_force = lambda x: blue_force,
-            #     red_force = lambda x: red_force,
-            #     terrian_civil_consideration =  lambda x: terrian_civil_consideration,
-            #     weather = lambda x: weather,
-            #     main_event = lambda x: main_event,
-            #     mission = lambda x: mission,
-            # )
-            RunnablePassthrough.assign(
-                sql1_result = lambda x: blue_force_j
-            )
-            | explain_template
-            | self.llm
-            # | StrOutputParser()
-        )        
-        self.chain = scenario_explain_chain
-        
-
-    def run(self):
-        print(f"[{QThread.currentThreadId()}] LLM작업 시작 {datetime.now()}")
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self._stream())
-
-    async def _stream(self):
-        self.description_sql1()
-        try:
-            buffer = []
-            async for chunk in self.chain.astream({"question": self.question}):
-                if chunk:
-                    buffer.append(chunk.content)
-
-                if len(buffer) >= 10:
-                    self.chunk_response.emit("".join(buffer))
-                    buffer.clear()
-            if buffer:
-                self.chunk_response.emit("".join(buffer))
-        except Exception as e:
-            print(f"스트리밍 중 오류 발생: {e}")
-            # self.report_error.emit(f"스트리밍 오류: {e}")
-        finally:
-            self.finished_response.emit()
-
-class GenerateSQL2Report(QThread):
-    chunk_response = pyqtSignal(str)
-    finished_response = pyqtSignal()
-
-    def __init__(self, local_llm):
-        super().__init__()
-        self.llm = local_llm
-        self.chain = None
-        self.question = "전투력에 치명적인 변화가 발생한 이벤트의 발생 시간과 이 사건에 직접 관여한 아군 부대는 무엇이고 어떤 이벤트가 있었나요?"
-
-    def description_sql2(self):
-        def generalize_to_json(data_string: str) -> str:
-            """
-            튜플 리스트 형태의 문자열 데이터를 JSON 문자열로 변환하는 일반화 함수.
-            
-            데이터 문자열은 [(헤더 튜플), (데이터 튜플), ...] 형식이어야 합니다.
-            
-            Args:
-                data_string: 변환할 문자열 데이터.
-                
-            Returns:
-                JSON 형식의 문자열. 변환 실패 시 None을 반환합니다.
-            """
-            try:
-                # 1. 문자열을 파이썬 리스트 구조로 안전하게 변환
-                # ast.literal_eval은 보안 문제 없이 파이썬 리터럴을 평가합니다.
-                data_list = ast.literal_eval(data_string)
-                
-                # 데이터가 비어 있거나 올바른 형태가 아니면 예외 처리
-                if not data_list or not isinstance(data_list, list):
-                    raise ValueError("데이터가 비어 있거나 리스트 형태가 아닙니다.")
-                    
-                # 2. 헤더(키)와 데이터 분리
-                keys = data_list[0] # 첫 번째 튜플은 헤더(키)
-                data_rows = data_list[1:] # 두 번째 튜플부터 실제 데이터 행
-                
-                if not isinstance(keys, tuple) and not isinstance(keys, list):
-                    raise ValueError("첫 번째 요소(헤더)가 튜플 또는 리스트 형태가 아닙니다.")
-
-                # 3. 각 데이터 행(튜플)을 딕셔너리(JSON 객체)로 변환
-                json_list = []
-                for row in data_rows:
-                    if len(keys) != len(row):
-                        print(f"경고: 키({len(keys)}개)와 데이터({len(row)}개)의 개수가 일치하지 않는 행이 발견되어 해당 행은 건너뜁니다.")
-                        continue
-
-                    # zip을 사용하여 키와 값을 묶어 딕셔너리 생성
-                    feature_dict = dict(zip(keys, row))
-                    
-                    # **일반화된 자료형 변환 (숫자형으로 변환 가능한 경우 시도)**
-                    # 이 부분은 데이터셋마다 달라질 수 있지만, 일반적인 숫자형 변환을 시도합니다.
-                    processed_dict = {}
-                    for k, v in feature_dict.items():
-                        try:
-                            # 정수형으로 시도
-                            processed_dict[k] = int(v)
-                        except (ValueError, TypeError):
-                            try:
-                                # 실수형으로 시도
-                                processed_dict[k] = float(v)
-                            except (ValueError, TypeError):
-                                # 실패하면 기존 값 (문자열 등) 사용
-                                processed_dict[k] = v
-                                
-                    json_list.append(processed_dict)
-                    
-                # 4. 최종 JSON 문자열로 변환 (들여쓰기 적용)
-                return json.dumps(json_list, indent=2, ensure_ascii=False)
-
-            except (ValueError, SyntaxError) as e:
-                print(f"!!! 데이터 변환 중 오류 발생: {e}")
-                return None
-    
-        #수정필요
-        db = SQLDatabase.from_uri("sqlite:///db/scenario_1.db")
-        
-        event_h = "[('시간', '종류', '관련부대', '상세내용', '중요도')]"
-
-        event = db.run("SELECT 시간, 종류, 관련부대, 상세내용, 중요도 FROM main_event where 중요도 > 3 GROUP BY 시간 ORDER BY 시간")
-
-        event_t = event_h[:-1] + ', ' + event[1:]
-
-        event_j = generalize_to_json(event_t)
-
-        sql2_explain_template = """
-        **다음 형식을 반드시 지켜 간단한 리포트를 작성하세요.**
-        작성할 때 주어지는 데이터만 가지고 리포트를 작성하고 **모든 내용은 데이터에 있는 내용만 가지고 작성**합니다
-        **이때 표의 행과 열이 바뀌어 내용이 바뀌지 않도록 주의합니다**
-        입력된 데이터를 바탕으로 지휘관이 빠르게 내용을 파악할 수 있도록 상세내용을 포함하여 질문의 의도에 맞게 답변합니다
-        기존의 답변의 markdown 형식도 그대로 유지하면서 한글로 번역해주세요
-
-        입력 데이터:{sql2_result}
-
-        질문: {question}
-        """
-
-        explain_template = ChatPromptTemplate.from_template(sql2_explain_template)
-
-        scenario_explain_chain = (
-            # RunnablePassthrough.assign(
-            #     blue_force = lambda x: blue_force,
-            #     red_force = lambda x: red_force,
-            #     terrian_civil_consideration =  lambda x: terrian_civil_consideration,
-            #     weather = lambda x: weather,
-            #     main_event = lambda x: main_event,
-            #     mission = lambda x: mission,
-            # )
-            RunnablePassthrough.assign(
-                sql2_result = lambda x: event_j
-            )
-            | explain_template
-            | self.llm
-            # | StrOutputParser()
-        )
-        self.chain = scenario_explain_chain
-
-    def run(self):
-        print(f"[{QThread.currentThreadId()}] LLM작업 시작 {datetime.now()}")
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self._stream())
-
-    async def _stream(self):
-        self.description_sql2()
-        try:
-            buffer = []
-            async for chunk in self.chain.astream({"question": self.question}):
-                if chunk:
-                    buffer.append(chunk.content)
-
-                if len(buffer) >= 10:
-                    self.chunk_response.emit("".join(buffer))
-                    buffer.clear()
-            if buffer:
-                self.chunk_response.emit("".join(buffer))
-        except Exception as e:
-            print(f"스트리밍 중 오류 발생: {e}")
-            # self.report_error.emit(f"스트리밍 오류: {e}")
-        finally:
-            self.finished_response.emit()
-
 class WaitingDialog(QProgressDialog):
     def __init__(self, parent=None):
         super().__init__("요청하신 내용을 바탕으로 최적의 답변을 준비하는 중입니다. 잠시만 기다려 주세요.",
@@ -743,7 +199,6 @@ class WaitingDialog(QProgressDialog):
         else:
             event.ignore() # 닫기 요청 무시
     
-
 class ChatRoom:
     def __init__(self, name):
         self.name = name
@@ -877,7 +332,7 @@ class Window(QMainWindow, Ui_MainWindow):
         #전체화면 실행
         self.showMaximized()
 
-        self.ui.splitter.setSizes([1207, 690])      #초기 프로그램 크기 조정
+        self.ui.splitter.setSizes([1204, 693])      #초기 프로그램 크기 조정
 
         #DB초기설정
         init_db()
@@ -885,10 +340,11 @@ class Window(QMainWindow, Ui_MainWindow):
         #소켓 관련 변수
         self.recv_thread = None
         self.socket = None
+        self.start_server_time = ""
         self.curr_server_time = ""
 
         #날씨DB init
-        conn = sqlite3.connect('d:/AI_team/github/Vision_AI_RnD_team/projects/test_project/ais_weather/korea_weather.db', check_same_thread=False)
+        conn = sqlite3.connect('d:/LEE/AI_team/github/Vision_AI_RnD_team/projects/test_project/ais_weather/korea_weather.db', check_same_thread=False)
         self.weather_cursor = conn.cursor()
         self.last_queried_hour = None
 
@@ -1299,6 +755,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.ui.btn_server_connect.clicked.connect(self.connect_server)
 
         self.ui.ship_btn.clicked.connect(self.start_ais_llm_query)
+
+        #program restart
+        self.ui.reset_program.clicked.connect(self.restart_program)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -1769,62 +1228,6 @@ class Window(QMainWindow, Ui_MainWindow):
             self.stream_worker = None
         QTimer.singleShot(5000, self.EnableStreamButtons)
 
-        # answer = rag_history_chain.invoke(
-        #     {"question": original_msg},
-        #     self.current_chat_room.experiment_config,
-        # )
-
-        # if answer:
-        #     print(answer.response_metadata['token_usage'])
-        #     print(answer.response_metadata['token_usage']['total_tokens'])
-        #     self.current_chat_room.experiment_token += answer.response_metadata['token_usage']['total_tokens'] / self.MAX_TOKENS * 100
-        #     update = f"used tokens: {self.current_chat_room.experiment_token:.2f}%"
-        #     self.ui.experiment_token_bar.setFormat(update)
-        #     self.ui.experiment_token_bar.setValue(int(self.current_chat_room.experiment_token))
-        #     print(self.current_chat_room.experiment_token)
-        #     print(self.current_chat_room.experiment_token * 128000)
-
-        #     report_msg = ""
-        #     report_msg += f"Sended Message: {msg}\n\n"
-        #     report_msg += "Ai Messages: \n"
-        #     report_msg += answer.content
-        #     report_msg += "\n\n"
-
-        #     self.js_streaming(report_msg)
-        #     self.show_status_messages("Default chat is working successful")
-        # else:
-        #     print("오류")
-    
-    #tokenizer func
-    # def count_tokens(self, messages: List[BaseMessage]) -> int:
-    #     token_count = 0
-    #     # 시스템 프롬프트 토큰도 계산
-    #     token_count += len(self.token_encoding.encode("너는 친절한 AI 어시스턴트야. 항상 존댓말로 대답해."))
-        
-    #     for message in messages:
-    #         token_count += len(self.token_encoding.encode(message.content))
-    #     return token_count
-    
-    def get_full_prompt_token_count(self, prompt_object) -> int:
-        """
-        LLM에 전달되는 프롬프트의 모든 요소(role 포함)의 토큰 수를 정확하게 계산합니다.
-        """
-        full_prompt_string = ""
-        
-        # 프롬프트 객체는 messages 리스트를 가지고 있습니다.
-        for message in prompt_object.messages:
-            # 각 메시지를 LLM이 이해하는 형태로 문자열에 추가
-            if isinstance(message, SystemMessage):
-                full_prompt_string += f"<|system|>\n{message.content}\n"
-            elif isinstance(message, HumanMessage):
-                full_prompt_string += f"<|user|>\n{message.content}\n"
-            elif isinstance(message, AIMessage):
-                full_prompt_string += f"<|assistant|>\n{message.content}\n"
-            # 기타 다른 메시지 타입이 있다면 추가
-
-        # 최종적으로 완성된 전체 프롬프트 문자열을 토크나이징
-        return len(self.tokenizer.encode(full_prompt_string))
-    
     def get_session_history(self, session_id: str) -> ChatMessageHistory:
         if session_id not in self.current_chat_room.chat_stored:
             self.current_chat_room.chat_stored[session_id] = ChatMessageHistory()
@@ -1869,14 +1272,9 @@ class Window(QMainWindow, Ui_MainWindow):
             self.ui.similarity_val.setEnabled(True)
             self.ui.keyword_txt.setEnabled(True)
 
-    def apply_rag_post_processing(self):
-        radio_btn = self.sender()
-        if radio_btn.isChecked():
-            self.rag_post_processing = radio_btn.text()
-            self.ui.rag_post_processing.setText(f'{radio_btn.text()}')
-
     def set_web_view(self):
-        self.ui.webEngineView.setUrl(QUrl("http://localhost:8502"))
+        self.ui.weather_board.setUrl(QUrl("http://localhost:8502"))
+        self.ui.geospatial_board.setUrl(QUrl("http://localhost:8503"))
         
 
     def GetStyleSheetTemplate(self):
@@ -1918,7 +1316,7 @@ class Window(QMainWindow, Ui_MainWindow):
         
         question = "전체 항적에 대해 묘사해줘"
         
-        self.llm_worker = GenerateAISReport(self.local_llm, self.weather_data)
+        self.llm_worker = GenerateAISReport(self.local_llm, self.weather_data, self.start_server_time, self.curr_server_time)
         self.llm_worker.report_chunk_fin.connect(self.handle_ais_response)
         self.llm_worker.report_finished.connect(self.handle_ais_finished)
         self.llm_worker.report_error.connect(self.handle_ais_error)
@@ -1958,99 +1356,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
             self.waiting_dialog.accept()
         QMessageBox.critical(self, "오류", f"{msg}")
-        
-
-    
-    def start_description1_llm_query(self):
-        if self.llm_worker is not None:
-            print("이전작업이 아직 실행중입니다.")
-            return
-        
-        self.setEnabled(False)
-        self.llm_worker = GenerateReport(self.local_llm)
-        self.llm_worker.report_chunk_fin.connect(self.handle_llm_response)
-        self.llm_worker.report_finished.connect(self.handle_finished)
-        self.llm_worker.report_error.connect(self.handle_error)
-        self.llm_worker.finished.connect(self.llm_worker.deleteLater)
-
-        #버튼 비활성화
-        self.DisableStreamButtons()
-        self.waiting_dialog = WaitingDialog(self)
-        self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
-
-        report_msg = ""
-        report_msg += "\n\nSended Message: 최근 전장상황에 대해 묘사해주세요\n\n"
-        report_msg += "Ai Messages: \n"
-        self.js_streaming_header(report_msg)
-
-        if self.llm_worker and self.llm_worker.isRunning():
-            print("아직 작업 중입니다.")
-        else:
-            # 새로 생성하거나 기존 게 끝난 걸 확인 후 실행
-            self.llm_worker.start()
-            self.waiting_dialog.exec()
-
-    def start_description3_llm_query(self):
-        if self.llm_worker2 and self.llm_worker2.isRunning():
-            print("이전작업이 아직 실행중입니다.")
-            return
-        
-        self.setEnabled(False)
-
-        self.llm_worker2 = GenerateSQL1Report(self.local_llm)
-        self.llm_worker2.chunk_response.connect(self.handle_sql1_response)
-        self.llm_worker2.finished_response.connect(self.handle_sql1_finished)
-        self.llm_worker2.finished.connect(self.llm_worker2.deleteLater)
-
-        #버튼 비활성화
-        self.DisableStreamButtons()
-        self.waiting_dialog = WaitingDialog(self)
-        self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
-
-        report_msg = ""
-        report_msg += "\n\nSended Message: 작전 시간 경과에 따른 아군 전체 부대의 평균 탄약보급량과 연료보급량의 변화 추이는 어떠한가요?\n\n"
-        report_msg += "Ai Messages: \n"
-        self.js_streaming_header(report_msg)
-
-        if self.llm_worker2 and self.llm_worker2.isRunning():
-            print("아직 작업 중입니다.")
-        else:
-            # 새로 생성하거나 기존 게 끝난 걸 확인 후 실행
-            self.llm_worker2.start()
-            self.waiting_dialog.exec()
-
-    def start_description5_llm_query(self):
-        if self.llm_worker3 and self.llm_worker3.isRunning():
-            print("이전작업이 아직 실행중입니다.")
-            return
-        
-        self.setEnabled(False)
-
-        self.llm_worker3 = GenerateSQL2Report(self.local_llm)
-        self.llm_worker3.chunk_response.connect(self.handle_sql2_response)
-        self.llm_worker3.finished_response.connect(self.handle_sql2_finished)
-        self.llm_worker3.finished.connect(self.llm_worker3.deleteLater)
-        
-        #버튼 비활성화
-        self.DisableStreamButtons()
-        self.waiting_dialog = WaitingDialog(self)
-        self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
-
-        report_msg = ""
-        report_msg += "\n\nSended Message: 전투력에 치명적인 변화가 발생한 이벤트의 발생 시간과 이 사건에 직접 관여한 아군 부대는 무엇이고 어떤 이벤트가 있었나요?\n\n"
-        report_msg += "Ai Messages: \n"
-        self.js_streaming_header(report_msg)
-
-        if self.llm_worker3 and self.llm_worker3.isRunning():
-            print("아직 작업 중입니다.")
-        else:
-            # 새로 생성하거나 기존 게 끝난 걸 확인 후 실행
-            self.llm_worker3.start()
-            self.waiting_dialog.exec()
-
-    def handle_llm_response(self, chunk):        
-        self.streaming_response(chunk)
-
+            
     def streaming_response(self, chunk):
         self.js_streaming_chunk(chunk)
         self.show_status_messages("Experiment chat is ")
@@ -2062,46 +1368,6 @@ class Window(QMainWindow, Ui_MainWindow):
             self.waiting_dialog.accept()
 
         QMessageBox.critical(self, "오류", f"{msg}")
-
-    def handle_finished(self):
-        if self.llm_worker:
-            self.llm_worker.deleteLater()
-            self.llm_worker = None
-        QTimer.singleShot(5000, self.EnableStreamButtons)
-        
-    def handle_sql1_response(self, chunk):
-        if self.isEnabled() == False:
-            self.setEnabled(True)
-        if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
-            self.waiting_dialog.accept()
-        self.streaming_sql1_response(chunk)
-        
-    def handle_sql1_finished(self):
-        if self.llm_worker2:
-            self.llm_worker2.deleteLater()
-            self.llm_worker2 = None
-        QTimer.singleShot(5000, self.EnableStreamButtons)
-
-    def streaming_sql1_response(self, chunk):
-        self.js_streaming_chunk(chunk)
-        self.show_status_messages("Experiment chat is ")
-
-    def handle_sql2_response(self, chunk):
-        if self.isEnabled() == False:
-            self.setEnabled(True)
-        if hasattr(self, 'waiting_dialog') and self.waiting_dialog.isVisible():
-            self.waiting_dialog.accept()
-        self.streaming_sql2_response(chunk)
-        
-    def handle_sql2_finished(self):
-        if self.llm_worker3:
-            self.llm_worker3.deleteLater()
-            self.llm_worker3 = None
-        QTimer.singleShot(5000, self.EnableStreamButtons)
-
-    def streaming_sql2_response(self, chunk):
-        self.js_streaming_chunk(chunk)
-        self.show_status_messages("Experiment chat is ")
 
     def js_streaming(self, response):
         words = response.split(' ')
@@ -2166,10 +1432,13 @@ class Window(QMainWindow, Ui_MainWindow):
     def update_log(self, msg):
         self.ui.text_server_log.append(msg)
 
-    def update_packet_log(self, i, packet):        
+    def update_packet_log(self, i, packet):
         time = packet[3]
         self.fetch_weather_and_position(time)
         self.curr_server_time = time
+
+        if not self.start_server_time:
+            self.start_server_time = time[:19]
 
         #현재 구역안에 있는 배 개수 계산
         self.counting_current_ship(packet)
@@ -2322,6 +1591,17 @@ class Window(QMainWindow, Ui_MainWindow):
             self.socket.close()
         event.accept()
 
+    def restart_program(self):
+        """현재 프로그램을 종료하고 다시 시작합니다."""
+        print("프로그램을 재시작합니다...")
+        
+        # 1. 현재 실행 중인 파이썬 인터프리터 경로 가져오기 (python.exe 등)
+        python = sys.executable
+        
+        # 2. 실행 중인 스크립트 파일과 인자값 유지
+        # os.execv는 현재 프로세스를 새로 시작하는 프로세스로 완전히 대체합니다.
+        os.execv(python, [python] + sys.argv)
+
 def kill_process_on_port(port):
         """특정 포트를 사용 중인 프로세스를 찾아 종료"""
         for proc in psutil.process_iter(['pid', 'name']):
@@ -2346,18 +1626,24 @@ def kill_process_on_port(port):
 def start_streamlit():
     kill_process_on_port(8501)
     kill_process_on_port(8502)
+    kill_process_on_port(8503)
     global sitmap_streamlit_process
     global dashboard_streamlit_process
+    global geo_dashboard_streamlit_process
     # Streamlit 앱 실행 명령어
 
     cmd = ["streamlit", "run", "./previous_files/fast_change.py", "--server.port=8501"]
     cmd2 = ["streamlit", "run", "./dashboard.py", "--server.headless=True", "--server.port=8502"]
+    cmd3 = ["streamlit", "run", "./geo_dashboard.py", "--server.headless=True", "--server.port=8503"]
 
     sitmap_streamlit_process = subprocess.Popen(cmd)
     print("실시간 상황도 streamlit서버가 백그라운드에서 시작되었습니다.")
 
     dashboard_streamlit_process = subprocess.Popen(cmd2)
     print("Dashboard streamlit서버가 백그라운드에서 시작되었습니다.")
+
+    geo_dashboard_streamlit_process = subprocess.Popen(cmd3)
+    print("Geo Dashboard streamlit서버가 백그라운드에서 시작되었습니다.")
 
 def stop_streamlit():
     """Streamlit 서버 프로세스 종료"""
@@ -2366,11 +1652,15 @@ def stop_streamlit():
 
     if sitmap_streamlit_process:
         sitmap_streamlit_process.kill()
-        print("Streamlit 서버가 종료되었습니다.")
+        print("상황도 Streamlit 서버가 종료되었습니다.")
 
     if dashboard_streamlit_process:
         dashboard_streamlit_process.kill()
-        print("Streamlit 서버가 종료되었습니다.")
+        print("Dashboard Streamlit 서버가 종료되었습니다.")
+
+    if geo_dashboard_streamlit_process:
+        geo_dashboard_streamlit_process.kill()
+        print("Geo Dashboard Streamlit 서버가 종료되었습니다.")
 
 if __name__ == "__main__":
     atexit.register(stop_streamlit)

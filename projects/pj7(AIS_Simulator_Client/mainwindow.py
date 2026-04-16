@@ -22,6 +22,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout_8.setObjectName("verticalLayout_8")
         self.splitter = QtWidgets.QSplitter(parent=self.centralwidget)
+        self.splitter.setMidLineWidth(0)
         self.splitter.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.splitter.setChildrenCollapsible(False)
         self.splitter.setObjectName("splitter")
@@ -50,19 +51,33 @@ class Ui_MainWindow(object):
 "    margin: 1px;\n"
 "}")
         self.tabWidget.setObjectName("tabWidget")
+        self.geo_dashboard = QtWidgets.QWidget()
+        self.geo_dashboard.setObjectName("geo_dashboard")
+        self.verticalLayout_17 = QtWidgets.QVBoxLayout(self.geo_dashboard)
+        self.verticalLayout_17.setObjectName("verticalLayout_17")
+        self.geospatial_board = QtWebEngineWidgets.QWebEngineView(parent=self.geo_dashboard)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.geospatial_board.sizePolicy().hasHeightForWidth())
+        self.geospatial_board.setSizePolicy(sizePolicy)
+        self.geospatial_board.setUrl(QtCore.QUrl("about:blank"))
+        self.geospatial_board.setObjectName("geospatial_board")
+        self.verticalLayout_17.addWidget(self.geospatial_board)
+        self.tabWidget.addTab(self.geo_dashboard, "")
         self.dashboard = QtWidgets.QWidget()
         self.dashboard.setObjectName("dashboard")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.dashboard)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.webEngineView = QtWebEngineWidgets.QWebEngineView(parent=self.dashboard)
+        self.weather_board = QtWebEngineWidgets.QWebEngineView(parent=self.dashboard)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.webEngineView.sizePolicy().hasHeightForWidth())
-        self.webEngineView.setSizePolicy(sizePolicy)
-        self.webEngineView.setUrl(QtCore.QUrl("about:blank"))
-        self.webEngineView.setObjectName("webEngineView")
-        self.verticalLayout.addWidget(self.webEngineView)
+        sizePolicy.setHeightForWidth(self.weather_board.sizePolicy().hasHeightForWidth())
+        self.weather_board.setSizePolicy(sizePolicy)
+        self.weather_board.setUrl(QtCore.QUrl("about:blank"))
+        self.weather_board.setObjectName("weather_board")
+        self.verticalLayout.addWidget(self.weather_board)
         self.verticalLayout.setStretch(0, 5)
         self.tabWidget.addTab(self.dashboard, "")
         self.packet_log = QtWidgets.QWidget()
@@ -1521,14 +1536,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.input_text)
         self.gridLayout_2 = QtWidgets.QGridLayout()
         self.gridLayout_2.setObjectName("gridLayout_2")
-        spacerItem18 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.gridLayout_2.addItem(spacerItem18, 1, 0, 1, 1)
-        spacerItem19 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.gridLayout_2.addItem(spacerItem19, 0, 1, 1, 1)
-        spacerItem20 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.gridLayout_2.addItem(spacerItem20, 1, 2, 1, 1)
-        spacerItem21 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.gridLayout_2.addItem(spacerItem21, 2, 1, 1, 1)
         self.send_btn = QtWidgets.QPushButton(parent=self.LLM)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -1554,7 +1561,13 @@ class Ui_MainWindow(object):
         self.send_btn.setAutoDefault(False)
         self.send_btn.setFlat(False)
         self.send_btn.setObjectName("send_btn")
-        self.gridLayout_2.addWidget(self.send_btn, 1, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.send_btn, 2, 1, 1, 1)
+        spacerItem18 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.gridLayout_2.addItem(spacerItem18, 2, 2, 1, 1)
+        spacerItem19 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.gridLayout_2.addItem(spacerItem19, 1, 1, 1, 1)
+        spacerItem20 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.gridLayout_2.addItem(spacerItem20, 2, 0, 1, 1)
         self.ship_btn = QtWidgets.QPushButton(parent=self.LLM)
         self.ship_btn.setStyleSheet("QPushButton {\n"
 "    color: rgb(184, 247, 185);\n"
@@ -1573,7 +1586,28 @@ class Ui_MainWindow(object):
 "    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
 "}")
         self.ship_btn.setObjectName("ship_btn")
-        self.gridLayout_2.addWidget(self.ship_btn, 3, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.ship_btn, 4, 1, 1, 1)
+        spacerItem21 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.gridLayout_2.addItem(spacerItem21, 3, 1, 1, 1)
+        self.reset_program = QtWidgets.QPushButton(parent=self.LLM)
+        self.reset_program.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.reset_program.setObjectName("reset_program")
+        self.gridLayout_2.addWidget(self.reset_program, 0, 1, 1, 1)
         self.gridLayout_2.setColumnStretch(0, 1)
         self.gridLayout_2.setColumnStretch(1, 8)
         self.gridLayout_2.setColumnStretch(2, 1)
@@ -1604,7 +1638,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu_Setting.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(2)
         self.tabWidget1.setCurrentIndex(2)
         self.send_btn.clicked.connect(self.input_text.setFocus) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -1616,9 +1650,10 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.geo_dashboard), _translate("MainWindow", "Geo_dashboard"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.dashboard), _translate("MainWindow", "Dashboard"))
         self.label_17.setText(_translate("MainWindow", "IP:"))
-        self.ip_input.setText(_translate("MainWindow", "192.168.0.109"))
+        self.ip_input.setText(_translate("MainWindow", "192.168.0.110"))
         self.ip_input.setPlaceholderText(_translate("MainWindow", "Enter Server IP..."))
         self.label_18.setText(_translate("MainWindow", "Port:"))
         self.port_input.setText(_translate("MainWindow", "9999"))
@@ -1672,6 +1707,7 @@ class Ui_MainWindow(object):
         self.input_text.setPlaceholderText(_translate("MainWindow", "Enter your message..."))
         self.send_btn.setText(_translate("MainWindow", "send"))
         self.ship_btn.setText(_translate("MainWindow", "ship"))
+        self.reset_program.setText(_translate("MainWindow", "reset"))
         self.tabWidget1.setTabText(self.tabWidget1.indexOf(self.LLM), _translate("MainWindow", "LLM참모"))
         self.menu_Setting.setTitle(_translate("MainWindow", "&Setting"))
         self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))

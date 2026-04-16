@@ -1,4 +1,4 @@
-import sqlite3, asyncio, duckdb, json
+import sqlite3, asyncio, duckdb, json, shapely, requests
 from PyQt6.QtCore import pyqtSignal, QThread
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -9,13 +9,20 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import movingpandas as mpd
+import holoviews as hv
 import shapely as shp
 import hvplot.pandas
 import matplotlib.pyplot as plt
+
 from geopandas import GeoDataFrame, read_file
-from shapely.geometry import Point, LineString, Polygon
+from geopy.distance import great_circle
+from shapely.geometry import Point, LineString, Polygon, MultiPoint, box
 from datetime import datetime, timedelta
-from holoviews import opts, dim
+
+
+from bokeh.resources import INLINE
+from bokeh.embed import file_html
+from holoviews import opts, dim, Layout
 
 
 class GenerateAISReport(QThread):
@@ -23,11 +30,23 @@ class GenerateAISReport(QThread):
     report_finished = pyqtSignal()
     report_error = pyqtSignal(str)
 
-    def __init__(self, local_llm, data: pd.DataFrame):
+    def __init__(self, local_llm, data: pd.DataFrame, startTime, currTime):
         super().__init__()
         self.llm = local_llm
         self.chain = None
         self.weather_df = data
+        self.start_server_time = startTime
+        self.curr_server_time = currTime
+
+        # ---geo values---
+        self.zones_gdf = None
+        self.geo_dict = {}
+        
+        # movingpandas전처리 결과 저장
+        self.aggregator = None
+
+        self.clusters_data_json = None
+        # ------------
 
     def compress_ship_data_duckdb(self, db_path, table_name, min_lon=125.678, max_lon=131.229, max_lat=36.001):
         con = duckdb.connect(database=':memory:')
@@ -260,7 +279,640 @@ class GenerateAISReport(QThread):
         con.execute("DETACH sqlite_db;")
         return df_result
 
-    def build_ais_report_chain(self):
+    def geo_init_zone_gdf(self):
+        zone_configs = {
+            # --- [Layer 1: 북부 연안 및 울산] Lat: 34.70 ~ 36.00 (일부 34.40 시작) ---
+            'Zone_16':   [125.00, 34.40, 125.50, 36.00, '서해 남부 외해'],
+            'Zone_5':    [125.50, 34.40, 126.60, 36.00, '목포-신안 해역'],
+            'Zone_12':   [126.60, 34.40, 127.60, 36.00, '고흥-완도 연안'],
+            'Zone_3':    [127.60, 34.70, 128.00, 36.00, '광양-여수 해역'],
+            'Zone_4':    [128.00, 34.70, 128.30, 36.00, '남해 중앙 연안'],
+            'Zone_2':    [128.30, 34.70, 128.70, 36.00, '거제-통영 해역'],
+            'Zone_1':    [128.70, 34.70, 129.30, 36.00, '부산-가덕 해역'],
+            'Zone_18':   [129.30, 34.70, 130.50, 36.00, '부산외항-울산남부'], # 부산 동쪽 빈틈 메움
+            'Zone_14':   [130.50, 35.15, 132.50, 36.00, '울산-포항 해역'],
+            
+            # --- [Layer 2: 중단 외해 및 대한해협] Lat: 33.80 ~ 34.70 ---
+            'Zone_7':    [125.00, 33.00, 126.20, 34.40, '서남해 외해'],
+            'Zone_8':    [126.20, 33.80, 127.60, 34.40, '제주-육지 교차로 해역'],
+            'Zone_9_1':  [127.60, 33.80, 128.30, 34.70, '여수-통영 외해'],
+            'Zone_9_2':  [128.30, 33.80, 128.70, 34.70, '거제-가덕 외해'],
+            'Zone_9_3':  [128.70, 33.80, 129.30, 34.70, '부산-대마도 입구 해역'], # 부산 하단 빈틈 메움
+            'Zone_15_1': [129.30, 33.80, 130.50, 34.70, '대마도 남서 해역'],
+            'Zone_17':   [130.50, 33.80, 131.50, 34.25, '시모노세키-기타큐슈 해역'],
+            'Zone_15_2': [130.50, 34.25, 131.50, 35.15, '대마도 북동 해역'],
+            
+            # --- [Layer 3: 제주 및 일본 연안] Lat: 33.00 ~ 33.80 ---
+            'Zone_6':    [126.20, 33.40, 126.90, 33.80, '제주 북부 연안'],
+            'Zone_13':   [126.20, 33.00, 126.90, 33.40, '제주 남부 연안'],
+            'Zone_11':   [126.90, 33.00, 129.50, 33.80, '제주 남동부 해역'],
+            'Zone_15_3': [129.50, 33.00, 131.00, 33.80, '이키-후쿠오카 연안'],
+            'Zone_15_4': [131.00, 33.00, 132.50, 35.15, '일본 가이요 외해'],
+            
+            # --- [Layer 4: 최남단 원거리] Lat: 31.00 ~ 33.00 ---
+            'Zone_10':   [125.00, 31.00, 132.50, 33.00, '원거리 국제공해']
+        }
+
+        polygons = []
+        ids = []
+        names = []
+
+        for zid, val in zone_configs.items():
+            polygons.append(box(val[0], val[1], val[2], val[3]))
+            ids.append(zid)
+            names.append(val[4])
+
+        self.zones_gdf = gpd.GeoDataFrame({'zone_id': ids, 'name': names}, 
+                                    geometry=polygons, crs="EPSG:4326")
+
+    def geo_common_preprocessing(self):
+        # 1. DuckDB 파일 연결 및 공간 확장 로드
+        db_path = "ships.db"
+        con = duckdb.connect(database=db_path)
+        con.execute("INSTALL spatial; LOAD spatial;")
+
+        table_name = "ship_logs"
+
+        # 2. 초기 데이터 필터링 (DuckDB)
+        # CSV를 읽으면서 위경도/시간/속도를 즉시 필터링
+        min_lon, max_lon, max_lat = 125.678, 131.229, 36.001
+        start_time, end_time = "2022-12-01 00:00:00", "2022-12-02 23:50:00"
+
+        # 쿼리 실행 (DB 내부에서 직접 필터링)
+        query = f"""
+            SELECT *, ST_AsWKB(ST_Point(longitude, latitude)) as geom_wkb, CAST(timestamp AS TIMESTAMP) as t
+            FROM {table_name}
+            WHERE longitude >= {min_lon} AND longitude <= {max_lon}
+            AND latitude <= {max_lat}
+            AND timestamp >= '{start_time}' 
+            AND timestamp <= '{end_time}'
+            AND speed > 0
+            ORDER BY MMSI, t ASC  -- 이 줄이 필수입니다!
+        """
+
+        # 3. DuckDB 결과를 Pandas로 가져오기
+        df = con.execute(query).df()
+
+        # 4. WKB 컬럼을 이용해 즉시 GeoDataFrame 생성
+        # 이 방식은 points_from_xy보다 대용량 처리 시 훨씬 빠릅니다.
+        ais_gdf = gpd.GeoDataFrame(
+            df, 
+            geometry=shapely.from_wkb(df['geom_wkb'].apply(bytes)),
+            crs="EPSG:4326"
+        ).set_index('t')
+
+        # 3. MovingPandas 집계 (클러스터 추출)
+        traj_collection = mpd.TrajectoryCollection(ais_gdf, 'mmsi', min_length=1000)
+        trips = mpd.ObservationGapSplitter(traj_collection).split(gap=timedelta(minutes=120))
+        self.aggregator = mpd.TrajectoryCollectionAggregator(
+            trips, max_distance=100000, min_distance=2000, min_stop_duration=timedelta(minutes=120)
+        )
+    
+    def geo_cluster_data_processing(self):
+        con = duckdb.connect(database=':memory:')
+        con.execute("INSTALL spatial; LOAD spatial;")
+
+        clusters_gdf = self.aggregator.get_clusters_gdf()
+
+        # 4. DuckDB 공간 조인 및 최종 통계 처리
+        # Geometry를 DuckDB가 이해할 수 있는 WKB로 변환하여 등록
+        clusters_gdf['geom_wkb'] = clusters_gdf['geometry'].to_wkb()
+        self.zones_gdf['geom_wkb'] = self.zones_gdf['geometry'].to_wkb()
+
+        con.register('v_clusters', clusters_gdf[['n', 'geom_wkb']])
+        con.register('v_zones', self.zones_gdf[['name', 'geom_wkb']])
+
+        # [공간 조인 + 그룹화 + 정렬]을 한 번의 SQL로 처리
+        # ST_GeomFromWKB를 사용하여 바이너리를 공간 객체로 복원 후 연산
+        final_query = """
+            SELECT z.name, COUNT(*) as stop_count, SUM(CAST(c.n AS DOUBLE)) as total_stay_index
+            FROM v_clusters c, v_zones z
+            WHERE ST_Intersects(ST_GeomFromWKB(c.geom_wkb), ST_GeomFromWKB(z.geom_wkb))
+            GROUP BY z.name
+            ORDER BY total_stay_index DESC
+        """
+
+        # 5. 결과 추출 및 JSON 변환
+        final_summary_df = con.execute(final_query).df()
+
+        clusters_data_json = json.dumps(
+            final_summary_df.to_dict(orient="records"), 
+            ensure_ascii=False, 
+            indent=4
+        )
+        return clusters_data_json
+
+    def geo_speed_processed_duckdb(self):
+        db_path = "ships.db"
+        con = duckdb.connect(database=db_path)
+        con.execute("INSTALL spatial; LOAD spatial;")
+
+        # 2. 기준 구역(zones_gdf)을 DuckDB에 등록
+        # 공간 조인을 위해 zones_gdf를 WKB로 변환하여 임시 테이블로 등록합니다.
+        self.zones_gdf['geom_wkb'] = self.zones_gdf['geometry'].to_wkb()
+        con.register('v_zones', self.zones_gdf[['name', 'geom_wkb']])
+
+        # 3. DuckDB 통합 쿼리 (필터링 + 공간 조인 + 통계 요약)
+        # 포인트 생성부터 구역 매칭, 평균/최대 속도 계산까지 SQL 한 번에 처리합니다.
+        min_lon, max_lon, max_lat = 125.678, 131.229, 36.001
+        start_time, end_time = "2022-12-01 00:00:00", "2022-12-02 23:50:00"
+
+        integrated_query = f"""
+            WITH filtered_ais AS (
+                -- [단계 1] 기본 필터링 및 포인트 생성
+                SELECT 
+                    speed,
+                    ST_Point(longitude, latitude) as point_geom
+                FROM ship_logs
+                WHERE longitude BETWEEN {min_lon} AND {max_lon}
+                AND latitude <= {max_lat}
+                AND timestamp >= '{start_time}' 
+                AND timestamp <= '{end_time}'
+                AND speed > 0
+            ),
+            joined_data AS (
+                -- [단계 2] 구역 테이블(v_zones)과 공간 조인 (ST_Within)
+                -- INNER JOIN을 통해 구역에 속하지 않은(NaN이 될) 데이터는 자동 필터링됩니다.
+                SELECT 
+                    z.name,
+                    a.speed
+                FROM filtered_ais a
+                JOIN v_zones z ON ST_Within(a.point_geom, ST_GeomFromWKB(z.geom_wkb))
+            )
+            -- [단계 3] 구역별 속도 통계 산출
+            SELECT 
+                name,
+                AVG(speed) as mean,
+                MAX(speed) as max,
+                COUNT(*) as count
+            FROM joined_data
+            GROUP BY name
+            ORDER BY name ASC
+        """
+
+        # 4. 결과 실행 및 JSON 변환
+        # 데이터 요약본만 파이썬으로 넘어오므로 매우 가볍습니다.
+        speed_stats_df = con.execute(integrated_query).df()
+
+        return speed_stats_df
+    
+    def geo_speed_data_processing(self):
+        speed_stats_df = self.geo_speed_processed_duckdb()
+        speed_data = json.dumps(
+            speed_stats_df.to_dict(orient="records"), 
+            ensure_ascii=False, 
+            indent=4
+        )
+        return speed_data
+
+    def geo_direction_flow_data_processing(self):
+        db_path = "ships.db"
+        comp_ship_data = self.compress_ship_data_duckdb_further(db_path=db_path, table_name="ship_logs")
+
+        # 1. DuckDB 연결 (메모리 모드) 및 공간 확장 로드
+        con = duckdb.connect(database=':memory:')
+        con.execute("INSTALL spatial; LOAD spatial;")
+
+        # 2. Pandas DataFrame을 DuckDB 테이블로 등록
+        # 이렇게 하면 SQL 쿼리에서 'v_ais_data'라는 이름으로 df를 참조할 수 있습니다.
+        con.register('v_ais_data', comp_ship_data)
+
+        # 3. DuckDB SQL 연산 통합 (Binning + Vector Mean)
+        query = """
+            WITH filtered_moving AS (
+                -- [단계 1] '정박/대기'를 제외하고 MMSI별 마지막 경로와 평균 속도 추출
+                SELECT 
+                    mmsi,
+                    -- 가장 최근의 경로를 가져오기 위해 start_time(또는 end_time) 기준 arg_max 사용
+                    arg_max(first_course, start_time) as last_course,
+                    AVG(avg_speed) as mean_speed
+                FROM v_ais_data
+                WHERE status != '정박/대기'
+                GROUP BY mmsi
+            ),
+            binned_directions AS (
+                -- [단계 2] 8방위 분류 (Binning)
+                SELECT 
+                    *,
+                    CASE 
+                        WHEN last_course >= 337.5 OR last_course < 22.5 THEN '북'
+                        WHEN last_course >= 22.5 AND last_course < 67.5 THEN '북동'
+                        WHEN last_course >= 67.5 AND last_course < 112.5 THEN '동'
+                        WHEN last_course >= 112.5 AND last_course < 157.5 THEN '남동'
+                        WHEN last_course >= 157.5 AND last_course < 202.5 THEN '남'
+                        WHEN last_course >= 202.5 AND last_course < 247.5 THEN '남서'
+                        WHEN last_course >= 247.5 AND last_course < 292.5 THEN '서'
+                        WHEN last_course >= 292.5 AND last_course < 337.5 THEN '북서'
+                    END AS direction_group
+                FROM filtered_moving
+            ),
+            vector_agg AS (
+                -- [단계 3] 방향 그룹별 통계 및 벡터 평균 연산
+                SELECT 
+                    direction_group,
+                    COUNT(*) as ship_count,
+                    AVG(mean_speed) as average_speed_knot,
+                    AVG(sin(radians(last_course))) as mean_sin,
+                    AVG(cos(radians(last_course))) as mean_cos
+                FROM binned_directions
+                GROUP BY direction_group
+            )
+            -- [단계 4] 최종 결과 포맷팅
+            SELECT 
+                direction_group || '진' as direction,
+                ship_count,
+                ROUND(average_speed_knot, 1) as average_speed_knot,
+                ROUND((degrees(atan2(mean_sin, mean_cos)) + 360) % 360, 1) as vector_course_deg
+            FROM vector_agg
+            ORDER BY 
+                CASE direction_group 
+                    WHEN '북' THEN 1 WHEN '북동' THEN 2 WHEN '동' THEN 3 WHEN '남동' THEN 4 
+                    WHEN '남' THEN 5 WHEN '남서' THEN 6 WHEN '서' THEN 7 WHEN '북서' THEN 8 
+                END
+        """
+        
+        # 4. 결과 실행 및 JSON 변환
+        result_df = con.execute(query).df()
+        
+        if result_df.empty:
+            return json.dumps([{"message": "현재 이동 중인 주요 선박 흐름 없음"}], ensure_ascii=False)
+            
+        direction_flow_data = json.dumps(result_df.to_dict(orient="records"), ensure_ascii=False, indent=4)
+        
+        return direction_flow_data
+
+    def geo_trajs_flow_data_processing(self):
+        # 1. DuckDB 연결 및 공간 확장 로드
+        con = duckdb.connect(database=':memory:')
+        con.execute("INSTALL spatial; LOAD spatial;")
+
+        flows = self.aggregator.get_flows_gdf()
+
+        # 2. 데이터 등록을 위한 WKB 변환
+        # flows는 LineString geometry를 가짐
+        flows['geom_wkb'] = flows.geometry.to_wkb()
+        self.zones_gdf['geom_wkb'] = self.zones_gdf['geometry'].to_wkb()
+
+        con.register('v_flows', flows[['weight', 'geom_wkb']])
+        con.register('v_zones', self.zones_gdf[['name', 'geom_wkb']])
+
+        # 3. 통합 SQL 쿼리
+        # ST_StartPoint, ST_EndPoint 함수를 사용하여 좌표 추출 및 조인
+        query = """
+            WITH flow_base AS (
+                SELECT 
+                    weight,
+                    ST_StartPoint(ST_GeomFromWKB(geom_wkb)) as start_pt,
+                    ST_EndPoint(ST_GeomFromWKB(geom_wkb)) as end_pt,
+                    row_number() OVER() as flow_id -- 각 항로에 고유 ID 부여
+                FROM v_flows
+            ),
+            start_zones AS (
+                -- 시작점당 구역 1개만 매칭 (기존 duplicated 제거 로직 재현)
+                SELECT flow_id, name as origin_zone
+                FROM (
+                    SELECT f.flow_id, z.name,
+                        row_number() OVER(PARTITION BY f.flow_id ORDER BY z.name) as rn
+                    FROM flow_base f
+                    JOIN v_zones z ON ST_Intersects(f.start_pt, ST_GeomFromWKB(z.geom_wkb))
+                ) WHERE rn = 1
+            ),
+            end_zones AS (
+                -- 끝점당 구역 1개만 매칭
+                SELECT flow_id, name as dest_zone
+                FROM (
+                    SELECT f.flow_id, z.name,
+                        row_number() OVER(PARTITION BY f.flow_id ORDER BY z.name) as rn
+                    FROM flow_base f
+                    JOIN v_zones z ON ST_Intersects(f.end_pt, ST_GeomFromWKB(z.geom_wkb))
+                ) WHERE rn = 1
+            )
+            SELECT 
+                s.origin_zone,
+                e.dest_zone,
+                SUM(f.weight) as weight
+            FROM flow_base f
+            JOIN start_zones s ON f.flow_id = s.flow_id
+            JOIN end_zones e ON f.flow_id = e.flow_id
+            GROUP BY s.origin_zone, e.dest_zone
+            ORDER BY weight DESC
+            LIMIT 13
+        """
+
+        # 4. 실행 및 결과 변환
+        flow_summary_df = con.execute(query).df()
+        
+        if flow_summary_df.empty:
+            return json.dumps([], ensure_ascii=False)
+
+        trajs_flow_data =  json.dumps(
+            flow_summary_df.to_dict(orient='records'), 
+            ensure_ascii=False, 
+            indent=4
+        )
+    
+        return trajs_flow_data
+    
+    def geo_shiptype_data_processing(self):
+        # 1. DuckDB 파일 연결 및 공간 확장 로드
+        db_path = "ships.db"
+        con = duckdb.connect(database=db_path)
+        con.execute("INSTALL spatial; LOAD spatial;")
+
+        table_name = "ship_logs"
+
+        # 2. 초기 데이터 필터링 (DuckDB)
+        # CSV를 읽으면서 위경도/시간/속도를 즉시 필터링
+        min_lon, max_lon, max_lat = 125.678, 131.229, 36.001
+        start_time, end_time = "2022-12-01 00:00:00", "2022-12-02 23:50:00"
+
+        # 쿼리 실행 (DB 내부에서 직접 필터링)
+        integrated_sql = f"""
+            -- [단계 1] 조건에 맞는 데이터를 임시 테이블에 먼저 저장 (가장 무거운 연산)
+            CREATE OR REPLACE TEMP TABLE t_filtered_ais AS 
+            SELECT *, ST_Point(longitude, latitude) as geom_pt
+            FROM {table_name}
+            WHERE longitude BETWEEN {min_lon} AND {max_lon}
+            AND latitude <= {max_lat}
+            AND timestamp >= '{start_time}' 
+            AND timestamp <= '{end_time}'
+            AND speed > 0;
+
+            -- [단계 2] 선종별 고유 선박 수 집계 (LLM 리포트용)
+            SELECT 
+                ShipType, 
+                COUNT(DISTINCT MMSI) as ship_count
+            FROM t_filtered_ais
+            GROUP BY ShipType
+            ORDER BY ship_count DESC;
+        """
+
+        shiptype_summary_df = con.execute(integrated_sql).df()
+
+        shiptype_data = json.dumps(
+            shiptype_summary_df.to_dict(orient="records"), 
+            ensure_ascii=False, 
+            indent=4
+        )
+
+        return shiptype_data
+
+    def weather_data_processing(self):
+        # 1. 평균을 계산할 필드 리스트 정의
+        target_columns = [
+            "풍속(m/s)", "풍향(deg)", "GUST풍속(m/s)", "현지기압(hPa)", 
+            "습도(%)", "기온(°C)", "수온(°C)", "최대파고(m)", 
+            "유의파고(m)", "평균파고(m)", "파주기(sec)", "파향(deg)"
+        ]
+
+        # 2. DataFrame에서 해당 컬럼만 선택하여 평균 계산
+        # numeric_only=True를 설정하면 숫자가 아닌 값이 섞여있을 때 에러를 방지합니다.
+        # round(2)로 소수점 둘째 자리까지 제한합니다.
+        weather_avg = self.weather_df[target_columns].mean().round(2)
+        # print(" === weather data debug ===")
+        # print(weather_avg.to_dict())
+        weather_json = json.dumps(weather_avg.to_dict(), ensure_ascii=False, indent=4, default=str)
+        
+        return weather_json
+    
+    def geo_processing_OD_Flow_map(self):
+        if len(self.aggregator.flows) > 0:
+            flows = self.aggregator.get_flows_gdf()
+        else:
+            print("생성된 항로(Flow)가 없습니다. 파라미터를 조정하세요.")
+            return
+        
+        if len(self.aggregator.clusters) > 0:
+            clusters = self.aggregator.get_clusters_gdf()
+        else:
+            print("생성된 군집(Cluster)이 없습니다. 파라미터를 조정하세요.")
+            return
+        
+        # 1. DuckDB 연결 및 공간 확장 로드 (기존 유지)
+        con = duckdb.connect(database=':memory:')
+        con.execute("INSTALL spatial; LOAD spatial;")
+
+        zone_speed_stats = self.geo_speed_processed_duckdb()
+        
+        # 2. 결과 데이터(zone_speed_stats)를 DuckDB에 등록
+        # 이미 계산된 통계치를 다시 DB로 보내 연산의 중심으로 삼습니다.
+        con.register('v_speed_stats', zone_speed_stats)
+
+        # [중요] zones_gdf는 이미 v_zones로 등록되어 있다고 가정합니다. 
+        # 만약 세션이 끊겼다면 아래 한 줄을 다시 실행하세요.
+        self.zones_gdf['geom_wkb'] = self.zones_gdf['geometry'].to_wkb()
+        con.register('v_zones', self.zones_gdf[['name', 'geom_wkb']])
+
+        # 3. DuckDB 통합 쿼리: 통계 데이터 + 구역 도형 데이터 병합
+        # 이 쿼리는 시각화에 필요한 모든 컬럼을 한 번에 정렬하여 반환합니다.
+        final_viz_query = """
+            SELECT 
+                z.name,
+                z.geom_wkb,
+                CAST(s.mean AS DOUBLE) as mean,
+                s.max,
+                s.count
+            FROM v_zones z
+            INNER JOIN v_speed_stats s ON z.name = s.name
+            ORDER BY s.mean DESC
+        """
+
+        # 4. 결과 실행 및 GeoDataFrame 복원
+        viz_df = con.execute(final_viz_query).df()
+
+        # DuckDB에서 가져온 WKB를 다시 Shapely geometry로 변환 (GeoPandas 최적화)
+        zones_plot_data = gpd.GeoDataFrame(
+            viz_df,
+            geometry=gpd.GeoSeries.from_wkb(viz_df['geom_wkb'].apply(bytes)),   # bytearray 데이터 처리
+            crs="EPSG:4326"
+        ).drop(columns=['geom_wkb'])
+
+        #################################################
+        ## 최적화된 시각화 실행 (전달받은 viz_df 사용)
+        #################################################
+
+        # 1. 해상구역 배경 (평균 속도 기반 채색)
+        zones_speed = zones_plot_data.hvplot(
+            geo=True, tiles="OSM", alpha=0.45, c="mean",
+            colorbar=True, clabel="Avg Speed (knots)",
+            line_color='black', line_width=1, cmap='YlOrRd', 
+            hover_cols=['name', 'mean', 'count'], # mean_knots 대신 mean 사용
+            frame_height=300, frame_width=320, legend=False,
+            responsive=True # 이전의 레이아웃 어긋남 방지
+        )
+
+        # 2. 레이어 통합
+        flow_cluster_map = (zones_speed * flows.hvplot(geo=True, hover_cols=['weight'], line_width='weight', alpha=0.5, color='#1f77b3') * clusters.hvplot(geo=True, color='red', size='n')
+        ).opts(
+            title='Integrated Analysis: OD Flows, Avg Speed & Clusters',
+            active_tools=['wheel_zoom']
+        )
+
+        # 3. HTML 변환 및 전송 준비 (이전 로직 활용)
+        renderer = hv.renderer('bokeh')
+        plot_state = renderer.get_plot(flow_cluster_map).state
+        plot_state.sizing_mode = 'stretch_both' # 레이아웃 최적화
+
+        # 3. Bokeh의 file_html을 사용하여 HTML 문자열 생성
+        html_content = file_html(plot_state, INLINE, "Interactive Map")
+
+        self.geo_dict['od_flow_map'] = html_content
+
+    def geo_render_test_map(self):
+        if len(self.aggregator.flows) > 0:
+            flows = self.aggregator.get_flows_gdf()
+        else:
+            print("생성된 항로(Flow)가 없습니다. 파라미터를 조정하세요.")
+            return
+        
+        if len(self.aggregator.clusters) > 0:
+            clusters = self.aggregator.get_clusters_gdf()
+        else:
+            print("생성된 군집(Cluster)이 없습니다. 파라미터를 조정하세요.")
+            return
+        
+        # 1. 렌더러 설정
+        renderer = hv.renderer('bokeh')
+
+        flows_plot = flows.hvplot(
+                title='Generalized aggregated trajectories',
+                geo=True, hover_cols=['weight'],
+                line_width='weight', alpha=0.5,
+                color='#1f77b3',
+                tiles='OSM',
+                min_height=200,
+                min_width=100,
+                responsive=True,      # 컨테이너 크기에 맞게 자동 조절
+            )
+        cluster_plot = clusters.hvplot(geo=True, color='red', size='n')
+        combined_plot = flows_plot * cluster_plot
+        
+        # 2. Holoviews 객체를 Bokeh 객체(state)로 변환
+        plot_state = renderer.get_plot(combined_plot).state
+
+        # 레이아웃 최적화
+        plot_state.sizing_mode = 'stretch_both'
+
+        # 3. Bokeh의 file_html을 사용하여 HTML 문자열 생성
+        html_content = file_html(plot_state, INLINE, "Interactive Map")
+        
+        self.geo_dict['test_map'] = html_content
+       
+
+    def geo_send_visualization_data(self):        
+        if self.geo_dict:
+            print(f"DEBUG: geo_dict 현재 내용 = {self.geo_dict.keys()}")
+            url = "http://localhost:8601/update"
+            try:
+                r = requests.post(url, json=self.geo_dict) # Form Data로 전송
+                print(f"상태 코드: {r.status_code}")
+
+                text_data = r.text
+                print(f"서버에러내용: {text_data}")
+
+                print("딕셔너리 정상전송")
+
+            except Exception as e:
+                print(f"연결 에러: {e}")
+        else:
+            print("딕셔너리 비어있음")
+            
+
+    def final_report_chain(self):
+
+        start_time = self.start_server_time[:19]
+        end_time = self.curr_server_time[:19]
+
+        print(start_time)
+        print(end_time)
+
+        time_diff = pd.to_datetime(end_time) - pd.to_datetime(start_time)
+
+        # 초기작업
+        self.geo_init_zone_gdf()
+        self.geo_common_preprocessing()
+        
+        # 대시보드 생성
+        self.geo_processing_OD_Flow_map()
+        self.geo_render_test_map()
+        
+        # 대시보드에 정보 전송
+        self.geo_send_visualization_data()        
+
+        clusters_data = self.geo_cluster_data_processing()
+        speed_data = self.geo_speed_data_processing()
+        direction_flow_data = self.geo_direction_flow_data_processing()
+        trajs_flow_data = self.geo_trajs_flow_data_processing()
+        shiptype_data = self.geo_shiptype_data_processing()
+        weather_data = self.weather_data_processing()
+
+        final_report_template = """
+            # Role
+            당신은 대한민국 해양수산부 소속의 '해상교통관제(VTS) 데이터 분석 전문가' 입니다.
+            제공된 통계 데이터를 바탕으로 해상 교통 흐름의 전체적인 패턴을 분석하고 현재 선박 운항 현황을 묘사해 주세요.  
+
+            #Input Data (Summarized Statistics)
+            1. [분석 대상 시간]:
+            - 시작 시점: {start_time}
+            - 종료 시점: {end_time}
+            - (약 {time_diff} 동안의 데이터 집계 결과)
+            2. [구역별 밀집 현황]: 
+            {clusters_data}
+            3. [구역별 선박 이동 속도 요약]:
+            {speed_data}
+            4. [주요 교통 흐름 (방향별 이동 현황)]:
+            {direction_flow_data}
+            5. [구역 간 주요 유동성(OD Flow) 현황]: 
+            {trajs_flow_data}
+            6. [선박 유형별 요약]:
+            {shiptype_data}
+            7. [현재 날씨 요약]
+            {weather_data}
+            
+
+            # Context & Rules
+            - cluster_data에서 'total_stay_index'가 높을수록 해당 구역에 더 많은 항적이 밀집되어 있음을 의미합니다. 
+            - speed_data에서 'mean'은 해상구역별 평균속도를 의미합니다. 평균속도가 클수록 선박이 해당 구간에서 더 빨리 이동하고 있음을 의미합니다. 
+            - traj_flow_data에서 'weight'가 높을수록 해당 경로(origin_zone -> dest_zone)는 주 간선 항로(Main Route)임을 의미합니다.
+            - 선박 유형별로 사용자가 쉽게 알아볼 수 있도록 테이블로 정리해줘. 데이터에 근거하여 가장 높은 비중을 차지하는 상위 3개 함종이 무엇인지 간단하게 설명해주고 상상이나 추측성 발언은 완전히 삼가해줘.  
+            - 보고서에는 traj_stay_index 값 혹은 weight값을 포함시키지 않아도 되. 이 값이 높다는건 항적이나 항로가 많이 밀집되어 있다는 의미정도로만 해석하면되.  
+            - 전문가적 통찰은 포함하되, 모든 분석은 반드시 제공된 데이터의 수치에 근거해야 합니다. 
+
+            # Mission
+            1. **[분석 대상 시간]**: 1번 데이터를 활용하여 분석 대상 시간을 자연스러운 자연어로 묘사하세요. 
+            2. **[밀집 구역 분석(Data Dashboard Fig 1 참고)]**: 2번 데이터를 활용하여 'total_stay_index'를 기준으로 상위 3개 핵심 해역을 선정하고, 해당 지역이 해상 교통 안전 관리 측면에서 왜 중요한지 한 문장으로 요약하세요.  
+            3. **[구간별 속도 분석(Data Dashboard Fig 1 참고)]**: 2번 데이터를 활용하여 각 구역(Zone)별 선박의 평균 속도(mean) 분포를 비교하고, 대한민국 남해안 해역의 공간적 특성에 따른 속도 변화 패턴을 분석하세요. 
+                특히 연안과 외해, 그리고 주요 항만 주변 간의 전반적인 주요 핵심 패턴만 설명하세요.   
+            4. **[이동 방향 및 흐름 분석]**: 4번 데이터를 바탕으로 현재 가장 지배적인 이동 방향을 식별하고, 해당 흐름의 규모 및 이동 속도의 특성을 분석하세요.  
+            5. **[주요 항로 패턴(Data Dashboard Fig 1 참고)]**: 5번 데이터를 활용하여 'weight' 기준 상위 5개 항로를 분석하여 대한민국 남해안의 주요 항로 패턴이 어떻게 형성되어 있는지 설명하세요. 
+            6. **[선박 유형 요약(Data Dashboard Table 1 참고)]**: 2번 데이터를 활용하여 선박 유형별 카운트 테이블에 대해 간단하게 설명하세요.  
+            7. **[현재 날씨 요약]**: 7번 데이터를 활용하여 현재 기상날씨에 대해 요약하여 설명하고 현재 항해중인 선박들에게 어떤 영향을 줄 수 있는지 설명하세요.
+            8. **[종합 결론]**:  현재 데이터상에서 나타나는 가장 두드러진 해상 교통 특징을 기술하세요. 
+
+            # Tone & Manner
+            - 간결하게 핵심 내용 요약.
+            - 전문 용어(병목 구간, 간선 항로, 트래픽 밀도 등)를 적절히 활용.
+        """
+
+        final_report_prompt = ChatPromptTemplate.from_template(final_report_template)
+
+        self.chain = (
+            RunnablePassthrough.assign(
+                start_time = lambda x: start_time,
+                end_time = lambda x: end_time,
+                time_diff = lambda x: time_diff,
+                clusters_data = lambda x: clusters_data,
+                speed_data = lambda x: speed_data,
+                direction_flow_data = lambda x: direction_flow_data,
+                trajs_flow_data = lambda x: trajs_flow_data,
+                shiptype_data = lambda x: shiptype_data,
+                weather_data = lambda x: weather_data
+            )
+            | final_report_prompt
+            | self.llm
+        )
+
+    def individual_track_chain(self):
         full_path = "ships.db"
 
         #mmsi로 배 선택
@@ -291,11 +943,11 @@ class GenerateAISReport(QThread):
 
         # 디버깅 로그
         print(closest_idx, closest_location['지점명'])
-        print(weather_json)
+        # print(weather_json)
         # --------------------------------------
         
         # 디버깅 로그
-        print(trajectory_json)
+        # print(trajectory_json)
         ais_prompt_template ="""
             # Role
             당신은 대한민국 주변 선박운행을 관제하는 베테랑 해상 관제사(VTS Operator)이자 선박 항적 분석 전문가 입니다. 
@@ -341,13 +993,10 @@ class GenerateAISReport(QThread):
         loop.run_until_complete(self._stream())
 
     async def _stream(self):
-        self.build_ais_report_chain()
-        # sorted_data = self.data.sort_values(by=['ShipName', 'start_time'], ascending=True)
-
-        # total_list = [
-        #     group[1].to_dict(orient='records')
-        #     for group in sorted_data.groupby('ShipName', sort=False)
-        # ]
+        # self.build_ais_report_chain()
+        
+        self.final_report_chain()
+        # self.individual_track_chain()
 
         try:
             buffer = []
