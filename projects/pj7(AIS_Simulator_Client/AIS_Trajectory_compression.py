@@ -1,4 +1,4 @@
-import sqlite3, asyncio, duckdb, json, shapely, requests
+import sqlite3, asyncio, duckdb, json, shapely, requests, io, base64
 from PyQt6.QtCore import pyqtSignal, QThread
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -18,7 +18,6 @@ from geopandas import GeoDataFrame, read_file
 from geopy.distance import great_circle
 from shapely.geometry import Point, LineString, Polygon, MultiPoint, box
 from datetime import datetime, timedelta
-
 
 from bokeh.resources import INLINE
 from bokeh.embed import file_html
@@ -40,13 +39,19 @@ class GenerateAISReport(QThread):
 
         # ---geo values---
         self.zones_gdf = None
+        self.ports_gdf = None
         self.geo_dict = {}
         
         # movingpandas전처리 결과 저장
+        self.ais_gdf = None
         self.aggregator = None
-
+        self.trips = None
         self.clusters_data_json = None
         # ------------
+
+        # 렌더러 설정
+        self.renderer = hv.renderer('bokeh')
+        
 
     def compress_ship_data_duckdb(self, db_path, table_name, min_lon=125.678, max_lon=131.229, max_lat=36.001):
         con = duckdb.connect(database=':memory:')
@@ -279,6 +284,21 @@ class GenerateAISReport(QThread):
         con.execute("DETACH sqlite_db;")
         return df_result
 
+    # 항만 입출항 판정 함수: 출항 선박은 반드시 해당 항구에서 출발하여, 항구 경계선 밖으로 나가야만 출항으로 판정
+    # 입항 선박은 항구 경계선 밖에서 시작하여 항구경계 안으로로 들어오 것만 인정
+    def is_leaving(self, traj, poly):
+        #시작은 안에서, 끝은 밖에서
+        return traj.get_start_location().intersects(poly) and not traj.get_end_location().intersects(poly)
+
+    def is_entering(self, traj, poly):
+        #시작은 안에서, 끝은 밖에서
+        return not traj.get_start_location().intersects(poly) and  traj.get_end_location().intersects(poly)
+
+    def geo_init_ports_gdf(self):
+        # 주요 항만 데이터
+        self.ports_gdf = gpd.read_file('./data/major_ports.shp')
+        self.ports_gdf = self.ports_gdf.to_crs("EPSG:4326")
+
     def geo_init_zone_gdf(self):
         zone_configs = {
             # --- [Layer 1: 북부 연안 및 울산] Lat: 34.70 ~ 36.00 (일부 34.40 시작) ---
@@ -325,7 +345,7 @@ class GenerateAISReport(QThread):
         self.zones_gdf = gpd.GeoDataFrame({'zone_id': ids, 'name': names}, 
                                     geometry=polygons, crs="EPSG:4326")
 
-    def geo_common_preprocessing(self):
+    def geo_common_preprocessing(self, start_time, end_time):
         # 1. DuckDB 파일 연결 및 공간 확장 로드
         db_path = "ships.db"
         con = duckdb.connect(database=db_path)
@@ -336,7 +356,6 @@ class GenerateAISReport(QThread):
         # 2. 초기 데이터 필터링 (DuckDB)
         # CSV를 읽으면서 위경도/시간/속도를 즉시 필터링
         min_lon, max_lon, max_lat = 125.678, 131.229, 36.001
-        start_time, end_time = "2022-12-01 00:00:00", "2022-12-02 23:50:00"
 
         # 쿼리 실행 (DB 내부에서 직접 필터링)
         query = f"""
@@ -355,17 +374,19 @@ class GenerateAISReport(QThread):
 
         # 4. WKB 컬럼을 이용해 즉시 GeoDataFrame 생성
         # 이 방식은 points_from_xy보다 대용량 처리 시 훨씬 빠릅니다.
-        ais_gdf = gpd.GeoDataFrame(
+        self.ais_gdf = gpd.GeoDataFrame(
             df, 
             geometry=shapely.from_wkb(df['geom_wkb'].apply(bytes)),
             crs="EPSG:4326"
         ).set_index('t')
 
         # 3. MovingPandas 집계 (클러스터 추출)
-        traj_collection = mpd.TrajectoryCollection(ais_gdf, 'mmsi', min_length=1000)
-        trips = mpd.ObservationGapSplitter(traj_collection).split(gap=timedelta(minutes=120))
+        traj_collection = mpd.TrajectoryCollection(self.ais_gdf, 'mmsi', min_length=1000)
+        n_traj_collection = mpd.DouglasPeuckerGeneralizer(traj_collection).generalize(tolerance=0.001) #가장 빠름
+        # 전처리 추가(실험 필요)
+        self.trips = mpd.ObservationGapSplitter(n_traj_collection).split(gap=timedelta(minutes=120))
         self.aggregator = mpd.TrajectoryCollectionAggregator(
-            trips, max_distance=100000, min_distance=2000, min_stop_duration=timedelta(minutes=120)
+            self.trips, max_distance=100000, min_distance=2000, min_stop_duration=timedelta(minutes=120)
         )
     
     def geo_cluster_data_processing(self):
@@ -402,7 +423,7 @@ class GenerateAISReport(QThread):
         )
         return clusters_data_json
 
-    def geo_speed_processed_duckdb(self):
+    def geo_speed_processed_duckdb(self, start_time, end_time):
         db_path = "ships.db"
         con = duckdb.connect(database=db_path)
         con.execute("INSTALL spatial; LOAD spatial;")
@@ -415,7 +436,6 @@ class GenerateAISReport(QThread):
         # 3. DuckDB 통합 쿼리 (필터링 + 공간 조인 + 통계 요약)
         # 포인트 생성부터 구역 매칭, 평균/최대 속도 계산까지 SQL 한 번에 처리합니다.
         min_lon, max_lon, max_lat = 125.678, 131.229, 36.001
-        start_time, end_time = "2022-12-01 00:00:00", "2022-12-02 23:50:00"
 
         integrated_query = f"""
             WITH filtered_ais AS (
@@ -456,8 +476,8 @@ class GenerateAISReport(QThread):
 
         return speed_stats_df
     
-    def geo_speed_data_processing(self):
-        speed_stats_df = self.geo_speed_processed_duckdb()
+    def geo_speed_data_processing(self, start_time, end_time):
+        speed_stats_df = self.geo_speed_processed_duckdb(start_time, end_time)
         speed_data = json.dumps(
             speed_stats_df.to_dict(orient="records"), 
             ensure_ascii=False, 
@@ -613,7 +633,7 @@ class GenerateAISReport(QThread):
     
         return trajs_flow_data
     
-    def geo_shiptype_data_processing(self):
+    def geo_shiptype_data_processing(self, start_time, end_time):
         # 1. DuckDB 파일 연결 및 공간 확장 로드
         db_path = "ships.db"
         con = duckdb.connect(database=db_path)
@@ -624,7 +644,6 @@ class GenerateAISReport(QThread):
         # 2. 초기 데이터 필터링 (DuckDB)
         # CSV를 읽으면서 위경도/시간/속도를 즉시 필터링
         min_lon, max_lon, max_lat = 125.678, 131.229, 36.001
-        start_time, end_time = "2022-12-01 00:00:00", "2022-12-02 23:50:00"
 
         # 쿼리 실행 (DB 내부에서 직접 필터링)
         integrated_sql = f"""
@@ -675,7 +694,7 @@ class GenerateAISReport(QThread):
         
         return weather_json
     
-    def geo_processing_OD_Flow_map(self):
+    def geo_render_OD_Flow_map(self, start_time, end_time):
         if len(self.aggregator.flows) > 0:
             flows = self.aggregator.get_flows_gdf()
         else:
@@ -692,7 +711,7 @@ class GenerateAISReport(QThread):
         con = duckdb.connect(database=':memory:')
         con.execute("INSTALL spatial; LOAD spatial;")
 
-        zone_speed_stats = self.geo_speed_processed_duckdb()
+        zone_speed_stats = self.geo_speed_processed_duckdb(start_time, end_time)
         
         # 2. 결과 데이터(zone_speed_stats)를 DuckDB에 등록
         # 이미 계산된 통계치를 다시 DB로 보내 연산의 중심으로 삼습니다.
@@ -733,24 +752,33 @@ class GenerateAISReport(QThread):
 
         # 1. 해상구역 배경 (평균 속도 기반 채색)
         zones_speed = zones_plot_data.hvplot(
-            geo=True, tiles="OSM", alpha=0.45, c="mean",
-            colorbar=True, clabel="Avg Speed (knots)",
-            line_color='black', line_width=1, cmap='YlOrRd', 
+            geo=True, tiles="EsriImagery", alpha=0.45, c="mean",
+            colorbar=False,
+            # clabel="Avg Speed (knots)",
+            line_color='black', line_width=1,
+            cmap='YlOrRd', 
             hover_cols=['name', 'mean', 'count'], # mean_knots 대신 mean 사용
-            frame_height=300, frame_width=320, legend=False,
+            frame_height=330, frame_width=430, legend=False,
             responsive=True # 이전의 레이아웃 어긋남 방지
         )
 
         # 2. 레이어 통합
-        flow_cluster_map = (zones_speed * flows.hvplot(geo=True, hover_cols=['weight'], line_width='weight', alpha=0.5, color='#1f77b3') * clusters.hvplot(geo=True, color='red', size='n')
+        flow_cluster_map = (zones_speed * flows.hvplot(geo=True, hover_cols=['weight'], line_width='weight', alpha=0.5, color='#00FFFF') * clusters.hvplot(geo=True, color='red', size='n')
         ).opts(
-            title='Integrated Analysis: OD Flows, Avg Speed & Clusters',
-            active_tools=['wheel_zoom']
+            # title='Integrated Analysis: OD Flows, Avg Speed & Clusters',
+            active_tools=['wheel_zoom'],
+            xaxis=None,            # x축 전체 숨기기
+            yaxis=None,            # y축 전체 숨기기
+            show_legend=False,     # 범례 숨기기
+            bgcolor='#0E1117',
+            # 에러가 났던 border_fill_color 대신 hooks를 사용하여 Bokeh 모델을 직접 수정
+            hooks=[lambda plot, element: (
+                setattr(plot.state, 'border_fill_color', '#0E1117'),
+                setattr(plot.state.title, 'text_color', 'white')
+            )]
         )
 
-        # 3. HTML 변환 및 전송 준비 (이전 로직 활용)
-        renderer = hv.renderer('bokeh')
-        plot_state = renderer.get_plot(flow_cluster_map).state
+        plot_state = self.renderer.get_plot(flow_cluster_map).state
         plot_state.sizing_mode = 'stretch_both' # 레이아웃 최적화
 
         # 3. Bokeh의 file_html을 사용하여 HTML 문자열 생성
@@ -758,48 +786,138 @@ class GenerateAISReport(QThread):
 
         self.geo_dict['od_flow_map'] = html_content
 
-    def geo_render_test_map(self):
-        if len(self.aggregator.flows) > 0:
-            flows = self.aggregator.get_flows_gdf()
-        else:
-            print("생성된 항로(Flow)가 없습니다. 파라미터를 조정하세요.")
-            return
-        
-        if len(self.aggregator.clusters) > 0:
-            clusters = self.aggregator.get_clusters_gdf()
-        else:
-            print("생성된 군집(Cluster)이 없습니다. 파라미터를 조정하세요.")
-            return
-        
-        # 1. 렌더러 설정
-        renderer = hv.renderer('bokeh')
+    def geo_render_major_ports_map(self):
+        anchored_ships_gdf = self.geo_processing_anchored_ships_gdf()
+        # 1. 대상 항구 리스트
+        target_ports = ['BUSAN HANG', 'ULSAN HANG','GWANGYANG HANG, HADONG HANG', 'MOKPO HANG']
 
-        flows_plot = flows.hvplot(
-                title='Generalized aggregated trajectories',
-                geo=True, hover_cols=['weight'],
-                line_width='weight', alpha=0.5,
-                color='#1f77b3',
-                tiles='OSM',
-                min_height=200,
-                min_width=100,
-                responsive=True,      # 컨테이너 크기에 맞게 자동 조절
+        for i, port_name in enumerate(target_ports):
+            # --- A. 해당 항구 폴리곤 및 영역(AOI) 추출 ---
+            single_port_gdf = self.ports_gdf[self.ports_gdf['objnam'] == port_name]
+            if single_port_gdf.empty: continue
+            
+            # 500m 버퍼 적용 (입출항 판정)
+            port_projected = single_port_gdf.to_crs(epsg=5179)
+            port_projected['geometry'] = port_projected.geometry.buffer(500)
+            port_aoi = port_projected.to_crs(epsg=4326).geometry.iloc[0]
+
+            # --- B. 해당 항구 범위 계산 (줌인용) ---
+            bounds = single_port_gdf.geometry.total_bounds
+            margin = 0.05  # 개별 항구 줌인이므로 마진을 작게 설정
+            p_xlim = (bounds[0] - margin, bounds[2] + margin)
+            p_ylim = (bounds[1] - margin, bounds[3] + margin)
+
+            # --- C. 해당 항구 전용 데이터 필터링 ---
+            # 출발/도착 항적 필터링
+            p_departures = [t for t in self.trips if self.is_leaving(t, port_aoi)]
+            p_arrivals = [t for t in self.trips if self.is_entering(t, port_aoi)]
+            
+            # 정박 선박 필터링 (해당 항구 폴리곤 안에 있는 것만)
+            p_anchored = anchored_ships_gdf[anchored_ships_gdf.geometry.within(port_aoi)]
+
+            # --- D. 개별 항구 레이어 생성 ---
+            layers = []
+            
+            # 1. 배경 지도 및 항구 폴리곤 (가장 아래)
+            layers.append(single_port_gdf.hvplot(
+                # title=f"{port_name} 현황",
+                color='red',
+                alpha=0.2,
+                geo=True,
+                tiles='EsriImagery',
+                xlim=p_xlim,
+                ylim=p_ylim, 
+                # frame_width=200,
+                frame_width=450,
+                frame_height=300
+            ))
+            
+            # 2. 출발 항적
+            if p_departures:
+                layers.append(mpd.TrajectoryCollection(p_departures).hvplot(color="blue", label="출발", line_width=2, tiles='EsriImagery'))
+            
+            # 3. 도착 항적
+            if p_arrivals:
+                layers.append(mpd.TrajectoryCollection(p_arrivals).hvplot(color="orange", label="도착", line_width=2, tiles='EsriImagery'))
+            
+            # 4. 정박 포인트
+            if not p_anchored.empty:
+                layers.append(p_anchored.hvplot.points(color='red', label="정박/대기", geo=True, size=5))
+
+            res_plot = hv.Overlay(layers).opts(
+                xaxis=None, 
+                yaxis=None, 
+                show_legend=False,
+                bgcolor='#0E1117',
+                # 에러가 났던 border_fill_color 대신 hooks를 사용하여 Bokeh 모델을 직접 수정
+                hooks=[lambda plot, element: (
+                    setattr(plot.state, 'border_fill_color', '#0E1117'),
+                    setattr(plot.state.title, 'text_color', 'white')
+                )]
             )
-        cluster_plot = clusters.hvplot(geo=True, color='red', size='n')
-        combined_plot = flows_plot * cluster_plot
-        
-        # 2. Holoviews 객체를 Bokeh 객체(state)로 변환
-        plot_state = renderer.get_plot(combined_plot).state
 
-        # 레이아웃 최적화
-        plot_state.sizing_mode = 'stretch_both'
+            plot_state = self.renderer.get_plot(res_plot).state
 
-        # 3. Bokeh의 file_html을 사용하여 HTML 문자열 생성
-        html_content = file_html(plot_state, INLINE, "Interactive Map")
-        
-        self.geo_dict['test_map'] = html_content
-       
+            # 레이아웃 최적화
+            plot_state.sizing_mode = 'stretch_both'
 
-    def geo_send_visualization_data(self):        
+            # 3. Bokeh의 file_html을 사용하여 HTML 문자열 생성
+            html_content = file_html(plot_state, INLINE, "Interactive Map")
+
+            # --- E. 항구별 오버레이 합체 후 리스트에 저장 ---
+            self.geo_dict[f'port_map_{i}'] = html_content
+
+    def geo_render_shiptype_count_map(self):
+        shiptype_count_summary = self.ais_gdf.groupby('ShipType')['mmsi'].nunique().sort_values(ascending=False)
+
+        # 데이터 Dashboard 시각화
+        # fig, ax = plt.figure(figsize=(2, 4))
+        fig, ax = plt.subplots(figsize=(2.2, 3.5))
+        fig.patch.set_alpha(0) # 배경 투명
+        ax.set_aspect('auto')
+
+        # colors = plt.cm.tab20.colors
+        colors = ['#FFF264'] * len(shiptype_count_summary)
+
+        shiptype_count_summary.plot(
+            kind="barh",
+            color=colors,
+            ax=ax
+        ) 
+
+        ax.invert_yaxis()
+        ax.set_ylabel('')
+
+        ax.tick_params(axis='x', colors='#FFF264', labelsize=8)
+        ax.tick_params(axis='y', colors='#FFF264', labelsize=8)
+        ax.set_facecolor('#282828') # 배경색
+
+        #테두리를 테마색으로 적용
+        for spine in ax.spines.values():
+            spine.set_color('#FFF264')
+            spine.set_linewidth(0.7)
+
+        # [추가] 불필요한 테두리 및 눈금 숨기기 (대시보드용으로 깔끔하게)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        # ax.spines['bottom'].set_visible(False)
+        # ax.set_xticks([]) # x축 숫자 숨기기
+
+        # [핵심] 여백 최소화 (이게 없으면 이미지가 잘리거나 여백이 너무 큽니다)
+        plt.tight_layout()
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+
+        # 2. 이미지를 Base64 문자열로 인코딩
+        img_str = base64.b64encode(buf.read()).decode('utf-8')
+
+        # 3. HTML <img> 태그 생성
+        html_content = f'<img src="data:image/png;base64,{img_str}">'
+
+        self.geo_dict['shiptype'] = html_content
+
+    def geo_send_visualization_data(self):
         if self.geo_dict:
             print(f"DEBUG: geo_dict 현재 내용 = {self.geo_dict.keys()}")
             url = "http://localhost:8601/update"
@@ -816,8 +934,201 @@ class GenerateAISReport(QThread):
                 print(f"연결 에러: {e}")
         else:
             print("딕셔너리 비어있음")
-            
 
+    def geo_processing_anchored_ships_gdf(self):
+        db_path = "ships.db"
+        stop_temp_df = self.compress_ship_data_duckdb_further(db_path=db_path, table_name="ship_logs")
+
+        # 1. DuckDB 연결 (메모리 모드) 및 공간 확장 로드
+        con = duckdb.connect(database=':memory:')
+        con.execute("INSTALL spatial; LOAD spatial;")
+
+        # 2. Pandas DataFrame을 DuckDB 메모리에 등록
+        con.register('v_ais_data', stop_temp_df)
+
+        # 3. DuckDB 통합 쿼리 수행
+        # - ROW_NUMBER()로 mmsi별 최신 데이터(end_time 기준) 식별
+        # - 시간 차이 계산 및 '정박/대기' 상태 필터링을 한 번에 처리
+        query = f"""
+            WITH latest_status AS (
+                SELECT *,
+                    ROW_NUMBER() OVER(PARTITION BY mmsi ORDER BY end_time DESC) as rn
+                FROM stop_temp_df
+            )
+            SELECT *
+            FROM latest_status
+            WHERE rn = 1  -- 각 mmsi별 가장 최신 행만 선택
+            AND status LIKE '%정박/대기%'
+            AND CAST(end_time AS TIMESTAMP) <= CAST('{self.curr_server_time}' AS TIMESTAMP)
+            AND CAST(end_time AS TIMESTAMP) >= CAST('{self.curr_server_time}' AS TIMESTAMP) - INTERVAL 1 HOUR
+        """
+
+        # 4. 결과 실행 (Pandas DataFrame으로 반환)
+        anchored_ships = con.execute(query).df()
+
+        # 5. GeoDataFrame 변환 (공간 조인 등을 위해)
+        geometry = gpd.points_from_xy(anchored_ships['lon'], anchored_ships['lat'])
+        anchored_ships_gdf = gpd.GeoDataFrame(anchored_ships, geometry=geometry, crs="EPSG:4326")
+
+        return anchored_ships_gdf
+    
+    def geo_major_ports_processing(self, start_time, end_time):
+        anchored_ships_gdf = self.geo_processing_anchored_ships_gdf()
+        # 분석할 항구 리스트 (시각화와 동일하게 설정)
+        target_ports = ['BUSAN HANG', 'ULSAN HANG', 'GWANGYANG HANG, HADONG HANG', 'MOKPO HANG']
+
+        # 결과를 담을 메인 딕셔너리
+        report_data = {
+            "report_info": {
+                "analysis_period": {
+                    "start": str(start_time),
+                    "end": str(end_time)
+                },
+                "generated_at": datetime.now().isoformat(),
+                "target_ports": target_ports
+            },
+            "ports_analysis": []
+        }
+
+        for port_name in target_ports:
+            # 1. 데이터 필터링 (기존 로직 동일)
+            single_port_gdf = self.ports_gdf[self.ports_gdf['objnam'] == port_name]
+            if single_port_gdf.empty: continue
+            
+            port_projected = single_port_gdf.to_crs(epsg=5179)
+            port_projected['geometry'] = port_projected.geometry.buffer(500)
+            port_aoi = port_projected.to_crs(epsg=4326).geometry.iloc[0]
+
+            p_departures = [t for t in self.trips if self.is_leaving(t, port_aoi)]
+            p_arrivals = [t for t in self.trips if self.is_entering(t, port_aoi)]
+            p_anchored = anchored_ships_gdf[anchored_ships_gdf.geometry.within(port_aoi)]
+
+            # 2. 항구별 JSON 구조 생성
+            port_entry = {
+                "port_name": port_name,
+                "summary": {
+                    "anchored_count": len(p_anchored),
+                    "departure_count": len(p_departures),
+                    "arrival_count": len(p_arrivals)
+                },
+                "details": {
+                    "anchored_ships": [
+                        {
+                            "name": row['ShipName'],
+                            "mmsi": int(row['mmsi']),
+                            "anchored_since": str(row['start_time'].strftime('%Y-%m-%d %H:%M:%S'))
+                        } for _, row in p_anchored.iterrows()
+                    ],
+                    "departures": [
+                        {
+                            "name": t.df['ShipName'].iloc[0],
+                            "type": t.df['ShipType'].iloc[0],
+                            "mmsi": int(str(t.id).split('_')[0]),
+                            "event_time": str(t.get_start_time())
+                        } for t in p_departures
+                    ],
+                    "arrivals": [
+                        {
+                            "name": t.df['ShipName'].iloc[0],
+                            "type": t.df['ShipType'].iloc[0],
+                            "mmsi": int(str(t.id).split('_')[0]),
+                            "event_time": str(t.get_end_time())
+                        } for t in p_arrivals
+                    ]
+                }
+            }
+            report_data["ports_analysis"].append(port_entry)
+            
+        major_ports_sum = json.dumps(report_data, indent=4, ensure_ascii=False)
+
+        return major_ports_sum
+
+    def geo_ship_status_extraction_processing(self, end_time):
+        db_path = "ships.db"
+        stop_temp_df = self.compress_ship_data_duckdb_further(db_path=db_path, table_name="ship_logs")
+
+        # 1. DuckDB 연결 (메모리 모드) 및 공간 확장 로드
+        con = duckdb.connect(database=':memory:')
+        con.execute("INSTALL spatial; LOAD spatial;")
+
+        # 2. Pandas DataFrame을 DuckDB 메모리에 등록
+        con.register('v_stop_data', stop_temp_df)
+
+        # 2. 통합 쿼리 수행
+        # - ShipName별 최신 행 추출 (tail(1) 대체)
+        # - 시간 필터링 및 상태별 카테고리 분류
+        query = f"""
+            WITH latest_ships AS (
+                SELECT 
+                    ShipName, mmsi, status, end_time,
+                    ROW_NUMBER() OVER(PARTITION BY ShipName ORDER BY end_time DESC, mmsi DESC) as rn
+                FROM v_stop_data
+            ),
+            filtered_ships AS (
+                SELECT ShipName, mmsi, status
+                FROM latest_ships
+                WHERE rn = 1
+                AND CAST(end_time AS TIMESTAMP) <= CAST('{end_time}' AS TIMESTAMP)
+                AND CAST(end_time AS TIMESTAMP) >= CAST('{end_time}' AS TIMESTAMP) - INTERVAL 1 HOUR
+            )
+            SELECT 
+                ShipName, mmsi, status,
+                CASE 
+                    WHEN status LIKE '%이동/통과%' THEN 'moving'
+                    WHEN status LIKE '%정박/대기%' THEN 'stop'
+                    WHEN status LIKE '%저속 운항%' THEN 'slow'
+                    ELSE 'others'
+                END as category
+            FROM filtered_ships
+        """
+        
+        # 3. 데이터 가져오기 및 분류
+        result_df = con.execute(query).df()
+        
+        def to_json_custom(target_df, category_name):
+            # 중복 제거 후 리스트 딕셔너리 변환
+            subset = target_df[target_df['category'] == category_name][['ShipName', 'mmsi', 'status']].drop_duplicates()
+            records = subset.to_dict(orient='records')
+            self.geo_dict[category_name] = records
+            return json.dumps(records, ensure_ascii=False, indent=4)
+        
+        # 4. 각 카테고리별 JSON 생성
+        moving_ships_json = to_json_custom(result_df, 'moving')
+        stop_ships_json = to_json_custom(result_df, 'stop')
+        slow_ships_json = to_json_custom(result_df, 'slow')
+        
+        return moving_ships_json, stop_ships_json, slow_ships_json
+
+    def geo_unusal_ships_extraction_processing(self):
+        db_path = "ships.db"
+        df = self.compress_ship_data_duckdb_further(db_path=db_path, table_name="ship_logs")
+
+        # 1) 분석 키워드 정의
+        turn_keywords = ['우선회', '좌선회']
+        speed_keywords = ['가속', '감속']
+
+        # 2) 각 행별로 특이 기동여부 체크
+        df['is_turning'] = df['status'].str.contains('|'.join(turn_keywords))
+        df['is_speed_changing'] = df['status'].str.contains('|'.join(speed_keywords))
+
+        # 3) ShipName별로 그룹화하여 특이 기동 횟수 집계
+        behavior_summary = df.groupby('ShipName').agg(
+            turn_count = ('is_turning', 'sum'),
+            speed_change_count = ('is_speed_changing', 'sum'),
+            total_records = ('status', 'count'),
+            status_list=('status', lambda x: list(x.unique()))
+        ).reset_index()
+
+        unusual_ships_df = behavior_summary[
+            (behavior_summary['turn_count'] >= 4) | 
+            (behavior_summary['speed_change_count'] >= 4)
+            ].sort_values(by='turn_count', ascending=False)
+
+        unusual_ships_json = unusual_ships_df[['ShipName','turn_count','speed_change_count', 'status_list']].to_dict(orient='records')
+        unusual_final_report_json = json.dumps(unusual_ships_json, ensure_ascii=False, indent=4)
+        
+        return unusual_final_report_json
+    
     def final_report_chain(self):
 
         start_time = self.start_server_time[:19]
@@ -829,22 +1140,30 @@ class GenerateAISReport(QThread):
         time_diff = pd.to_datetime(end_time) - pd.to_datetime(start_time)
 
         # 초기작업
+        self.geo_init_ports_gdf()
         self.geo_init_zone_gdf()
-        self.geo_common_preprocessing()
+        self.geo_common_preprocessing(start_time, end_time)
         
         # 대시보드 생성
-        self.geo_processing_OD_Flow_map()
-        self.geo_render_test_map()
-        
-        # 대시보드에 정보 전송
-        self.geo_send_visualization_data()        
+        self.geo_render_OD_Flow_map(start_time, end_time)
+        self.geo_render_major_ports_map()
+        self.geo_render_shiptype_count_map()
 
         clusters_data = self.geo_cluster_data_processing()
-        speed_data = self.geo_speed_data_processing()
+        speed_data = self.geo_speed_data_processing(start_time, end_time)
         direction_flow_data = self.geo_direction_flow_data_processing()
         trajs_flow_data = self.geo_trajs_flow_data_processing()
-        shiptype_data = self.geo_shiptype_data_processing()
+        shiptype_data = self.geo_shiptype_data_processing(start_time, end_time)
         weather_data = self.weather_data_processing()
+        major_ports_sum = self.geo_major_ports_processing(start_time, end_time)
+        moving_result, stopping_result, slow_result = self.geo_ship_status_extraction_processing(end_time)
+        unusual_behavior = self.geo_unusal_ships_extraction_processing()
+
+        # geo_dict 디버깅
+        print(self.geo_dict.keys())
+
+        # 대시보드에 정보 전송
+        self.geo_send_visualization_data()
 
         final_report_template = """
             # Role
@@ -866,32 +1185,87 @@ class GenerateAISReport(QThread):
             {trajs_flow_data}
             6. [선박 유형별 요약]:
             {shiptype_data}
-            7. [현재 날씨 요약]
+            7. [주요 항만별 선박 입출항 현황]:
+            {major_ports_sum}
+            8. [선박 상태별 현황 요약]:
+            - 순항 중인 선박 리스트: {moving_result}  
+            - 정박/대기 중인 선박 리스트: {stopping_result}
+            - 저속 운항 중인 선박 리스트: {slow_result}
+
+            9. [특이 기동 선박]:
+            {unusual_behavior}
+
+            10. [현재 날씨 요약]
             {weather_data}
             
 
-            # Context & Rules
-            - cluster_data에서 'total_stay_index'가 높을수록 해당 구역에 더 많은 항적이 밀집되어 있음을 의미합니다. 
-            - speed_data에서 'mean'은 해상구역별 평균속도를 의미합니다. 평균속도가 클수록 선박이 해당 구간에서 더 빨리 이동하고 있음을 의미합니다. 
-            - traj_flow_data에서 'weight'가 높을수록 해당 경로(origin_zone -> dest_zone)는 주 간선 항로(Main Route)임을 의미합니다.
-            - 선박 유형별로 사용자가 쉽게 알아볼 수 있도록 테이블로 정리해줘. 데이터에 근거하여 가장 높은 비중을 차지하는 상위 3개 함종이 무엇인지 간단하게 설명해주고 상상이나 추측성 발언은 완전히 삼가해줘.  
-            - 보고서에는 traj_stay_index 값 혹은 weight값을 포함시키지 않아도 되. 이 값이 높다는건 항적이나 항로가 많이 밀집되어 있다는 의미정도로만 해석하면되.  
-            - 전문가적 통찰은 포함하되, 모든 분석은 반드시 제공된 데이터의 수치에 근거해야 합니다. 
+            # Context & Rules (필독)
+            - **[데이터 근거]**: 모든 분석은 수치에만 근거하며, 상상이나 추측은 엄격히 금지합니다.  
+            - **[전문성]**: 병목 구간, 간선 항로, 트래픽 밀도 등 필요에 따라 전문 용어를 적절히 배치하십시오.
 
-            # Mission
-            1. **[분석 대상 시간]**: 1번 데이터를 활용하여 분석 대상 시간을 자연스러운 자연어로 묘사하세요. 
-            2. **[밀집 구역 분석(Data Dashboard Fig 1 참고)]**: 2번 데이터를 활용하여 'total_stay_index'를 기준으로 상위 3개 핵심 해역을 선정하고, 해당 지역이 해상 교통 안전 관리 측면에서 왜 중요한지 한 문장으로 요약하세요.  
-            3. **[구간별 속도 분석(Data Dashboard Fig 1 참고)]**: 2번 데이터를 활용하여 각 구역(Zone)별 선박의 평균 속도(mean) 분포를 비교하고, 대한민국 남해안 해역의 공간적 특성에 따른 속도 변화 패턴을 분석하세요. 
-                특히 연안과 외해, 그리고 주요 항만 주변 간의 전반적인 주요 핵심 패턴만 설명하세요.   
-            4. **[이동 방향 및 흐름 분석]**: 4번 데이터를 바탕으로 현재 가장 지배적인 이동 방향을 식별하고, 해당 흐름의 규모 및 이동 속도의 특성을 분석하세요.  
-            5. **[주요 항로 패턴(Data Dashboard Fig 1 참고)]**: 5번 데이터를 활용하여 'weight' 기준 상위 5개 항로를 분석하여 대한민국 남해안의 주요 항로 패턴이 어떻게 형성되어 있는지 설명하세요. 
-            6. **[선박 유형 요약(Data Dashboard Table 1 참고)]**: 2번 데이터를 활용하여 선박 유형별 카운트 테이블에 대해 간단하게 설명하세요.  
-            7. **[현재 날씨 요약]**: 7번 데이터를 활용하여 현재 기상날씨에 대해 요약하여 설명하고 현재 항해중인 선박들에게 어떤 영향을 줄 수 있는지 설명하세요.
-            8. **[종합 결론]**:  현재 데이터상에서 나타나는 가장 두드러진 해상 교통 특징을 기술하세요. 
+            # Mission: 리포트 구성 가이드라인
+            1. **[분석 대상 시간]**: 1번 데이터를 자연스러운 문장으로 묘사.  
+            2. **[구역별 밀집 현황]**: 
+                - 2번 'clusters_data'에서 'total_stay_index'가 높을수록 해당 구역에 더 많은 항적이 밀집되어 있음을 의미합니다.  
+                - 이를 기준으로 상위 3개 핵심 해역을 선정하여 테이블로 만들어주고, 테이블 아래 해당 지역의 항적 밀집 패턴을 간단하게 요약하세요.  
+            3. **[구역별 선박 이동 속도 현황]**: 
+                - 2번 'speed_data'에서 'mean'은 해상구역별 평균속도를 의미합니다.
+                - 2번 'speed_data'를 활용하여 각 구역별 선박의 평균 속도 분포를 비교하고, 대한민국 남해안 해역에서 연안과 외해, 그리고 주요 항만 주변 간의 전반적인 핵심 패턴을 설명하세요.   
+            4. **[주요 교통 흐름 요약]**: 
+                -4번 'direction_flow_data'데이터를 바탕으로 현재 가장 지배적인 이동 방향을 식별하세요. 
+                -해당 흐름의 규모 및 이동 속도의 특성을 간략하게 요약하여 기술하세요.  
+            5. **[구역 간 주요 항로(OD Flow) 현황]**: 
+                - 5번 'trajs_flow_data'에서 'weight'값이 높을수록 해당 경로(origin_zone -> dest_zone)는 주 간선 항로(Main Route)임을 의미합니다.
+                - 'trajs_flow_data'를 활용하여 'weight' 기준 상위 5개 항로를 분석하여 대한민국 남해안의 주요 항로 패턴이 어떻게 형성되어 있는지 설명하세요. 
+            6. **[선박 유형별 통계]**: 
+                - 6번 '선박 유형별 통계'는 반드시 Markdown테이블 형식을 사용하십시오.
+                - 6번 'shiptype_data'를 활용하여 선박 유형별 카운트 테이블에 대해 가장 높은 비중을 차지하는 상위 3개 함종이 무엇인지 간단하게 설명하세요. 
+            7. **[주요 항만별 선박 입출항 현황]**: 
+                - 7번 'major_ports_sum'데이터를 활용하여 주요 항만별 선박 입출항 현황을 다음 예시와 같이 기술해주세요. 
+                    예시 1:
+                    ▶ 정박/대기 중인 선박: 총 4척
+                - PKG-722 임병래 (273331810): 2022-12-01 00:00:06부터 정박 중
+                - MHC-565 김포 (352403000): 2022-12-01 00:04:18부터 정박 중
+                - MHC-563 고령 (477024700): 2022-12-01 00:01:07부터 정박 중
+                - MHC-567 금화 (667002156): 2022-12-01 00:01:24부터 정박 중
+                    ▶ 출발/기동 선박: 총 5척
+                - ATS 'ATS- 평택': 2022-12-01 12:06:01 에 출발
+                - LST 'LST-681 고준봉': 2022-12-01 12:22:20 에 출발
+                - LST 'LST-672 덕봉': 2022-12-01 08:20:09 에 출발
+                - PKG 'PKG-718 현시학': 2022-12-01 23:00:47 에 출발
+                - LST 'LST-673 비봉': 2022-12-01 09:58:31 에 출발
+                    ▶ 도착/진입 선박: 총 2척
+                - ATS 'ATS- 평택': 2022-12-01 08:54:02 에 도착
+                - SS 'SS-061 장보고': 2022-12-02 11:55:04 에 도착
+                    
+                    위 예시의 "부터 정박 중", " 에 출발", " 에 도착"이라는 조사와 서술어를 하나도 빠짐없이 포함해서 답변해줘.  
+            8. **[선박 상태별 현황 요약]**: 
+                - 아래 예제와 같이 각 카테고리 별로 'ShipName', 'mmsi' 리스트만 정리해줘. 테이블로 전시하지 마. 
+                    ▶ 순항 중인 선박 리스트
+                    - AST-688 일천봉(256011000)
+                    - DDG-992 율곡이이(431400833)
+                    ▶ 정박 중인 선박 리스트
+                    - AST-688 일천봉(256011000)
+                    - DDG-992 율곡이이(431400833)
+                    ▶ 저속 운항 중인 선박 리스트
+                    - AST-688 일천봉(256011000)
+                    - DDG-992 율곡이이(431400833)
+
+            9. **[주요 선박 특이 기동 상세 분석]**: 
+                - 제공된 9번 데이터 'unusual_bahavior'를 바탕으로 답변해줘.
+                - 특히 좌선회 및 우선회등 선회가 빈번하거나 가속 감속 등 속도 변화가 잦은 선박을 우선적으로 기술해줘. 
+                - 다음 제공된 예시와 같이 작성해줘. 
+                    ▶ 특이 기동 식별 보고
+                - [선박명]: 'turn_count'회의 변침과 'speed_change_count'회의 속도 변화 포착.
+                - 분석 내용: 'status_list'의 상태를 인용하여 기동의 특이점 간략하게 요약.
+
+            10. **[현재 날씨 요약]**: 10번 데이터를 활용하여 현재 기상날씨에 대해 요약하여 설명하고 현재 항해중인 선박들에게 어떤 영향을 줄 수 있는지 설명하세요.
+            11. **[종합 결론]**:  
+                - 현재 데이터상에서 나타나는 가장 두드러진 해상 교통 특징 및 관제 주의사항 간략하게 요약하여 기술하세요. 
 
             # Tone & Manner
-            - 간결하게 핵심 내용 요약.
-            - 전문 용어(병목 구간, 간선 항로, 트래픽 밀도 등)를 적절히 활용.
+            - 전문가용 관제 보고서 스타일 (명조체 중심의 정중하고 명확한 문체)
+            - 수치와 제공된 데이터 기반 팩트 위주의 서술
         """
 
         final_report_prompt = ChatPromptTemplate.from_template(final_report_template)
@@ -906,7 +1280,12 @@ class GenerateAISReport(QThread):
                 direction_flow_data = lambda x: direction_flow_data,
                 trajs_flow_data = lambda x: trajs_flow_data,
                 shiptype_data = lambda x: shiptype_data,
-                weather_data = lambda x: weather_data
+                weather_data = lambda x: weather_data,
+                major_ports_sum = lambda x: major_ports_sum,
+                moving_result = lambda x: moving_result,
+                stopping_result = lambda x: stopping_result,
+                slow_result = lambda x: slow_result,
+                unusual_behavior = lambda x: unusual_behavior
             )
             | final_report_prompt
             | self.llm

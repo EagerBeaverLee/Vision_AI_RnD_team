@@ -1317,6 +1317,7 @@ class Window(QMainWindow, Ui_MainWindow):
         question = "전체 항적에 대해 묘사해줘"
         
         self.llm_worker = GenerateAISReport(self.local_llm, self.weather_data, self.start_server_time, self.curr_server_time)
+        
         self.llm_worker.report_chunk_fin.connect(self.handle_ais_response)
         self.llm_worker.report_finished.connect(self.handle_ais_finished)
         self.llm_worker.report_error.connect(self.handle_ais_error)
