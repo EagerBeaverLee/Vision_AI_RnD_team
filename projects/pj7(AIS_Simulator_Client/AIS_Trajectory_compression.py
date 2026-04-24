@@ -29,18 +29,23 @@ class GenerateAISReport(QThread):
     report_finished = pyqtSignal()
     report_error = pyqtSignal(str)
 
-    def __init__(self, local_llm, data: pd.DataFrame, startTime, currTime):
+    def __init__(self, flag: bool, local_llm, question, data: pd.DataFrame, mmsi_list, startTime, currTime):
         super().__init__()
+        self.flag = flag    #True: 전체항적 report, False: 개별항적 report
         self.llm = local_llm
         self.chain = None
         self.weather_df = data
         self.start_server_time = startTime
         self.curr_server_time = currTime
+        self.question = question
 
         # ---geo values---
         self.zones_gdf = None
         self.ports_gdf = None
         self.geo_dict = {}
+        self.mmsi_list = mmsi_list
+        self.ship_input_data = None
+        self.weather_json = []
         
         # movingpandas전처리 결과 저장
         self.ais_gdf = None
@@ -1129,6 +1134,45 @@ class GenerateAISReport(QThread):
         
         return unusual_final_report_json
     
+    def create_dynamic_route_prompt(self, num_ships):
+        # 배의 개수만큼 프롬프트 안에 들어갈 변수 리스트를 동적으로 생성
+        # 예: "선박 1: {ship1}\n선박 2: {ship2}"
+        # trajectory_data = "\n".join([f"선박{i+1} 데이터: {{ship{i+1}}}" for i in range(num_ships)])
+        trajectory_data = "\n".join([f"선박{i+1} 데이터: {{ship{i+1}}}" for i in range(num_ships)])
+        
+        system_template = f"""
+        # Role
+        당신은 대한민국 주변 선박운행을 관제하는 베테랑 해상 관제사(VTS Operator)이자 선박 항적 분석 전문가 입니다. 
+        아래 제공된 {num_ships}척의 요약된 항적 데이터(Summarized Trajectory)와 날씨데이터(weather_data) 바탕으로 선박의 이동 패턴과 주요 이벤트를 전문적인 자연어로 묘사해주세요.
+        
+        #Input Data (Summarized Trajectory)
+        1. [선박별 항해 패턴]:
+        {trajectory_data}
+        2. [현재 날씨 요약]:
+        {{weather_data}}
+
+        # Context & Rules (필독)
+            - **[데이터 근거]**: 모든 분석은 수치에만 근거하며, 상상이나 추측은 엄격히 금지합니다.
+            - markdown 구조를 정확하게 지켜서 출력하세요
+        
+        # Mission: 리포트 구성 가이드라인
+        1. **[선박별 항해 패턴]**:
+            - 제공된 1번 데이터를 활용하여 선박별 전체적인 항해패턴을 누락되는 배 없이 간단히 요약
+            - "status"필드를 기준으로 하되 start_time과 end_time을 참고하여 특징적인 항목(좌·우선회, 급 감·가속)위주로 요약, 배끼리 데이터가 혼용되지 않도록 주의
+            - 관제사가 관심을 가져야 할 특이사항 위주로 간단하게 언급
+        2. **[현재 날씨 요약]**:
+            - 1번 데이터와 2번 데이터가 ship1 - spot1, ship2 - spot2 ... 이렇게 일대일 대응하므로, 지점명 앞에 선박 이름 명시
+            - 현재 날씨에 대해 지점 누락 없이 순서를 그대로 유지하며 지점끼리 데이터가 바뀌지 않도록 유의하여 간단히 요약
+            - 관제사가 관심을 가져야 할 날씨의 특이사항(풍향, 풍속 유의파고 등)이 있을 시 간단하게 언급
+        3. **[종합 결론]**:  
+            - 현재 데이터상에서 나타나는 가장 두드러진 해상 교통 특징 및 관제 주의사항 간략하게 요약하여 기술
+        """
+
+        return ChatPromptTemplate.from_messages([
+            ("system", system_template),
+            ("human", "{question}")
+        ])
+
     def final_report_chain(self):
 
         start_time = self.start_server_time[:19]
@@ -1195,7 +1239,7 @@ class GenerateAISReport(QThread):
             9. [특이 기동 선박]:
             {unusual_behavior}
 
-            10. [현재 날씨 요약]
+            10. [현재 날씨 요약]:
             {weather_data}
             
 
@@ -1295,75 +1339,54 @@ class GenerateAISReport(QThread):
         full_path = "ships.db"
 
         #mmsi로 배 선택
-        target_mmsi = [563161700, 352002106]
+        target_mmsi = self.mmsi_list
         compress_twice = self.compress_ship_data_duckdb_further(db_path=full_path, table_name="ship_logs")
 
         filtered_mmsi = compress_twice[compress_twice['mmsi'].isin(target_mmsi)].copy()
 
-        data_dict = filtered_mmsi.to_dict(orient='records')
-        trajectory_json = json.dumps(data_dict, ensure_ascii=False, indent=4, default=str)
+        self.ship_input_data = {
+            f"ship{i+1}": json.dumps(df.to_dict(orient='records'), ensure_ascii=False, default=str, indent=4)
+            for i, (_, df) in enumerate(filtered_mmsi.groupby('ShipName', sort=False))
+        }
 
-        # mmsi로 필터링된 지역의 가장 마지막 location 저장
-        last_data = filtered_mmsi.iloc[-1]
-        last_lat = last_data['lat']
-        last_lon = last_data['lon']
+        # mmsi 두개 이상일 때 각각의 최단거리 위치 ---
+        last_df = filtered_mmsi.groupby('mmsi').tail(1)
+        coords = self.weather_df[['latitude', 'longitude']].values
+        
+        i = 0
 
-        # --- 최단경로인 지점 계산 알고리즘 ---
-        target = np.array([last_lat, last_lon])
-
-        dist_sq = np.sum((self.weather_df[['latitude', 'longitude']].values - target)**2, axis=1)
-
-        closest_idx = np.argmin(dist_sq)
-
-        closest_location = self.weather_df.iloc[closest_idx]
-
-        weather_dict = closest_location.to_dict()
-        weather_json = json.dumps(weather_dict, ensure_ascii=False, indent=4, default=str)
+        for _, ship_row in last_df.iterrows():
+            # 1. 선박 현재 위치 및 기본 정보 추출
+            # mmsi = ship_row['mmsi']
+            curr_pos = np.array([ship_row['lat'], ship_row['lon']])
+            
+            # 2. 거리 계산 및 가장 가까운 지점 인덱스 추출
+            dist_seq = np.sum((coords - curr_pos)**2, axis=1)
+            closest_i = np.argmin(dist_seq)
+            
+            # 3. 가장 가까운 지점의 정보를 가져와서 선박 정보와 합치기
+            closest_node = self.weather_df.iloc[closest_i].to_dict()
+            self.weather_json.append({f'spot{i+1}':closest_node})
+            i = i+1
 
         # 디버깅 로그
-        print(closest_idx, closest_location['지점명'])
-        # print(weather_json)
+        # print("개별항적 날씨데이터 디버깅" + "*" * 10)
+        # print(self.weather_json)
+        # print("*" * 55)
         # --------------------------------------
         
-        # 디버깅 로그
-        # print(trajectory_json)
-        ais_prompt_template ="""
-            # Role
-            당신은 대한민국 주변 선박운행을 관제하는 베테랑 해상 관제사(VTS Operator)이자 선박 항적 분석 전문가 입니다. 
-            제공된 요약된 항적 데이터(Summarized Trajectory)를 바탕으로 선박의 이동 패턴과 주요 이벤트를 전문적인 자연어로 묘사해주세요.
+        # 1. 현재 배의 개수 파악
+        num_ships = len(self.ship_input_data)
 
-            #Input Data
-            1. Summarized Trajectory
-            {trajectory_data}
-            2. Current Weather data
-            {weather_data}
+        # 현재 필터링된 선박 수
+        print(num_ships)
+        print("*" * 55)
 
-            # Guidelines
-            1. 시간 순서대로 전체적인 항해 흐름을 요약해주세요.
-            2. 요약할 때 기준은 "status"필드를 기준으로 하되 start_time과 end_time을 참고하세요. 
-            3. trajectory_data는 ShipName이 같은 데이터끼리 리스트로 한번 더 묶여있으니 서로 ShipName이 서로 다른 배끼리 혼용하지 않도록 유의하세요.
-            4. 첫번째 ShipName에 해당하는 현재날씨는 weather_data에서 첫번째 날씨 데이터를, 두번째 Shipnam에 해당하는 현재 날씨는 weather_data에서 두번째 날씨 데이터를 참고하세요.
-            5. 전문적인 해상 관제 용어를 사용해도 되지만, 가독성이 좋게 작성하세요.
-            6. 날씨데이터에 대해서 관제사가 고려하고 참고해야 할 사항에 대해 설명해주세요
+        # 2. 개수에 맞는 템플릿 생성
+        dynamic_prompt = self.create_dynamic_route_prompt(num_ships)
 
-            #Output Format
-            1. 전체적인 항해 패턴을 간단하게 요약; 관제사가 관심을 가져야 할 특이 사항이 있을 시 간단하게 언급
-            2. 현재 날씨에 대해 간단히 요약; 관제사가 관심을 가져야 할 날씨의 특이사항(풍향, 풍속 유의파고 등)이 있을 시 간단하게 언급 및 조치사항 설명
-            3. 1, 2 항목을 종합적으로 정리해서 묘사
-
-            질문:{question}
-            """
-
-        each_ship_prompt = ChatPromptTemplate.from_template(ais_prompt_template)
-
-        self.chain = (
-            RunnablePassthrough.assign(
-                trajectory_data = lambda x: trajectory_json,
-                weather_data = lambda x: weather_json,
-            )
-            | each_ship_prompt
-            | self.llm
-        )
+        # 4. 실행
+        self.chain = dynamic_prompt | self.llm
         
     def run(self):
         print(f"[{QThread.currentThreadId()}] LLM작업 시작 {datetime.now()}")
@@ -1372,14 +1395,18 @@ class GenerateAISReport(QThread):
         loop.run_until_complete(self._stream())
 
     async def _stream(self):
-        # self.build_ais_report_chain()
-        
-        self.final_report_chain()
-        # self.individual_track_chain()
+        inputs = {"question": self.question}
+
+        if self.flag:
+            self.final_report_chain()
+        else :
+            self.individual_track_chain()
+            inputs["weather_data"] = self.weather_json
+            inputs.update(self.ship_input_data) # ship1, ship2 데이터들이 inputs에 합쳐짐
 
         try:
             buffer = []
-            async for chunk in self.chain.astream({'question': "항적에 대해 묘사해줘"}):
+            async for chunk in self.chain.astream(inputs):
                 if chunk:
                     buffer.append(chunk.content)
 
@@ -1389,6 +1416,8 @@ class GenerateAISReport(QThread):
 
             if buffer:
                 self.report_chunk_fin.emit("".join(buffer))
+
+            self.report_chunk_fin.emit("".join("\n\n"))
 
         except Exception as e:
             print(f"스트리밍 중 오류 발생: {e}")

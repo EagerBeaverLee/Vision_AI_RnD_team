@@ -106,49 +106,28 @@ def display_dashboard():
     # FastAPI의 data_store에서 HTML을 가져옴
     # 실제 환경에서는 전역 변수나 DB, 혹은 st.session_state를 통해 데이터가 공유되어야 합니다.
     moving_list = data_store.get("moving", "")
-    try:
-        # 데이터가 [{...}, {...}] 리스트 형태라면 바로 변환됩니다.
-        if isinstance(moving_list, list):
-            print(f"if")
-            moving_df = pd.DataFrame(moving_list)
-        else:
-            print(f"else")
-            # 데이터가 만약 딕셔너리 형태라면 리스트로 감싸서 변환
-            moving_df = pd.DataFrame([moving_list])
-
-    except Exception as e:
-        # 에러 발생 시 빈 데이터프레임이라도 만들어야 대시보드가 안 터집니다.
-        print(f"변환 실패: {e}")
-        moving_df = pd.DataFrame(columns=['ShipName', 'mmsi'])
-
     stop_list = data_store.get("stop", "")
-    try:
-        # 데이터가 [{...}, {...}] 리스트 형태라면 바로 변환됩니다.
-        if isinstance(stop_list, list):
-            stop_df = pd.DataFrame(stop_list)
-        else:
-            # 데이터가 만약 딕셔너리 형태라면 리스트로 감싸서 변환
-            stop_df = pd.DataFrame([stop_list])
-
-    except Exception as e:
-        # 에러 발생 시 빈 데이터프레임이라도 만들어야 대시보드가 안 터집니다.
-        print(f"변환 실패: {e}")
-        stop_df = pd.DataFrame(columns=['ShipName', 'mmsi'])
-
     slow_list = data_store.get("slow", "")
-    try:
-        # 데이터가 [{...}, {...}] 리스트 형태라면 바로 변환됩니다.
-        if isinstance(stop_list, list):
-            slow_df = pd.DataFrame(slow_list)
-        else:
-            # 데이터가 만약 딕셔너리 형태라면 리스트로 감싸서 변환
-            slow_df = pd.DataFrame([slow_list])
 
-    except Exception as e:
-        # 에러 발생 시 빈 데이터프레임이라도 만들어야 대시보드가 안 터집니다.
-        print(f"변환 실패: {e}")
-        slow_df = pd.DataFrame(columns=['ShipName', 'mmsi'])
-
+    def transform_data(data_list):
+        try:
+            # 데이터가 [{...}, {...}] 리스트 형태라면 바로 변환됩니다.
+            if isinstance(data_list, list):
+                res_list = pd.DataFrame(data_list)
+            else:
+                # 데이터가 만약 딕셔너리 형태라면 리스트로 감싸서 변환
+                res_list = pd.DataFrame([data_list])
+            return res_list
+        except Exception as e:
+            # 에러 발생 시 빈 데이터프레임이라도 만들어야 대시보드가 안 터집니다.
+            print(f"변환 실패: {e}")
+            res_list = pd.DataFrame(columns=['ShipName', 'mmsi'])
+            return res_list
+    
+    moving_df = transform_data(moving_list)
+    stop_df = transform_data(stop_list)
+    slow_df = transform_data(slow_list)
+    
     od_map_html = data_store.get("od_flow_map", "")
     shiptype_html = data_store.get("shiptype", "")
     port_map_0 = data_store.get("port_map_0", "")
@@ -156,8 +135,8 @@ def display_dashboard():
     port_map_2 = data_store.get("port_map_2", "")
     port_map_3 = data_store.get("port_map_3", "")
 
-    print("이동중인 선박")
-    print(moving_df)
+    # print("이동중인 선박")
+    # print(moving_df)
 
 
     ship_data_dict = {
@@ -167,8 +146,8 @@ def display_dashboard():
     }
     
     # key디버깅
-    print("받은 data_store Key 리스트")
-    print(data_store.keys())
+    # print("받은 data_store Key 리스트")
+    # print(data_store.keys())
 
     if od_map_html:
         col1, col2, col3 = st.columns([1.2,2,1])

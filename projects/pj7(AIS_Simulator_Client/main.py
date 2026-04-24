@@ -31,6 +31,10 @@ from langchain_community.tools import QuerySQLDataBaseTool
 from langchain_core.output_parsers import StrOutputParser
 from sqlalchemy import create_engine, inspect
 
+#Query Routing
+from typing import Literal, Optional
+from pydantic import BaseModel, Field
+
 #tokenizer
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langchain_core.runnables.history import RunnableWithMessageHistory
@@ -245,6 +249,18 @@ class ChatRoom:
         self.default_config = {"configurable": {"session_id": self.default_session_id}}
         self.experiment_config = {"configurable": {"session_id": self.experiment_session_id}}
 
+class RouteQuery(BaseModel):
+    datasource: Literal["ship_report", "ship_info", "none"] = Field(
+        ...,
+        description="사용자 질문에 따라 'ship_report' 또는 'ship_info' 또는 'none'으로 라우팅합니다."
+    )
+    target_ships: Optional[list[dict]] = Field(
+        default=None,
+        description="""datasource가 'ship_info'일 때만 해당 선박의 MMSI 번호를 추출하여 포함합니다.
+        mmsi가 2개 이상일 경우 mmsi를 모두 포함하고 따옴표나 쌍따옴표 없이 int형으로 출력합니다
+        'ship_report' 또는 'none'일 경우 이 필드는 비워둡니다(null)."""
+    )
+
 class Slider_Animation(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -312,8 +328,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.scenario_time = None
         self.llm_worker = None
-        self.llm_worker2 = None
-        self.llm_worker3 = None
         self.stream_worker = None
 
         #쓰레드 기다리는 창
@@ -754,10 +768,13 @@ class Window(QMainWindow, Ui_MainWindow):
         #Client_func
         self.ui.btn_server_connect.clicked.connect(self.connect_server)
 
-        self.ui.ship_btn.clicked.connect(self.start_ais_llm_query)
+        self.ui.ship_btn.clicked.connect(self.debug_ais_llm_query)
 
         #program restart
         self.ui.reset_program.clicked.connect(self.restart_program)
+
+    def debug_ais_llm_query(self):
+        self.start_ais_llm_query("현재 상황에 대해 묘사해줘")
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -941,22 +958,8 @@ class Window(QMainWindow, Ui_MainWindow):
         message = self.ui.input_text.toPlainText()
 
         if message.strip():
-            if not self.current_chat_room.m_api_key:
-                QMessageBox.about(
-                self,
-                "Error",
-                "<p>Please enter your api key</p>",
-                )
-                return
-            
-            if self.rag_indexing != self.current_chat_room.rag_apply_indexing:
-                QMessageBox.critical(self, "오류", "load 버튼으로 임베딩을 진행해주세요")
-                return
-            
             self.ui.input_text.clear()
-            # self.default_llm(message)
-            self.rag_llm(message)
-            # self.history_llm(message)
+            self.query_routing_report(message)
 
         else:
             QMessageBox.about(
@@ -964,11 +967,67 @@ class Window(QMainWindow, Ui_MainWindow):
                 "Error",
                 "<p>Please enter any message</p>",
             )
+
+    def init_query_routing(self):
+        # 파일 열기 (r: 읽기 모드)
+        with open('./data/ship_list.json', 'r', encoding='utf-8') as f:
+            ship_list_json = json.load(f)
+
+        structured_llm_router = self.local_llm.with_structured_output(RouteQuery)
+
+        system = """당신은 사용자 질문을 '선박 리포트(ship_report)' '선박 정보(ship_info)' 또는 '기타(none)'로 분류하는 전문 라우터입니다.
+        1. ship_report 선택 기준:.
+        - 질문에 특정 선박 이름이나 MMSI 번호가 없는 경우.
+        - 선박의 현재 위치, 상태, 항적 등 현재 상황에 대해 묻고 있지만, '어떤 선박'인지 식별할 수 있는 정보(이름/MMSI)가 전혀 없는 경우.
+        - 현재 상황이나 상태 또는 지금까지의 상황에 대해 물어보는 경우.
+        - 주요 쟁점 상황이나 종합적인 판단, 검토를 요청하는 경우.
+
+        2. ship_info 선택 기준:
+        - [선박리스트]에 존재하는 mmsi 번호 또는 선박이름(ShipName)이 포함되어 있는 경우.
+        - 선박의 현재 위치, 상태, 항적, 이동패턴, 이동경로 등을 묻는 경우.
+
+        3. none 선택 기준:
+        - 질문에 [선박리스트]에 없는 선박 이름이나 MMSI 번호를 물어본 경우.
+        - 인사, 일반적인 대화, 또는 해운/선박과 관련 없는 질문인 경우.
+
+        [선박리스트]
+        {ship_list_json}
+
+        출력 규칙:
+        - datasource가 'ship_info'인 경우, 제공된 선박 리스트에서 매칭된 {{ship_name: str, mmsi: int}} 객체의 리스트를 반환하십시오.
+        - datasource가 'none'인 경우, target_ships 필드는 비워두십시오."""
+
+        route_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                ("human","{question}"),
+            ]
+        ).partial(ship_list_json=ship_list_json)
+
+        return route_prompt | structured_llm_router
+
+    def query_routing_report(self, question):
+        question_router = self.init_query_routing()
+
+        retriever_route = {
+            'ship_report': lambda a1, a2: self.start_ais_llm_query(True, a1, a2),
+            'ship_info': lambda a1, a2: self.start_ais_llm_query(False, a1, a2),
+            'none': lambda a1, a2: self.rag_btn_llm(a1)
+        }
+
+        selected_data_source = question_router.invoke({"question": question})        
+
+        mmsi_list = [
+            i['mmsi']
+            for i in selected_data_source.target_ships
+        ]
+
+        retriever_route[selected_data_source.datasource](question, mmsi_list)
+    
     def apply_api_key(self):
         if self.ui.api_key_txt.text().strip():
             self.current_chat_room.m_api_key = self.ui.api_key_txt.text().strip()
             self.show_status_messages(f"api key is apply successful")
-            # self.init_vector_db()
 
     def apply_prompt(self):
         if self.current_chat_room.m_prompt == self.ui.prompt_txt.toPlainText().strip():
@@ -1086,37 +1145,11 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             print("오류")
 
-        # retriever = self.worker.vector_db.as_retriever()
-        # res_doc = retriever = retriever.invoke(msg)
+    def rag_btn_llm(self, question):
+        if self.rag_indexing != self.current_chat_room.rag_apply_indexing:
+            QMessageBox.critical(self, "오류", "load 버튼으로 임베딩을 진행해주세요")
+            return
 
-        # if res_doc:
-        #     for i, doc in enumerate(res_doc):
-        #         print(f"[{i+1}] 문서내용: {doc.page_content[:200]}...")
-        #         words = str(doc).split(' ')
-        #         for j, d in enumerate(words):
-        #             cursor = self.ui.experiment_txt.textCursor()
-        #             cursor.movePosition(cursor.MoveOperation.End)
-
-        #             # 마지막 단어가 아니면 공백 추가
-        #             if j < len(words) - 1:
-        #                 cursor.insertText(d + " ")
-        #             else:
-        #                 cursor.insertText(d + "\n")
-                    
-        #             self.ui.experiment_txt.setTextCursor(cursor)
-                    
-        #             # 텍스트가 추가될 때마다 UI 업데이트
-        #             QCoreApplication.processEvents()
-                    
-        #             # 시작적 지연
-        #             time.sleep(0.05)
-        #         if doc.metadata:
-        #             print(f"출처: {doc.metadata.get('source', '알 수 없음')}")
-        # else:
-        #     print("관련문서를 찾을 수 없습니다")
-        # return
-
-    def rag_btn_llm(self, original_msg, msg):
         if not self.current_chat_room.m_api_key:
             QMessageBox.critical(self, "오류", "api key를 입력해주세요")
             return
@@ -1171,10 +1204,6 @@ class Window(QMainWindow, Ui_MainWindow):
             ]
         )
 
-        # llm = ChatOpenAI(
-        #     api_key=self.current_chat_room.m_api_key,
-        #     temperature=self.current_chat_room.m_temperature,
-        # )
         similary = None
         keywords = None
 
@@ -1194,12 +1223,11 @@ class Window(QMainWindow, Ui_MainWindow):
             history_messages_key="history",
         )
 
-        self.stream_worker = LLMStreamThread(original_msg, self.local_llm, rag_history_chain)
+        self.stream_worker = LLMStreamThread(question, self.local_llm, rag_history_chain)
         self.stream_worker.text_chunk_received.connect(self.handle_rag_response)
         self.stream_worker.stream_finished.connect(self.handle_rag_response_finished)
         self.stream_worker.finished.connect(self.stream_worker.deleteLater)
 
-        self.DisableStreamButtons()
         self.waiting_dialog = WaitingDialog(self)
         self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
 
@@ -1309,15 +1337,13 @@ class Window(QMainWindow, Ui_MainWindow):
         }
         """
 
-    def start_ais_llm_query(self):
+    def start_ais_llm_query(self, flag: bool, question, mmsi_list):
         if self.llm_worker is not None:
             print("이전작업이 아직 실행중입니다.")
             return
-        
-        question = "전체 항적에 대해 묘사해줘"
-        
-        self.llm_worker = GenerateAISReport(self.local_llm, self.weather_data, self.start_server_time, self.curr_server_time)
-        
+                
+        self.llm_worker = GenerateAISReport(flag, self.local_llm, question, self.weather_data, mmsi_list, self.start_server_time, self.curr_server_time)
+
         self.llm_worker.report_chunk_fin.connect(self.handle_ais_response)
         self.llm_worker.report_finished.connect(self.handle_ais_finished)
         self.llm_worker.report_error.connect(self.handle_ais_error)
@@ -1328,7 +1354,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
 
         report_msg = ""
-        report_msg += "\n\n" + question + "\n\n"
+        report_msg += "Sended Message: " + question + "\n\n"
         report_msg += "Ai Messages: \n"
         self.js_streaming_header(report_msg)
 
@@ -1358,10 +1384,6 @@ class Window(QMainWindow, Ui_MainWindow):
             self.waiting_dialog.accept()
         QMessageBox.critical(self, "오류", f"{msg}")
             
-    def streaming_response(self, chunk):
-        self.js_streaming_chunk(chunk)
-        self.show_status_messages("Experiment chat is ")
-
     def handle_error(self, msg):
         if self.isEnabled() == False:
             self.setEnabled(True)

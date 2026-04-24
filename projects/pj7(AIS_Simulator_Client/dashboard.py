@@ -13,6 +13,7 @@ import altair as alt
 
 import numpy as np
 import streamlit as st
+from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import pydeck as pdk
 from fastapi import FastAPI, Request
@@ -22,6 +23,45 @@ import threading
 from streamlit.runtime import Runtime
 from streamlit.runtime.scriptrunner import get_script_run_ctx
 import streamlit.components.v1 as components
+
+class WeatherChartProcessor:
+    """무거운 시각화 작업을 처리하는 프로세서"""
+    def __init__(self):
+        # 최대 4개의 차트를 병렬로 생성하기 위한 스레드 풀
+        self.executor = ThreadPoolExecutor(max_workers=4)
+
+    def generate_all_charts(self, s):
+        """클릭된 station 데이터를 바탕으로 모든 차트를 비동기적으로 생성"""
+        # 1. 풍향/풍속
+        ws = [float(s.get('풍속(m/s)', 0))]
+        wd = [float(s.get('풍향(deg)', 0))]
+        future_wind = self.executor.submit(render_wind_chart, wd, ws, 2, 2)
+
+        # 2. 습도
+        hum_val = float(s.get('습도(%)', 0))
+        future_hum = self.executor.submit(render_humidity_gauge, hum_val, 158)
+
+        # 3. 기압
+        hpa_val = float(s.get('현지기압(hPa)', 0))
+        future_hpa = self.executor.submit(render_custom_gauge, hpa_val, 2, 2)
+
+        # 4. 파향
+        wvd = [float(s.get('파향(deg)', 0))]
+        future_wave = self.executor.submit(render_wave_chart, wvd, 2, 2)
+        
+        # 5. 파고 (이것도 무겁다면 포함)
+        max_wh = float(s.get('최대파고(m)', 0))
+        high_max_wh = float(s.get('유의파고(m)', 0))
+        avg_wh = float(s.get('평균파고(m)', 0))
+        future_wh = self.executor.submit(render_wave_height, max_wh, high_max_wh, avg_wh, 4, 1.6)
+
+        return {
+            "wind": future_wind.result(),
+            "humidity": future_hum.result(),
+            "pressure": future_hpa.result(),
+            "wave_dir": future_wave.result(),
+            "wave_height": future_wh.result()
+        }
 
 st.markdown("""
     <style>
@@ -54,6 +94,10 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
+
+# 싱글톤으로 인스턴스 생성
+if 'processor' not in st.session_state:
+    st.session_state.processor = WeatherChartProcessor()
 
 # 1. 전역 데이터 저장소
 @st.cache_resource
@@ -491,25 +535,6 @@ def render_folium_map():
                         fig = render_wave_chart(wvd, 2, 2)
                         st.pyplot(fig, width='stretch')
 
-                    # hpa_val = float(station.get('현지기압(hPa)', 0))
-                    # fig_hpa = render_needle_gauge(hpa_val)
-                    # st.plotly_chart(fig_hpa, width='stretch')
-
-                #     st.markdown('<div class="card-dashboard">테스트</div>', unsafe_allow_html=True)
-
-                #     Mwh = float(s.get('최대파고(m)', 0))
-                #     avwh = float(s.get('평균파고(m)', 0))
-
-                #     st.altair_chart(make_donut(round(avwh / Mwh * 100,1), 'wave height', 'red'))
-
-                #지점 클릭 디버그
-                
-                # st.write(f"💨 **풍속:** {s.get('풍속(m/s)', 0)} m/s")
-                # st.write(f"🧭 **풍향:** {s.get('풍향(deg)', 0)}°")
-            
-            # if st.button("닫기"):
-            #     st.session_state.selected_station = None
-            #     st.rerun()
             with st.container(border=True):
                 st.markdown('<div class="bar-dashboard">⛵ 파고</div>', unsafe_allow_html=True)
 
@@ -523,7 +548,135 @@ def render_folium_map():
         else:
             st.info("지도에서 마커를 클릭하면 상세 데이터가 표시됩니다.")
 
+# def render_folium_map():
+#     df = data_store["df"]
 
+#     # --- 1. 세션 상태 초기화 ---
+#     for key, default in {
+#         'map_center': [34.6, 127.7],
+#         'map_zoom': 7,
+#         'selected_station': None,
+#         'last_clicked_pos': None,
+#         'chart_cache': None # 생성된 차트 객체 저장용
+#     }.items():
+#         if key not in st.session_state:
+#             st.session_state[key] = default
+
+#     col1, col2 = st.columns([1.5, 1])
+
+#     with col1:
+#         if not df.empty:
+#             map_key = "weather_map_v1"
+            
+#             # 브라우저의 현재 지도 상태 유지
+#             if map_key in st.session_state and st.session_state[map_key]:
+#                 last_ui_state = st.session_state[map_key]
+#                 st.session_state['map_center'] = [last_ui_state["center"]["lat"], last_ui_state["center"]["lng"]]
+#                 st.session_state['map_zoom'] = last_ui_state["zoom"]
+
+#             m = folium.Map(
+#                 location=st.session_state['map_center'],
+#                 zoom_start=st.session_state['map_zoom'],
+#                 tiles='openstreetmap'
+#             )
+
+#             # 초기값 설정 (울산)
+#             if st.session_state.selected_station is None:
+#                 st.session_state.selected_station = df.loc[14].to_dict()
+#                 # 초기 차트 생성
+#                 st.session_state.chart_cache = st.session_state.processor.generate_all_charts(st.session_state.selected_station)
+
+#             # 마커 그리기 (생략: 기존 코드와 동일하게 icon_html 적용)
+#             for _, row in df.iterrows():
+#                 # 사진과 유사한 스타일의 HTML/CSS 정의
+#                 icon_html = f"""
+#                 <div style="font-size: 9pt; font-weight: bold; color: black; text-shadow: 1px 1px white, -1px -1px white, -1px 1px white, 1px -1px white; text-align: center; margin-bottom: 1px;">{row['지점명']}</div>
+#                 <div style="
+#                     background-color: white;
+#                     border: 1px solid #999;
+#                     border-radius: 4px;
+#                     padding: 4px;
+#                     width: 50px;
+#                     text-align: center;
+#                     box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+#                     font-family: 'Malgun Gothic', sans-serif;
+#                     line-height: 1.1;
+#                 ">
+#                     <div style="font-size: 9pt; color: #ff0000;">{row['기온(°C)']}°C</div>
+#                     <div style="font-size: 9pt; color: #000fff;">{row['습도(%)']}%</div>
+#                 </div>
+#                 """
+#                 folium.Marker(
+#                     location=[row['latitude'], row['longitude']],
+#                     icon=folium.DivIcon(html=icon_html, icon_size=(50, 45), icon_anchor=(35, 22))
+#                 ).add_to(m)
+                
+#                 # 투명 클릭 레이어
+#                 folium.CircleMarker(
+#                     location=[row['latitude'], row['longitude']],
+#                     radius=15, color="transparent", fill=True, popup=row['지점명']
+#                 ).add_to(m)
+
+#             # 지도 렌더링
+#             map_data = st_folium(
+#                 m, width='100%', height=600, key=map_key,
+#                 returned_objects=["last_object_clicked", "center", "zoom"]
+#             )
+
+#             # --- 지도 조작 업데이트 (rerun 방지) ---
+#             if map_data and map_data.get("center"):
+#                 st.session_state['map_center'] = [map_data["center"]["lat"], map_data["center"]["lng"]]
+#                 st.session_state['map_zoom'] = map_data["zoom"]
+
+#             # --- 클릭 감지 및 차트 업데이트 ---
+#             new_clicked_pos = map_data.get("last_object_clicked")
+#             if new_clicked_pos and new_clicked_pos != st.session_state['last_clicked_pos']:
+#                 st.session_state['last_clicked_pos'] = new_clicked_pos
+                
+#                 # 거리 계산
+#                 df['dist'] = np.sqrt((df['latitude'] - new_clicked_pos['lat'])**2 + (df['longitude'] - new_clicked_pos['lng'])**2)
+#                 closest_idx = df['dist'].idxmin()
+
+#                 if df.loc[closest_idx, 'dist'] < 0.1:
+#                     new_station = df.loc[closest_idx].to_dict()
+#                     if st.session_state.selected_station['지점명'] != new_station['지점명']:
+#                         st.session_state.selected_station = new_station
+#                         # [핵심] 클릭 시 백그라운드 프로세서 호출하여 차트 미리 생성
+#                         st.session_state.chart_cache = st.session_state.processor.generate_all_charts(new_station)
+#                         st.rerun()
+
+#     with col2:
+#         station = st.session_state.selected_station
+#         charts = st.session_state.chart_cache
+        
+#         if station and charts:
+#             st.markdown(f"#### {station['지점명']}")
+            
+#             sub_col1, sub_col2 = st.columns(2)
+#             with sub_col1:
+#                 with st.container(border=True):
+#                     st.markdown('<div class="card-dashboard">🧭 풍향/풍속</div>', unsafe_allow_html=True)
+#                     st.pyplot(charts['wind'])
+
+#                 with st.container(border=True):
+#                     st.markdown('<div class="card-dashboard">💧 현재 습도</div>', unsafe_allow_html=True)
+#                     # Plotly 객체인 경우 처리
+#                     st.plotly_chart(charts['humidity'], use_container_width=True)
+
+#             with sub_col2:
+#                 with st.container(border=True):
+#                     st.markdown('<div class="card-dashboard">☁️ 기압</div>', unsafe_allow_html=True)
+#                     st.pyplot(charts['pressure'])
+
+#                 with st.container(border=True):
+#                     st.markdown('<div class="card-dashboard">🌊 파향</div>', unsafe_allow_html=True)
+#                     st.pyplot(charts['wave_dir'])
+            
+#             with st.container(border=True):
+#                 st.markdown('<div class="bar-dashboard">⛵ 파고</div>', unsafe_allow_html=True)
+#                 st.pyplot(charts['wave_height'])
+#         else:
+#             st.info("지도에서 마커를 클릭하면 상세 데이터가 표시됩니다.")
 
 @st.fragment
 def render_plotly_map():

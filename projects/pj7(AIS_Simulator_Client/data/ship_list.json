@@ -1,0 +1,418 @@
+[
+    {
+        "ShipName": "PKG-721 지덕칠",
+        "mmsi": 209079000
+    },
+    {
+        "ShipName": "LST-685 성인봉",
+        "mmsi": 215017000
+    },
+    {
+        "ShipName": "ATS- 평택",
+        "mmsi": 215080000
+    },
+    {
+        "ShipName": "LST-681 고준봉",
+        "mmsi": 215183000
+    },
+    {
+        "ShipName": "ATS- 통영",
+        "mmsi": 218791000
+    },
+    {
+        "ShipName": "SS-071 이억기",
+        "mmsi": 219259000
+    },
+    {
+        "ShipName": "LST-671 운봉",
+        "mmsi": 229750000
+    },
+    {
+        "ShipName": "AOE-57 천지",
+        "mmsi": 239838000
+    },
+    {
+        "ShipName": "LST-672 덕봉",
+        "mmsi": 244693000
+    },
+    {
+        "ShipName": "DDH-978 왕건",
+        "mmsi": 255805780
+    },
+    {
+        "ShipName": "DDH-977 대조영",
+        "mmsi": 255806362
+    },
+    {
+        "ShipName": "AST-688 일천봉",
+        "mmsi": 256011000
+    },
+    {
+        "ShipName": "AST-688 일천봉",
+        "mmsi": 256334000
+    },
+    {
+        "ShipName": "SS-065 박위",
+        "mmsi": 259005000
+    },
+    {
+        "ShipName": "PKG-722 임병래",
+        "mmsi": 273331810
+    },
+    {
+        "ShipName": "FFG-816 충북",
+        "mmsi": 273347430
+    },
+    {
+        "ShipName": "LST-676 위봉",
+        "mmsi": 273358000
+    },
+    {
+        "ShipName": "FFG-815 강원",
+        "mmsi": 273419340
+    },
+    {
+        "ShipName": "PKG-728 박동진",
+        "mmsi": 273819710
+    },
+    {
+        "ShipName": "DDH-979 강감찬",
+        "mmsi": 273820700
+    },
+    {
+        "ShipName": "FF-959 부산",
+        "mmsi": 305062000
+    },
+    {
+        "ShipName": "DDH-971 광개토대왕",
+        "mmsi": 305089000
+    },
+    {
+        "ShipName": "LPH-6111 독도",
+        "mmsi": 311039000
+    },
+    {
+        "ShipName": "PCC-781 남원",
+        "mmsi": 319409000
+    },
+    {
+        "ShipName": "SS-067 정운",
+        "mmsi": 341988000
+    },
+    {
+        "ShipName": "LST-686 천왕봉",
+        "mmsi": 351225000
+    },
+    {
+        "ShipName": "SS-076 김좌진",
+        "mmsi": 351854000
+    },
+    {
+        "ShipName": "AGS- 신천지",
+        "mmsi": 352001086
+    },
+    {
+        "ShipName": "PCC-777 대천",
+        "mmsi": 352001677
+    },
+    {
+        "ShipName": "PKM- 참수리",
+        "mmsi": 352001842
+    },
+    {
+        "ShipName": "FFG-818 대구",
+        "mmsi": 352002106
+    },
+    {
+        "ShipName": "MHC-565 김포",
+        "mmsi": 352403000
+    },
+    {
+        "ShipName": "SS-069 나대용",
+        "mmsi": 354197000
+    },
+    {
+        "ShipName": "DDH-975 충무공 이순신",
+        "mmsi": 356222000
+    },
+    {
+        "ShipName": "PKG-716 서후원",
+        "mmsi": 357987000
+    },
+    {
+        "ShipName": "SS-061 장보고",
+        "mmsi": 371002000
+    },
+    {
+        "ShipName": "PCC-783 신성",
+        "mmsi": 371407000
+    },
+    {
+        "ShipName": "LST-675 개봉",
+        "mmsi": 371473000
+    },
+    {
+        "ShipName": "LST-682 비로봉",
+        "mmsi": 372024000
+    },
+    {
+        "ShipName": "LST-678 북한",
+        "mmsi": 374314000
+    },
+    {
+        "ShipName": "PKG-712 한상국",
+        "mmsi": 413212420
+    },
+    {
+        "ShipName": "MLS- 남포",
+        "mmsi": 413227040
+    },
+    {
+        "ShipName": "AGS- 신세기",
+        "mmsi": 413379570
+    },
+    {
+        "ShipName": "DDG-991 세종대왕",
+        "mmsi": 413424530
+    },
+    {
+        "ShipName": "FFG-819 경남",
+        "mmsi": 413482000
+    },
+    {
+        "ShipName": "AOE-58 대청",
+        "mmsi": 413700980
+    },
+    {
+        "ShipName": "SS-072 손원일",
+        "mmsi": 413956000
+    },
+    {
+        "ShipName": "MSH- 해남",
+        "mmsi": 431006614
+    },
+    {
+        "ShipName": "AOE-59 화천",
+        "mmsi": 431016257
+    },
+    {
+        "ShipName": "DDG-992 율곡이이",
+        "mmsi": 431400833
+    },
+    {
+        "ShipName": "PCC-782 광명",
+        "mmsi": 431501855
+    },
+    {
+        "ShipName": "PKG-717 박동혁",
+        "mmsi": 440002000
+    },
+    {
+        "ShipName": "PKG-733 이병철",
+        "mmsi": 440019210
+    },
+    {
+        "ShipName": "LST-679 화산",
+        "mmsi": 440204000
+    },
+    {
+        "ShipName": "DDG-993 서애류성룡",
+        "mmsi": 440314210
+    },
+    {
+        "ShipName": "MSH- 옹진",
+        "mmsi": 440467000
+    },
+    {
+        "ShipName": "SS-062 이천",
+        "mmsi": 440562000
+    },
+    {
+        "ShipName": "SS-078 유관순",
+        "mmsi": 441963000
+    },
+    {
+        "ShipName": "LST-687 천자봉",
+        "mmsi": 457391000
+    },
+    {
+        "ShipName": "DDH-981 최영",
+        "mmsi": 466221000
+    },
+    {
+        "ShipName": "DDH-976 문무대왕",
+        "mmsi": 477016800
+    },
+    {
+        "ShipName": "MHC-563 고령",
+        "mmsi": 477024700
+    },
+    {
+        "ShipName": "FFG-812 경기",
+        "mmsi": 477083900
+    },
+    {
+        "ShipName": "FFG-811 인천",
+        "mmsi": 477112700
+    },
+    {
+        "ShipName": "PKG-713 조천형",
+        "mmsi": 477655100
+    },
+    {
+        "ShipName": "SS-073 정지",
+        "mmsi": 477892100
+    },
+    {
+        "ShipName": "PKG-732 전병익",
+        "mmsi": 477947800
+    },
+    {
+        "ShipName": "PKG-725 홍대선",
+        "mmsi": 511475000
+    },
+    {
+        "ShipName": "DDH-972 을지문덕",
+        "mmsi": 538002403
+    },
+    {
+        "ShipName": "SS-077 윤봉길",
+        "mmsi": 538002418
+    },
+    {
+        "ShipName": "SS-068 이순신",
+        "mmsi": 538003822
+    },
+    {
+        "ShipName": "PCC-785 공주",
+        "mmsi": 538004697
+    },
+    {
+        "ShipName": "PKG-711 윤영하",
+        "mmsi": 538004898
+    },
+    {
+        "ShipName": "MHC-562 강진",
+        "mmsi": 538005766
+    },
+    {
+        "ShipName": "ASR-21 청해진",
+        "mmsi": 538007238
+    },
+    {
+        "ShipName": "PKG-729 김수현",
+        "mmsi": 538007318
+    },
+    {
+        "ShipName": "MHC-566 고창",
+        "mmsi": 538007592
+    },
+    {
+        "ShipName": "DDH-973 양만춘",
+        "mmsi": 538008114
+    },
+    {
+        "ShipName": "PKG-723 홍시욱",
+        "mmsi": 538008133
+    },
+    {
+        "ShipName": "FF-961 청주",
+        "mmsi": 538009442
+    },
+    {
+        "ShipName": "MHC-561 강경",
+        "mmsi": 538009814
+    },
+    {
+        "ShipName": "SS-075 안중근",
+        "mmsi": 538009816
+    },
+    {
+        "ShipName": "SS-081 이범석",
+        "mmsi": 563049100
+    },
+    {
+        "ShipName": "PKG-715 황도현",
+        "mmsi": 563103400
+    },
+    {
+        "ShipName": "LST-683 향로봉",
+        "mmsi": 563161700
+    },
+    {
+        "ShipName": "PKG-718 현시학",
+        "mmsi": 563709000
+    },
+    {
+        "ShipName": "SSM-052",
+        "mmsi": 563872000
+    },
+    {
+        "ShipName": "LPH-6112 마라도",
+        "mmsi": 564575000
+    },
+    {
+        "ShipName": "LST-687 천자봉",
+        "mmsi": 572912210
+    },
+    {
+        "ShipName": "FFG-817 광주",
+        "mmsi": 636015431
+    },
+    {
+        "ShipName": "LST-673 비봉",
+        "mmsi": 636015481
+    },
+    {
+        "ShipName": "SS-063 최무선",
+        "mmsi": 636017515
+    },
+    {
+        "ShipName": "PKG-719 정긍모",
+        "mmsi": 636018260
+    },
+    {
+        "ShipName": "SSM-053",
+        "mmsi": 636019930
+    },
+    {
+        "ShipName": "PKG-726 한문식",
+        "mmsi": 636020104
+    },
+    {
+        "ShipName": "LST-677 수영",
+        "mmsi": 636020594
+    },
+    {
+        "ShipName": "PKG-727 김창학",
+        "mmsi": 636020992
+    },
+    {
+        "ShipName": "MLS-560 원산함",
+        "mmsi": 636021418
+    },
+    {
+        "ShipName": "SS-079 홍범도",
+        "mmsi": 636021595
+    },
+    {
+        "ShipName": "SS-066 이종무",
+        "mmsi": 636022497
+    },
+    {
+        "ShipName": "FFG-813 전북",
+        "mmsi": 636022499
+    },
+    {
+        "ShipName": "SSM-051",
+        "mmsi": 636093035
+    },
+    {
+        "ShipName": "MSH- 양양",
+        "mmsi": 667001518
+    },
+    {
+        "ShipName": "MHC-567 금화",
+        "mmsi": 667002156
+    }
+]
