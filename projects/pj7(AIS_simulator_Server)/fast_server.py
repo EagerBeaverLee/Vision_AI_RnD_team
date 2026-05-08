@@ -52,14 +52,39 @@ class ClientHandler(QThread):
                 #     break
                 # msg = data.decode('utf-8')
                 self.msg_received.emit(self.client_socket, msg)
-            except:
+
+            except (ConnectionResetError, BrokenPipeError):
+                # 2. 스트림릿이 강제 종료되거나 네트워크가 끊긴 경우
+                print("클라이언트와 연결이 비정상적으로 끊어졌습니다.")
+                break
+            except OSError:
+                # 3. 메인 스레드에서 client_socket.close()를 호출해서 recv()가 깨어난 경우
+                print("서버에서 강제로 소켓을 닫았습니다.")
+                break
+            except Exception as e:
+                print(f"알 수 없는 에러: {e}")
                 break
         
-        # 루프 탈출 시 연결 종료 신호 보냄
-        self.disconnected.emit(self.client_socket)
+        # while문을 빠져나오면 자원 정리
+        self.cleanup()
+
+    def cleanup(self):
+        self.is_running = False
+        try:
+            self.client_socket.close()
+        except:
+            pass
+        # UI 쪽에 스레드가 끝났음을 알림
+        self.disconnected.emit(self)
 
     def stop(self):
-        self.running = False
+        """메인 UI에서 강제로 스레드를 멈출 때 호출하는 메서드"""
+        self.is_running = False
+        try:
+            # 소켓을 닫으면 run() 안의 recv()가 OSError를 발생시키며 즉시 대기가 풀림
+            self.client_socket.close()
+        except:
+            pass
 
 # 서버 연결 수락용 메인 스레드
 class ServerThread(QThread):
@@ -128,6 +153,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.real_last_tick = None
         self.speed_factor = 1
         self.next_row_buffer = None
+
+        self.delta_seconds = 0
 
         self.ui.speed_factor_val.setText("1")
 
@@ -205,6 +232,7 @@ class Window(QMainWindow, Ui_MainWindow):
         handler = ClientHandler(client_socket, ip)
         handler.msg_received.connect(self.process_client_message)
         handler.disconnected.connect(self.handle_disconnection)
+        handler.finished.connect(handler.deleteLater)
         handler.start()
         
         self.client_handlers[client_socket] = handler
@@ -219,22 +247,30 @@ class Window(QMainWindow, Ui_MainWindow):
         item = self.ui.client_table.item(row, 0)
         client_socket = item.data(Qt.ItemDataRole.UserRole)
         
-        if client_socket:
-            client_socket.close() # 소켓을 닫으면 Handler에서 disconnected 시그널이 발생하여 UI 정리됨
+        # ⭐ 직접 소켓을 닫지 않고, 스레드의 stop() 호출
+        if client_socket in self.client_handlers:
+            handler = self.client_handlers[client_socket]
+            handler.stop() 
+            # stop() 내에서 is_running = False 및 socket.close()가 실행되며
+            # 안전하게 run() 루프를 빠져나오고 disconnected 시그널이 발생함
 
-    def handle_disconnection(self, client_socket):
-        # 소켓 객체로 테이블에서 해당 행 찾아서 삭제 (인덱스 밀림 방지)
+    def handle_disconnection(self, thread):
+        # 1. 전달받은 스레드 객체에서 실제 소켓을 꺼냅니다.
+        client_socket = thread.client_socket
+
+        # 2. 딕셔너리에서 해당 스레드 제거
+        if client_socket in self.client_handlers:
+            del self.client_handlers[client_socket]
+
+        # 3. UI 테이블에서 해당 소켓을 가진 행(Row) 찾아서 삭제
         for row in range(self.ui.client_table.rowCount()):
             item = self.ui.client_table.item(row, 0)
-            if item.data(Qt.ItemDataRole.UserRole) == client_socket:
+            
+            # item.data 안에는 소켓이 들어있으므로, 정상적으로 일치하는지 비교 가능!
+            if item and item.data(Qt.ItemDataRole.UserRole) == client_socket:
                 ip = item.text()
                 self.ui.client_table.removeRow(row)
-                self.ui.log_browser.append(f"[해제] {ip} 연결 끊김")
-                
-                # 핸들러 정리
-                if client_socket in self.client_handlers:
-                    self.client_handlers[client_socket].stop()
-                    del self.client_handlers[client_socket]
+                self.ui.log_browser.append(f"[종료] {ip} 연결 해제됨")
                 break
 
     def disconnect_all_clients(self):
@@ -328,6 +364,7 @@ class Window(QMainWindow, Ui_MainWindow):
         # 2. 시뮬레이션 시간 업데이트 (실제 흐른 시간 * 배속)
         # 예: 현실에서 0.1초 흘렀고 10배속이면, 시뮬레이션 시간은 1초 전진
         self.sim_current_time += timedelta(seconds=real_delta_seconds * self.speed_factor)
+        self.delta_seconds += real_delta_seconds * self.speed_factor
 
         time_str = self.sim_current_time.strftime('%Y-%m-%d %H:%M:%S')
         self.ui.sim_current_time.setText(f"현재 시뮬레이션 시간: {time_str}")
@@ -351,15 +388,19 @@ class Window(QMainWindow, Ui_MainWindow):
             packet_list = send_df.to_dict('records')
             
             # 3. 소켓 전송 (한 번에 묶어서 보냄)
-            self.broadcast_packets(packet_list)
+            self.broadcast_packets(packet_list, time_str)
 
             print(f"[{len(packet_list)}건] 고속 전송 완료")
+
+        if self.delta_seconds >= 1.0:
+            self.timeUpdate_packets(time_str)
+            self.delta_seconds -= 1
 
         # 4. 버퍼 관리 (데이터가 다 떨어졌거나 얼마 안 남았으면 리필)
         if len(self.buffer_df) < 100: # 예: 100개 미만 남으면 다음 청크 로드
             self.load_next_chunk()
 
-    def broadcast_packets(self, data_chunk):
+    def broadcast_packets(self, data_chunk, curr_server_time: str):
         if not data_chunk:
             print("데이터가 없습니다")
             return       
@@ -380,12 +421,15 @@ class Window(QMainWindow, Ui_MainWindow):
                         json_str = json.dumps(data_chunk, default=str)
                         json_bytes = json_str.encode('utf-8')
                         
-                        DATA_TYPE = 1   # 메세지는 0, DB형식은 1
+                        DATA_TYPE = 1   # 메세지는 0, DB형식은 1, 시간만 업데이트는 2
+
+                        time_bytes = curr_server_time.encode('utf-8')
 
                         # 헤더
                         # field1: 데이터타입 (메세지는 0, DB형식은 1)
-                        # field2: 데이터 길이 (4바이트 Big Endian)
-                        header = struct.pack('>BI', DATA_TYPE, len(json_bytes))
+                        # field2: 서버의 현재 모의 시간(19바이트 문자열 -> 19s, ex. 2022-12-01 00:00:03)
+                        # field3: 데이터 길이 (4바이트 Big Endian)
+                        header = struct.pack('>B19sI', DATA_TYPE, time_bytes, len(json_bytes))
                         
                         client_socket.sendall(header + json_bytes)
                 except Exception as e:
@@ -395,7 +439,34 @@ class Window(QMainWindow, Ui_MainWindow):
         #누적 전송패킷 계산
         self.current_line_count += len(data_chunk)
         self.ui.log_browser.append(f"[Send] {len(data_chunk)}건 전송 (누적: {self.current_line_count})")
-            
+
+    def timeUpdate_packets(self, curr_server_time: str):
+        row_count = self.ui.client_table.rowCount()
+        for i in range(row_count):
+            item = self.ui.client_table.item(i, 0)
+
+            if item:
+                client_socket = item.data(Qt.ItemDataRole.UserRole)
+        
+                try:
+                    if client_socket:
+                        DATA_TYPE = 2   # 메세지는 0, DB형식은 1, 시간만 업데이트는 2
+
+                        time_str = "0"
+                        time_json = time_str.encode('utf-8')
+
+                        time_bytes = curr_server_time.encode('utf-8')
+
+                        # 헤더
+                        # field1: 데이터타입 (메세지는 0, DB형식은 1)
+                        # field2: 서버의 현재 모의 시간(19바이트 문자열 -> 19s, ex. 2022-12-01 00:00:03)
+                        # field3: 데이터 길이 (4바이트 Big Endian)
+                        header = struct.pack('>B19sI', DATA_TYPE, time_bytes, len(time_json))
+                        
+                        client_socket.sendall(header + time_json)
+                except Exception as e:
+                    self.ui.log_browser.append(f"[Socket Timeupdate Error] {e}")
+                    self.stop_sending()
 
     def send_message(self):
         row = self.ui.client_table.currentRow()
@@ -427,72 +498,6 @@ class Window(QMainWindow, Ui_MainWindow):
         except Exception as e:
             status_item.setText("전송 실패")
             self.ui.log_browser.append(f"[오류] 전송 실패: {e}")
-
-    def send_packet(self):
-        row = self.ui.client_table.currentRow()
-        if row < 0 or not self.csv_path:
-            QMessageBox.warning(self, "알림", "대상을 선택하고 csv파일을 로드하세요.")
-            self.stop_sending()
-            return
-        
-        item = self.ui.client_table.item(row, 0)
-        client_socket = item.data(Qt.ItemDataRole.UserRole)
-
-        if not client_socket:
-            self.stop_sending()
-            return
-        
-        batch_size = self.ui.sending_size.value()
-        data_chunk = []
-
-        try:
-            for _ in range(batch_size):
-                try:
-                    # iterator에서 다음 줄 가져오기
-                    row = next(self.csv_reader)
-                    data_chunk.append(row)
-                    self.current_line_count += 1
-                except StopIteration:
-                    # 파일 끝에 도달하면 파일 닫고 다시 열기 (Loop)
-                    self.ui.log_browser.append("[System] 파일 끝 도달 스트리밍 종료")
-                    self.file_handle.close()
-                    self.stop_sending()
-                    break
-        except Exception as e:
-            self.ui.log_browser.append(f"[Read Error] {e}")
-            self.stop_sending()
-            return
-        
-        if not data_chunk:
-            print("데이터가 없습니다")
-            return
-        
-        # 데이터 전송 (프로토콜: 헤더(길이) + JSON바디)
-        try:
-            json_str = json.dumps(data_chunk)
-            json_bytes = json_str.encode('utf-8')
-
-            DATA_TYPE = 1   # 메세지는 0, DB형식은 1
-            
-            # 헤더
-            # field1: 데이터타입 (메세지는 0, DB형식은 1)
-            # field2: 데이터 길이 (4바이트 Big Endian)
-            header = struct.pack('>BI', DATA_TYPE, len(json_bytes))
-            
-            client_socket.sendall(header + json_bytes)
-            
-            # 로그 출력 (너무 자주 찍히지 않게)
-            if self.current_line_count % (batch_size * 5) == 0 or self.current_line_count < batch_size * 2:
-                self.ui.log_browser.append(f"[Send] {len(data_chunk)}건 전송 (누적: {self.current_line_count})")
-            else:
-                self.ui.log_browser.append(f"[Send] {len(data_chunk)}건 전송")
-                
-        except Exception as e:
-            self.ui.log_browser.append(f"[Socket Error] {e}")
-            self.stop_sending()
-
-    def send_packet_by_time(self):
-        return
 
     def start_sending(self):
         if not self.csv_path:
