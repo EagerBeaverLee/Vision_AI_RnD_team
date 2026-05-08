@@ -62,11 +62,11 @@ class DefaultRetriever(QObject):
         
     def run(self):
         try:
-            flag = 0    #0:생성, 1:로드
+            flag = 1    #0:생성, 1:로드
             files = os.listdir(self.folder_path)
             total_files = len(files)
             # save_vector = "./test_faiss_embedding"
-            save_vector = "./faiss_default"
+            save_vector = "./Vessel_Response"
 
             if total_files == 0:
                 self.error.emit("선택한 폴더에 파일이 없습니다.")
@@ -109,10 +109,10 @@ class DefaultRetriever(QObject):
             self.finished.emit()
 
     def copy_retriever(self):
-        retriever = self.vector_db.as_retriever(search_kwargs={"k": 2})
+        retriever = self.vector_db.as_retriever(search_kwargs={"k": 4})
         return retriever
 
     def query(self, question: str) -> str:
-        retriever = self.vector_db.as_retriever(search_kwargs={"k": 2})
+        retriever = self.vector_db.as_retriever(search_kwargs={"k": 4})
         query_res = retriever.invoke(question)
         return query_res

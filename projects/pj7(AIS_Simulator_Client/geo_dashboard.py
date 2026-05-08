@@ -179,7 +179,7 @@ def display_dashboard():
             st.dataframe(
                 display_df, 
                 height=200,
-                use_container_width=True, # 컬럼 너비를 화면에 맞게 꽉 채움
+                width='stretch', # 컬럼 너비를 화면에 맞게 꽉 채움
                 hide_index=True          # 불필요한 인덱스 번호 숨기기
             )
         with col2:

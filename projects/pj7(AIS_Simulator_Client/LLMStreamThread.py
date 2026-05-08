@@ -41,6 +41,8 @@ class LLMStreamThread(QThread):
             if buffer:
                 self.text_chunk_received.emit("".join(buffer))
 
+            self.text_chunk_received.emit("".join("\n\n"))
+
         except Exception as e:
             print(f"스트리밍 중 오류 발생: {e}")
             self.stream_error.emit(f"스트리밍 오류: {e}")

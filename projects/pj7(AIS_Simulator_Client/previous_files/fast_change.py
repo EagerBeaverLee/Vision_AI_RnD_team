@@ -68,20 +68,16 @@ def socket_client_thread(host, port, data_queue):
     try:
         client_socket.connect((host, port))
         st.toast(f"✅ 서버 연결 성공 ({host}:{port})")
-    except Exception as e:
-        st.error(f"서버 연결 실패: {e}")
-        return
-
-    while True:
-        try:
+        while True:
+        
             # 헤더 읽기 (Type 1B + Length 4B)
             header = b""
-            while len(header) < 5:
-                packet = client_socket.recv(5 - len(header))
+            while len(header) < 24:
+                packet = client_socket.recv(24 - len(header))
                 if not packet: return
                 header += packet
             
-            _, msg_len = struct.unpack('>BI', header)
+            _, _, msg_len = struct.unpack('>B19sI', header)
             
             # 바디 읽기
             body = b""
@@ -94,9 +90,14 @@ def socket_client_thread(host, port, data_queue):
             data = json.loads(body.decode('utf-8'))
             data_queue.put(data)
             
-        except Exception as e:
-            break
-    client_socket.close()
+    except ConnectionResetError:
+        print("🚨 서버에 의해 강제로 연결이 초기화되었습니다. (서버 다운 등)")
+    except Exception as e:
+        print(f"🚨 네트워크 에러 발생: {e}")
+    finally:
+        # [핵심] 정상 종료든, 에러든, 서버가 끊었든 마지막에는 무조건 소켓을 닫음
+        client_socket.close()
+        print("🔒 소켓이 안전하게 닫혔습니다.")
 
 # 5. 사이드바 컨트롤
 st.sidebar.header("🕹️ Real-time Control")
@@ -302,12 +303,13 @@ def run_simulation_loop():
     if latest_packet:
         log_code_box.code(json.dumps(latest_packet, indent=2, ensure_ascii=False, default=str), language='json')
 
-    with status_placeholder.container():
-        if latest_packet and isinstance(latest_packet, dict):
-            current_ts = latest_packet['timestamp']
-            st.write(f"**Server Time:** {current_ts}")
-            st.write(f"**Tracked Ships:** {len(st.session_state.ship_states)}")
-            st.write(f"**Packet Size:** {processed_count * 2.5}/sec")
+    if latest_packet and isinstance(latest_packet, dict):
+        current_ts = latest_packet['timestamp']
+
+        status_text = f"""Server Time: {current_ts}\nTracked Ships: {len(st.session_state.ship_states)}\nPacket Size: {processed_count * 2.5}/sec"""
+
+        # 2. 합친 문자열을 code 블록에 덮어쓰기 (언어는 일반 텍스트이므로 None 또는 'text' 사용)
+        status_placeholder.code(status_text, language='text')
 
 # 앱 실행
 run_simulation_loop()

@@ -21,6 +21,7 @@ from Step_Back_Question_Gen import StepBackQuestionGenerator
 from Multiple_Questions_Gen import MultipleQuestionGenerator
 from LLMStreamThread import LLMStreamThread
 from AIS_Trajectory_compression import GenerateAISReport
+from weather_data_renewal import DataSenderThread
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -88,6 +89,7 @@ class ReceiveThread(QThread):
     log_packet = pyqtSignal(int, list)
     disconnect_signal = pyqtSignal()
     msg_received = pyqtSignal(str)
+    server_time_sig = pyqtSignal(str)
 
     def __init__(self, socket):
         super().__init__()
@@ -109,19 +111,22 @@ class ReceiveThread(QThread):
     def run(self):
         # 스레드 내에서 DB 연결 (SQLite는 스레드 간 연결 공유 불가 원칙)
         conn = sqlite3.connect("ships.db")
-        # conn.execute("PRAGMA journal_mode=WAL;") # 이 줄을 반드시 추가하세요!
         cursor = conn.cursor()
 
         while self.running:
             try:
                 # 1. 헤더(4바이트) 읽기
-                header = self.recv_all(5)
+                header = self.recv_all(24)
                 if not header:
                     self.disconnect_signal.emit()
                     break
                 
                 # 2. 데이터 길이 파악
-                data_type, data_len = struct.unpack('>BI', header)
+                data_type, time_bytes, data_len = struct.unpack('>B19sI', header)
+
+                curr_server_time = time_bytes.decode('utf-8')
+
+                self.server_time_sig.emit(curr_server_time)
                 
                 if data_type == 0:
                     # 3. 본문 읽기
@@ -250,15 +255,15 @@ class ChatRoom:
         self.experiment_config = {"configurable": {"session_id": self.experiment_session_id}}
 
 class RouteQuery(BaseModel):
-    datasource: Literal["ship_report", "ship_info", "none"] = Field(
+    datasource: Literal["ship_report", "ship_info", "vector_store"] = Field(
         ...,
-        description="사용자 질문에 따라 'ship_report' 또는 'ship_info' 또는 'none'으로 라우팅합니다."
+        description="사용자 질문에 따라 'ship_report' 또는 'ship_info' 또는 'vector_store'으로 라우팅합니다."
     )
     target_ships: Optional[list[dict]] = Field(
         default=None,
         description="""datasource가 'ship_info'일 때만 해당 선박의 MMSI 번호를 추출하여 포함합니다.
         mmsi가 2개 이상일 경우 mmsi를 모두 포함하고 따옴표나 쌍따옴표 없이 int형으로 출력합니다
-        'ship_report' 또는 'none'일 경우 이 필드는 비워둡니다(null)."""
+        'ship_report' 또는 'vector_store'일 경우 이 필드는 비워둡니다(null)."""
     )
 
 class Slider_Animation(QObject):
@@ -373,16 +378,11 @@ class Window(QMainWindow, Ui_MainWindow):
             api_key="ai",
             model="openai/gpt-oss-20b",
             base_url="http://192.168.0.110:8000/v1",
+            # base_url="http://49.174.2.3:8000/v1",
             temperature=self.current_chat_room.m_temperature,
             # max_tokens = 6000
         )
-        # self.local_llm = ChatOpenAI(
-        #     api_key="ai",
-        #     model="openai/gpt-oss-20b",
-        #     base_url="http://49.174.2.3:8000/v1",
-        #     temperature=self.current_chat_room.m_temperature,
-        #     # max_tokens = 6000
-        # )
+
     def init_openai_llm(self):
         self.openai_llm = ChatOpenAI(
             api_key=self.current_chat_room.m_api_key,
@@ -492,8 +492,15 @@ class Window(QMainWindow, Ui_MainWindow):
         self.init_openai_llm()
         # path = QFileDialog.getExistingDirectory(self, "폴더 선택")
         files, _ = QFileDialog.getOpenFileNames(self, "파일 선택")
-        folder_path = os.path.dirname(files[0])
-        
+
+        if files:
+            folder_path = os.path.dirname(files[0])
+            print(f"선택한 폴더: {folder_path}")
+
+        else:
+            print("파일 선택이 취소되었습니다.")
+            return
+
         retriever_map = {
             "Default": self.create_default_retriever,
             "ParentRetriverPipeline": self.create_parent_retriever,
@@ -502,42 +509,36 @@ class Window(QMainWindow, Ui_MainWindow):
             "Granular": self.create_granular_retriever,
         }
 
-        if folder_path:
-            self.ui.path.setText(f"{folder_path}")
+        self.ui.path.setText(f"{folder_path}")
 
-            self.ui.Loading_bar.setValue(0)
-            self.ui.Load_btn.setEnabled(False) #작업 중 버튼 비활성화
+        self.ui.Loading_bar.setValue(0)
+        self.ui.Load_btn.setEnabled(False) #작업 중 버튼 비활성화
 
-            self.threading = QThread()
+        self.threading = QThread()
 
-            if self.rag_indexing in retriever_map:
-                self.worker = retriever_map[self.rag_indexing](folder_path)
-            else:
-                print(f"Error: retriever_map에 없는 키: {self.rag_indexing}")
-                return
+        if self.rag_indexing in retriever_map:
+            self.worker = retriever_map[self.rag_indexing](folder_path)
+        else:
+            print(f"Error: retriever_map에 없는 키: {self.rag_indexing}")
+            return
 
-            #현재 채팅방에 인덱싱 기법 저장
-            self.current_chat_room.rag_apply_indexing = self.rag_indexing
+        #현재 채팅방에 인덱싱 기법 저장
+        self.current_chat_room.rag_apply_indexing = self.rag_indexing
 
-            # self.worker = DefaultRetriever(
-            #     folder_path=path,
-            #     api_key=self.current_chat_room.m_api_key
-            # )
+        self.worker.moveToThread(self.threading)
 
-            self.worker.moveToThread(self.threading)
+        self.threading.started.connect(self.worker.run)
+        self.worker.progresses.connect(self.ui.Loading_bar.setValue)
+        self.worker.finished.connect(self.threading.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.worker.finished.connect(self.threading.deleteLater)
 
-            self.threading.started.connect(self.worker.run)
-            self.worker.progresses.connect(self.ui.Loading_bar.setValue)
-            self.worker.finished.connect(self.threading.quit)
-            self.worker.finished.connect(self.worker.deleteLater)
-            self.worker.finished.connect(self.threading.deleteLater)
+        self.worker.finished.connect(lambda: self.ui.Load_btn.setEnabled(True))
+        self.worker.error.connect(lambda msg: QMessageBox.critical(self, "오류", msg))
+        self.worker.finished.connect(lambda: QMessageBox.information(self, "완료", "임베딩이 완료되었습니다"))
+        self.worker.changeUi.connect(self.check_applied_indexing)
 
-            self.worker.finished.connect(lambda: self.ui.Load_btn.setEnabled(True))
-            self.worker.error.connect(lambda msg: QMessageBox.critical(self, "오류", msg))
-            self.worker.finished.connect(lambda: QMessageBox.information(self, "완료", "임베딩이 완료되었습니다"))
-            self.worker.changeUi.connect(self.check_applied_indexing)
-
-            self.threading.start()
+        self.threading.start()
 
     def on_context_menu(self, point: QPoint):
         self.clicked_item = self.ui.chat_room_table.itemAt(point)
@@ -975,7 +976,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         structured_llm_router = self.local_llm.with_structured_output(RouteQuery)
 
-        system = """당신은 사용자 질문을 '선박 리포트(ship_report)' '선박 정보(ship_info)' 또는 '기타(none)'로 분류하는 전문 라우터입니다.
+        system = """당신은 사용자 질문을 '선박 리포트(ship_report)' '선박 정보(ship_info)' 또는 '벡터스토어(vector_store)'로 분류하는 전문 라우터입니다.
         1. ship_report 선택 기준:.
         - 질문에 특정 선박 이름이나 MMSI 번호가 없는 경우.
         - 선박의 현재 위치, 상태, 항적 등 현재 상황에 대해 묻고 있지만, '어떤 선박'인지 식별할 수 있는 정보(이름/MMSI)가 전혀 없는 경우.
@@ -986,16 +987,21 @@ class Window(QMainWindow, Ui_MainWindow):
         - [선박리스트]에 존재하는 mmsi 번호 또는 선박이름(ShipName)이 포함되어 있는 경우.
         - 선박의 현재 위치, 상태, 항적, 이동패턴, 이동경로 등을 묻는 경우.
 
-        3. none 선택 기준:
-        - 질문에 [선박리스트]에 없는 선박 이름이나 MMSI 번호를 물어본 경우.
-        - 인사, 일반적인 대화, 또는 해운/선박과 관련 없는 질문인 경우.
+        3. vector_store 선택 기준:
+        - 선박과 관련된 구체적인 행동과 그 이유에 대해 물어보는 경우
+        - 특정 [기후상황리스트]에서 기준을 제시하며 행동 지침에 대해 물어본 경우.
+        - 선박이 행동하기 위한 자세한 [기후상황리스트]의 기준에 대해 물어보는 경우.
+        - 특정 [기후상황리스트]가 선박에 미칠 수 있는 영향에 대해 물어보는 경우.
 
         [선박리스트]
         {ship_list_json}
 
+        [기후상황리스트]
+        풍속(m/s), 풍향(deg), GUST풍속(m/s), 현지기압(hPa), 습도(%), 기온(°C), 수온(°C), 최대파고(m), 유의파고(m), 평균파고(m), 파주기(sec), 파향(deg)
+
         출력 규칙:
         - datasource가 'ship_info'인 경우, 제공된 선박 리스트에서 매칭된 {{ship_name: str, mmsi: int}} 객체의 리스트를 반환하십시오.
-        - datasource가 'none'인 경우, target_ships 필드는 비워두십시오."""
+        - datasource가 'vector_store'인 경우, target_ships 필드는 비워두십시오."""
 
         route_prompt = ChatPromptTemplate.from_messages(
             [
@@ -1012,10 +1018,14 @@ class Window(QMainWindow, Ui_MainWindow):
         retriever_route = {
             'ship_report': lambda a1, a2: self.start_ais_llm_query(True, a1, a2),
             'ship_info': lambda a1, a2: self.start_ais_llm_query(False, a1, a2),
-            'none': lambda a1, a2: self.rag_btn_llm(a1)
+            'vector_store': lambda a1, a2: self.rag_btn_llm(a1)
         }
 
         selected_data_source = question_router.invoke({"question": question})        
+
+        print("쿼리라우팅 디버깅" + "*" * 35)
+        print(selected_data_source.datasource)
+        print("*" * 55)
 
         mmsi_list = [
             i['mmsi']
@@ -1048,103 +1058,6 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             self.current_chat_room.m_keyword = None
     
-    def rag_llm(self, msg):
-        if not self.current_chat_room.m_api_key:
-            QMessageBox.critical(self, "오류", "api key를 입력해주세요")
-            return
-        
-        if not self.worker:
-            QMessageBox.critical(self, "오류", "벡터스토어가 없습니다")
-            return
-
-        generator_map = {
-            "Default": self.create_default_generator,
-            "Rewrite-Retrieve-Read Generator": self.create_rewrite_retrieve_read_generator,
-            "Multiple Questions Generator": self.create_multiple_question_generator,
-            "Step-Back Question Generator": self.create_step_back_question_generator,
-        }
-        print(self.rag_transformation)
-        generator = generator_map[self.rag_transformation]()
-
-        # prompt_template = """
-        #     당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다.
-        #     문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요.
-        #     만약 문서에 질문에 대한 정보가 없다면, "제공된 문서에는 이 질문에 대한 정보가 없습니다."라고 답변하세요.
-        #     문서에 있는 내용만을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다.
-
-        #     이전 대화:
-        #     {history}
-
-        #     문서 내용:
-        #     {context}
-
-        #     질문: {question}
-
-        #     답변:
-        #     """
-        # prompt = ChatPromptTemplate.from_template(prompt_template)
- 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", f"{self.current_chat_room.m_prompt}\n"
-                "당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다."
-                "문서 내용에 기반하여 대한 답변을 제공하세요."
-                # "만약 문서에 질문에 대한 정보가 없다면, '제공된 문서에는 이 질문에 대한 정보가 없습니다.'라고 답변하세요."
-                "최대한 문서에 있는 내용을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다."
-                "답변은 영어로 표현된 원래 의미가 최대한 바뀌지 않도록 모두 한글로 번역해서 응답하세요"
-                "기존의 답변의 markdown 형식도 그대로 유지하면서 번역해주세요"
-                "문서 내용: {context}"),
-                ("placeholder", "{history}"),
-                ("human", "질문: {question}"),
-            ]
-        )
-
-        similary = None
-        keywords = None
-
-        if self.ui.similarity_post_processor.isChecked() and self.ui.similarity_post_processor.isEnabled():
-            similary = float(self.current_chat_room.m_similarity)
-        if self.ui.keywords.isChecked() and self.ui.keywords.isEnabled():
-            keyword = self.current_chat_room.m_keyword
-            split_list = keyword.split(',')
-            keywords = [item.strip() for item in split_list]
-
-        rag_chain = generator.build_rag_chain(prompt, self.worker.copy_retriever(), similary, keywords, self.ui.reciprocal_rank_fusion.isChecked())
-
-        rag_history_chain = RunnableWithMessageHistory(
-            rag_chain,
-            self.get_session_history,
-            input_messages_key="question",
-            history_messages_key="history",
-        )
-
-        answer = rag_history_chain.invoke(
-            {"question": msg},
-            self.current_chat_room.experiment_config,
-        )
-
-        if answer:
-            print(answer.response_metadata['token_usage'])
-            print(answer.response_metadata['token_usage']['total_tokens'])
-            self.current_chat_room.experiment_token += answer.response_metadata['token_usage']['total_tokens'] / self.MAX_TOKENS * 100
-            update = f"used tokens: {self.current_chat_room.experiment_token:.2f}%"
-            self.ui.experiment_token_bar.setFormat(update)
-            self.ui.experiment_token_bar.setValue(int(self.current_chat_room.experiment_token))
-            print(self.current_chat_room.experiment_token)
-            print(self.current_chat_room.experiment_token * 128000)
-
-            report_msg = ""
-            report_msg += f"Sended Message: {msg}\n\n"
-            report_msg += "Ai Messages: \n"
-            report_msg += answer.content
-            report_msg += "\n\n"
-
-            self.js_streaming(report_msg)
-            
-            self.show_status_messages("Default chat is working successful")
-        else:
-            print("오류")
-
     def rag_btn_llm(self, question):
         if self.rag_indexing != self.current_chat_room.rag_apply_indexing:
             QMessageBox.critical(self, "오류", "load 버튼으로 임베딩을 진행해주세요")
@@ -1170,24 +1083,6 @@ class Window(QMainWindow, Ui_MainWindow):
         }
         print(self.rag_transformation)
         generator = generator_map[self.rag_transformation]()
-
-        # prompt_template = """
-        #     당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다.
-        #     문서의 내용을 철저히 검토하여 질문에 대한 답변을 제공하세요.
-        #     만약 문서에 질문에 대한 정보가 없다면, "제공된 문서에는 이 질문에 대한 정보가 없습니다."라고 답변하세요.
-        #     문서에 있는 내용만을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다.
-
-        #     이전 대화:
-        #     {history}
-
-        #     문서 내용:
-        #     {context}
-
-        #     질문: {question}
-
-        #     답변:
-        #     """
-        # prompt = ChatPromptTemplate.from_template(prompt_template)
 
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -1231,6 +1126,11 @@ class Window(QMainWindow, Ui_MainWindow):
         self.waiting_dialog = WaitingDialog(self)
         self.waiting_dialog.setStyleSheet(self.GetStyleSheetTemplate())
 
+        report_msg = ""
+        report_msg += "Sended Message: " + question + "\n\n"
+        report_msg += "Ai Messages: \n"
+        self.js_streaming_header(report_msg)
+        
         if self.stream_worker and self.stream_worker.isRunning():
             print("아직 작업 중입니다.")
         else:
@@ -1254,7 +1154,6 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.stream_worker:
             self.stream_worker.deleteLater()
             self.stream_worker = None
-        QTimer.singleShot(5000, self.EnableStreamButtons)
 
     def get_session_history(self, session_id: str) -> ChatMessageHistory:
         if session_id not in self.current_chat_room.chat_stored:
@@ -1338,7 +1237,7 @@ class Window(QMainWindow, Ui_MainWindow):
         """
 
     def start_ais_llm_query(self, flag: bool, question, mmsi_list):
-        if self.llm_worker is not None:
+        if self.llm_worker is not None: 
             print("이전작업이 아직 실행중입니다.")
             return
                 
@@ -1446,6 +1345,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.recv_thread.msg_received.connect(self.process_server_message)
             self.recv_thread.log_signal.connect(self.update_log)
             self.recv_thread.log_packet.connect(self.update_packet_log)
+            self.recv_thread.server_time_sig.connect(self.update_server_time)
             self.recv_thread.disconnect_signal.connect(self.on_disconnected)
             self.recv_thread.start()
 
@@ -1458,17 +1358,13 @@ class Window(QMainWindow, Ui_MainWindow):
     def update_packet_log(self, i, packet):
         time = packet[3]
         self.fetch_weather_and_position(time)
-        self.curr_server_time = time
+        # self.curr_server_time = time
 
         if not self.start_server_time:
             self.start_server_time = time[:19]
 
         #현재 구역안에 있는 배 개수 계산
         self.counting_current_ship(packet)
-
-        #시뮬레이션 시간 출력
-        if isinstance(time, str) and len(time) >= 19:
-            self.ui.server_time.setText(time[:19])
 
         # 로그가 5만개 이상일 경우 24500개 정리(패킷 1개에 2줄 차지함)
         if self.ui.text_server_log.document().blockCount() > 50000:
@@ -1482,6 +1378,10 @@ class Window(QMainWindow, Ui_MainWindow):
             self.ui.text_server_log.setTextCursor(cursor)
         display_text = f"[{i}] Packet: {' | '.join(map(str, packet))} |"
         self.ui.text_server_log.append(display_text)
+
+    def update_server_time(self, time):
+        self.curr_server_time = time
+        self.ui.server_time.setText(self.curr_server_time)
 
     def counting_current_ship(self, packet):
         # packet[2]: MMSI, packet[6]: 경도, packet[7]: 위도
@@ -1569,25 +1469,28 @@ class Window(QMainWindow, Ui_MainWindow):
                     value_data = final_df.fillna(0).to_dict(orient='records')
 
                     url = "http://localhost:8600/update"
-                    try:
-                        r = requests.post(url, json=value_data)
-                        print(f"상태 코드: {r.status_code}")
+                    # url = "http://localhost:8600/from_main"
 
-                        text_data = r.text
-                        print(f"서버에러내용: {text_data}")
-
-                    except Exception as e:
-                        print(f"연결 에러: {e}")
-                        
-
-                    print(f"🔔 [시간 변경 감지] {current_hour_str}시 기상 데이터 갱신")
-                    # print(rows[0][0], rows[0][1], rows[0][2])
-                    for row in rows:
-                        print(row)
+                    # 1. 스레드 생성 및 데이터 전달
+                    self.sender_thread = DataSenderThread(url, value_data)
+                    
+                    # 2. 결과가 돌아왔을 때 실행할 함수 연결 (선택 사항)
+                    self.sender_thread.result_signal.connect(self.on_send_finished)
+                    
+                    # 3. 백그라운드에서 전송 시작! (UI는 멈추지 않고 바로 다음 줄로 넘어감)
+                    self.sender_thread.start()
+                                        
                 # 3. 조회가 완료되면 마지막 조회 시간을 현재 '시'로 업데이트
                 self.last_queried_hour = current_hour_str
             except Exception as e:
                 print(f"DB 조회 중 오류 발생: {e}")
+
+    def on_send_finished(self, success, message):
+        """스레드가 전송을 마치면 자동으로 호출되는 함수"""
+        if success:
+            print(f"데이터 전송 완료: {message}")
+        else:
+            print(f"데이터 전송 실패: {message}")
 
     def toggle_ui(self, connected):
         #클라이언트 -> 서버 메세지 전송 확장성을 위한 func
@@ -1650,11 +1553,12 @@ def start_streamlit():
     kill_process_on_port(8501)
     kill_process_on_port(8502)
     kill_process_on_port(8503)
+
     global sitmap_streamlit_process
     global dashboard_streamlit_process
     global geo_dashboard_streamlit_process
-    # Streamlit 앱 실행 명령어
 
+    # Streamlit 앱 실행 명령어
     cmd = ["streamlit", "run", "./previous_files/fast_change.py", "--server.port=8501"]
     cmd2 = ["streamlit", "run", "./dashboard.py", "--server.headless=True", "--server.port=8502"]
     cmd3 = ["streamlit", "run", "./geo_dashboard.py", "--server.headless=True", "--server.port=8503"]
@@ -1672,6 +1576,7 @@ def stop_streamlit():
     """Streamlit 서버 프로세스 종료"""
     global sitmap_streamlit_process
     global dashboard_streamlit_process
+    global geo_dashboard_streamlit_process
 
     if sitmap_streamlit_process:
         sitmap_streamlit_process.kill()
