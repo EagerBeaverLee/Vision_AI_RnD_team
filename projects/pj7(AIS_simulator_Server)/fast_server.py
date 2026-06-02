@@ -295,7 +295,9 @@ class Window(QMainWindow, Ui_MainWindow):
             with open(self.csv_path, 'r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 headers = reader.fieldnames
+                total_count = list(reader)
                 self.ui.log_browser.append(f"[Check] 컬럼 확인: {headers}")
+                self.ui.log_browser.append(f"[Check] 총 row 수: {len(total_count)}")
                 self.ui.btn_send_packet.setEnabled(True)
         except Exception as e:
             QMessageBox.critical(self, "파일 오류", f"파일을 읽을 수 없습니다: {e}")
