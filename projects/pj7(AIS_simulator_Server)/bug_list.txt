@@ -1,5 +1,0 @@
-해결해야할 bug
-1. 서버에서 일시정지 상태인채로 client를 죽이면 서버도 다음 로그와 함께 같이 죽음
-[로그]
-시뮬레이션 일시정지
-QThread: Destroyed while thread '' is still running
