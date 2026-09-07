@@ -4,7 +4,12 @@ from PyQt6.QtCore import pyqtSignal, QThread
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+from langchain_openai import ChatOpenAI
 
+from langfuse import get_client, observe
+from langfuse.langchain import CallbackHandler
+
+import os
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -29,7 +34,7 @@ class GenerateAISReport(QThread):
     report_finished = pyqtSignal()
     report_error = pyqtSignal(str)
 
-    def __init__(self, flag: bool, local_llm, question, data: pd.DataFrame, mmsi_list, startTime, currTime):
+    def __init__(self, flag: bool, local_llm: ChatOpenAI, question, data: pd.DataFrame, mmsi_list, startTime, currTime, trace_id, parent_span_id):
         super().__init__()
         self.flag = flag    #True: 전체항적 report, False: 개별항적 report
         self.llm = local_llm
@@ -51,8 +56,15 @@ class GenerateAISReport(QThread):
 
         # 렌더러 설정
         self.renderer = hv.renderer('bokeh')
-        
 
+        # langfuse 설정
+        self.trace_id = trace_id
+        self.parent_span_id = parent_span_id
+        self.config = {
+            "callbacks": [CallbackHandler()]
+        }
+
+    @observe()
     def compress_ship_data_duckdb(self, db_path, table_name, min_time, max_time, min_lon=125.678, max_lon=131.229, max_lat=36.001):
         con = duckdb.connect(database=':memory:')
         con.execute("INSTALL sqlite; LOAD sqlite;")
@@ -170,7 +182,8 @@ class GenerateAISReport(QThread):
         df_result = con.execute(query).df()
         con.execute("DETACH sqlite_db;")
         return df_result
-    
+
+    @observe()
     def compress_ship_data_duckdb_further(self, db_path, table_name, min_time, max_time, min_lon=125.678, max_lon=131.229, max_lat=36.001):
         con = duckdb.connect(database=':memory:')
         con.execute("INSTALL sqlite; LOAD sqlite;")
@@ -297,11 +310,13 @@ class GenerateAISReport(QThread):
         #시작은 안에서, 끝은 밖에서
         return not traj.get_start_location().intersects(poly) and  traj.get_end_location().intersects(poly)
 
+    @observe()
     def geo_init_ports_gdf(self):
         # 주요 항만 데이터
         self.ports_gdf = gpd.read_file('./data/major_ports.shp')
         self.ports_gdf = self.ports_gdf.to_crs("EPSG:4326")
 
+    @observe()
     def geo_init_zone_gdf(self):
         zone_configs = {
             # --- [Layer 1: 북부 연안 및 울산] Lat: 34.70 ~ 36.00 (일부 34.40 시작) ---
@@ -348,6 +363,7 @@ class GenerateAISReport(QThread):
         self.zones_gdf = gpd.GeoDataFrame({'zone_id': ids, 'name': names}, 
                                     geometry=polygons, crs="EPSG:4326")
 
+    @observe()
     def geo_common_preprocessing(self, start_time, end_time):
         # 1. DuckDB 파일 연결 및 공간 확장 로드
         db_path = "ships.db"
@@ -393,7 +409,8 @@ class GenerateAISReport(QThread):
         )
 
         return ais_gdf, trips, aggregator
-    
+
+    @observe()
     def geo_cluster_data_processing(self, aggregator):
         con = duckdb.connect(database=':memory:')
         con.execute("INSTALL spatial; LOAD spatial;")
@@ -428,6 +445,7 @@ class GenerateAISReport(QThread):
         )
         return clusters_data_json
 
+    @observe()
     def geo_speed_processed_duckdb(self, start_time, end_time):
         db_path = "ships.db"
         con = duckdb.connect(database=db_path)
@@ -480,7 +498,8 @@ class GenerateAISReport(QThread):
         speed_stats_df = con.execute(integrated_query).df()
 
         return speed_stats_df
-    
+
+    @observe()
     def geo_speed_data_processing(self, start_time, end_time):
         speed_stats_df = self.geo_speed_processed_duckdb(start_time, end_time)
         speed_data = json.dumps(
@@ -490,6 +509,7 @@ class GenerateAISReport(QThread):
         )
         return speed_data
 
+    @observe()
     def geo_direction_flow_data_processing(self, start_time, end_time):
         db_path = "ships.db"
         comp_ship_data = self.compress_ship_data_duckdb_further(db_path=db_path, table_name="ship_logs", min_time=start_time, max_time=end_time)
@@ -566,6 +586,7 @@ class GenerateAISReport(QThread):
         
         return direction_flow_data
 
+    @observe()
     def geo_trajs_flow_data_processing(self, aggregator):
         # 1. DuckDB 연결 및 공간 확장 로드
         con = duckdb.connect(database=':memory:')
@@ -637,7 +658,8 @@ class GenerateAISReport(QThread):
         )
     
         return trajs_flow_data
-    
+
+    @observe()
     def geo_shiptype_data_processing(self, start_time, end_time):
         # 1. DuckDB 파일 연결 및 공간 확장 로드
         db_path = "ships.db"
@@ -681,6 +703,7 @@ class GenerateAISReport(QThread):
 
         return shiptype_data
 
+    @observe()
     def weather_data_processing(self):
         # 1. 평균을 계산할 필드 리스트 정의
         target_columns = [
@@ -698,7 +721,8 @@ class GenerateAISReport(QThread):
         weather_json = json.dumps(weather_avg.to_dict(), ensure_ascii=False, indent=4, default=str)
         
         return weather_json
-    
+
+    @observe()
     def geo_render_OD_Flow_map(self, start_time, end_time):
         _, _, aggregator = self.geo_common_preprocessing(start_time, end_time)
 
@@ -793,6 +817,7 @@ class GenerateAISReport(QThread):
 
         self.geo_dict['od_flow_map'] = html_content
 
+    @observe()
     def geo_render_major_ports_map(self, trips, start_time, end_time):
         anchored_ships_gdf = self.geo_processing_anchored_ships_gdf(start_time, end_time)
 
@@ -875,6 +900,7 @@ class GenerateAISReport(QThread):
             # --- E. 항구별 오버레이 합체 후 리스트에 저장 ---
             self.geo_dict[f'port_map_{i}'] = html_content
 
+    @observe()
     def geo_render_shiptype_count_map(self, ais_gdf):
         shiptype_count_summary = ais_gdf.groupby('ShipType')['mmsi'].nunique().sort_values(ascending=False)
 
@@ -925,6 +951,7 @@ class GenerateAISReport(QThread):
 
         self.geo_dict['shiptype'] = html_content
 
+    @observe()
     def geo_send_visualization_data(self):
         if self.geo_dict:
             print(f"DEBUG: geo_dict 현재 내용 = {self.geo_dict.keys()}")
@@ -943,6 +970,7 @@ class GenerateAISReport(QThread):
         else:
             print("딕셔너리 비어있음")
 
+    @observe()
     def geo_processing_anchored_ships_gdf(self, start_time, end_time):
         db_path = "ships.db"
         stop_temp_df = self.compress_ship_data_duckdb_further(db_path=db_path, table_name="ship_logs", min_time=start_time, max_time=end_time)
@@ -979,7 +1007,8 @@ class GenerateAISReport(QThread):
         anchored_ships_gdf = gpd.GeoDataFrame(anchored_ships, geometry=geometry, crs="EPSG:4326")
 
         return anchored_ships_gdf
-    
+
+    @observe()
     def geo_major_ports_processing(self, trips, start_time, end_time):
         anchored_ships_gdf = self.geo_processing_anchored_ships_gdf(start_time, end_time)
         # 분석할 항구 리스트 (시각화와 동일하게 설정)
@@ -1051,6 +1080,7 @@ class GenerateAISReport(QThread):
 
         return major_ports_sum
 
+    @observe()
     def geo_ship_status_extraction_processing(self, start_time, end_time):
         db_path = "ships.db"
         stop_temp_df = self.compress_ship_data_duckdb_further(db_path=db_path, table_name="ship_logs", min_time=start_time, max_time=end_time)
@@ -1107,6 +1137,7 @@ class GenerateAISReport(QThread):
         
         return moving_ships_json, stop_ships_json, slow_ships_json
 
+    @observe()
     def geo_unusal_ships_extraction_processing(self, start_time, end_time):
         db_path = "ships.db"
         df = self.compress_ship_data_duckdb_further(db_path=db_path, table_name="ship_logs", min_time=start_time, max_time=end_time)
@@ -1136,7 +1167,8 @@ class GenerateAISReport(QThread):
         unusual_final_report_json = json.dumps(unusual_ships_json, ensure_ascii=False, indent=4)
         
         return unusual_final_report_json
-    
+
+    @observe()
     def create_dynamic_route_prompt(self, num_ships, start_time, end_time, time_diff):
         # 배의 개수만큼 프롬프트 안에 들어갈 변수 리스트를 동적으로 생성
         # 예: "선박 1: {ship1}\n선박 2: {ship2}"
@@ -1180,6 +1212,7 @@ class GenerateAISReport(QThread):
             ("human", "{question}")
         ])
 
+    @observe()
     def report_time_adjustment(self):
         origin_start_time = self.start_server_time[:19]
         end_time = self.curr_server_time[:19]
@@ -1190,11 +1223,13 @@ class GenerateAISReport(QThread):
         if time_diff.total_seconds() > 10800:
             res = pd.to_datetime(end_time) - timedelta(seconds=10800)
             start_time = res.strftime('%Y-%m-%d %H:%M:%S')
+            time_diff = timedelta(seconds=10800)
         else:
             start_time = origin_start_time
 
         return origin_start_time, start_time, end_time, time_diff
-        
+
+    @observe()
     def final_report_chain(self):
         # 리포트 시작, 끝시간 설정
         origin_start_time, start_time, end_time, time_diff = self.report_time_adjustment()
@@ -1352,6 +1387,7 @@ class GenerateAISReport(QThread):
             | self.llm
         )
 
+    @observe()
     def individual_track_chain(self):
         full_path = "ships.db"
 
@@ -1413,34 +1449,45 @@ class GenerateAISReport(QThread):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self._stream())
-
+    
     async def _stream(self):
-        inputs = {"question": self.question}
+        langfuse = get_client()
+        with langfuse.start_as_current_observation(
+            as_type="span",
+            name="ais_stream",
+            trace_context={
+                "trace_id": self.trace_id,
+                "parent_span_id": self.parent_span_id,
+            },
+            input={"question": self.question},
+        ) as span:
+            inputs = {"question": self.question}
 
-        if self.flag:
-            self.final_report_chain()
-        else :
-            ship_input_data, weather_json = self.individual_track_chain()
-            inputs["weather_data"] = weather_json
-            inputs.update(ship_input_data) # ship1, ship2 데이터들이 inputs에 합쳐짐
+            if self.flag:
+                self.final_report_chain()
+            else :
+                ship_input_data, weather_json = self.individual_track_chain()
+                inputs["weather_data"] = weather_json
+                inputs.update(ship_input_data) # ship1, ship2 데이터들이 inputs에 합쳐짐
 
-        try:
-            buffer = []
-            async for chunk in self.chain.astream(inputs):
-                if chunk:
-                    buffer.append(chunk.content)
+            try:
+                buffer = []
+                async for chunk in self.chain.astream(inputs, config=self.config):
+                    if chunk:
+                        buffer.append(chunk.content)
 
-                if len(buffer) >= 10:
+                    if len(buffer) >= 10:
+                        self.report_chunk_fin.emit("".join(buffer))
+                        buffer.clear()
+
+                if buffer:
                     self.report_chunk_fin.emit("".join(buffer))
-                    buffer.clear()
 
-            if buffer:
-                self.report_chunk_fin.emit("".join(buffer))
+                self.report_chunk_fin.emit("".join("\n\n"))
+                span.update(output={"status": "streaming done"})
 
-            self.report_chunk_fin.emit("".join("\n\n"))
-
-        except Exception as e:
-            print(f"스트리밍 중 오류 발생: {e}")
-            self.report_error.emit(f"스트리밍 오류: {e}")
-        finally:
-            self.report_finished.emit()
+            except Exception as e:
+                print(f"스트리밍 중 오류 발생: {e}")
+                self.report_error.emit(f"스트리밍 오류: {e}")
+            finally:
+                self.report_finished.emit()

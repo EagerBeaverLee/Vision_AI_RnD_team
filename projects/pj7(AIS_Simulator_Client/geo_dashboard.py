@@ -1,31 +1,14 @@
-#folium import
-import folium
-from streamlit_folium import st_folium
-
-from windrose import WindroseAxes
-import matplotlib.pyplot as plt
-from matplotlib.patches import Wedge, Polygon, Circle
-
-import plotly.graph_objects as go
-
-import altair as alt
-
-import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 
 import pandas as pd
-import pydeck as pdk
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import threading
 from streamlit.runtime import Runtime
-from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 import holoviews as hv
-from bokeh.embed import file_html
-from bokeh.resources import INLINE
 
 
 st.markdown("""

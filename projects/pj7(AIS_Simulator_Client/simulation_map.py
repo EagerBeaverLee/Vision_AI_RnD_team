@@ -6,8 +6,6 @@ import struct
 import json
 import threading
 import queue
-import time
-from datetime import datetime
 from collections import deque # [성능 포인트 1] Deque 추가
 
 # 1. 페이지 설정

@@ -1562,33 +1562,12 @@ class Ui_MainWindow(object):
         self.send_btn.setFlat(False)
         self.send_btn.setObjectName("send_btn")
         self.gridLayout_2.addWidget(self.send_btn, 2, 1, 1, 1)
-        spacerItem18 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.gridLayout_2.addItem(spacerItem18, 2, 2, 1, 1)
-        spacerItem19 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.gridLayout_2.addItem(spacerItem19, 1, 1, 1, 1)
-        spacerItem20 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.gridLayout_2.addItem(spacerItem20, 2, 0, 1, 1)
-        self.ship_btn = QtWidgets.QPushButton(parent=self.LLM)
-        self.ship_btn.setStyleSheet("QPushButton {\n"
-"    color: rgb(184, 247, 185);\n"
-"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
-"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
-"}\n"
-"QPushButton:hover {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
-"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
-"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
-"}")
-        self.ship_btn.setObjectName("ship_btn")
-        self.gridLayout_2.addWidget(self.ship_btn, 4, 1, 1, 1)
-        spacerItem21 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.gridLayout_2.addItem(spacerItem21, 3, 1, 1, 1)
+        spacerItem18 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.gridLayout_2.addItem(spacerItem18, 1, 1, 1, 1)
+        spacerItem19 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.gridLayout_2.addItem(spacerItem19, 2, 0, 1, 1)
+        spacerItem20 = QtWidgets.QSpacerItem(65, 13, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.gridLayout_2.addItem(spacerItem20, 3, 1, 1, 1)
         self.reset_program = QtWidgets.QPushButton(parent=self.LLM)
         self.reset_program.setStyleSheet("QPushButton {\n"
 "    color: rgb(184, 247, 185);\n"
@@ -1608,12 +1587,10 @@ class Ui_MainWindow(object):
 "}")
         self.reset_program.setObjectName("reset_program")
         self.gridLayout_2.addWidget(self.reset_program, 0, 1, 1, 1)
+        spacerItem21 = QtWidgets.QSpacerItem(13, 32, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.gridLayout_2.addItem(spacerItem21, 2, 2, 1, 1)
         self.gridLayout_2.setColumnStretch(0, 1)
-        self.gridLayout_2.setColumnStretch(1, 8)
-        self.gridLayout_2.setColumnStretch(2, 1)
         self.gridLayout_2.setRowStretch(0, 1)
-        self.gridLayout_2.setRowStretch(1, 3)
-        self.gridLayout_2.setRowStretch(2, 1)
         self.horizontalLayout.addLayout(self.gridLayout_2)
         self.horizontalLayout.setStretch(0, 5)
         self.horizontalLayout.setStretch(1, 1)
@@ -1706,7 +1683,6 @@ class Ui_MainWindow(object):
         self.experiment_token_bar.setFormat(_translate("MainWindow", "used tokens: %p%"))
         self.input_text.setPlaceholderText(_translate("MainWindow", "Enter your message..."))
         self.send_btn.setText(_translate("MainWindow", "send"))
-        self.ship_btn.setText(_translate("MainWindow", "ship"))
         self.reset_program.setText(_translate("MainWindow", "reset"))
         self.tabWidget1.setTabText(self.tabWidget1.indexOf(self.LLM), _translate("MainWindow", "LLM참모"))
         self.menu_Setting.setTitle(_translate("MainWindow", "&Setting"))

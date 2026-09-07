@@ -1,13 +1,12 @@
-import sys, os, time, copy, json, ast, markdown, psutil, signal, asyncio, sqlite3, socket, struct, requests
+import sys, os, time, copy, json, psutil, sqlite3, socket, struct
 import pandas as pd
 import subprocess
 import atexit
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QSizePolicy, QMenu, QFileDialog, QProgressDialog
+    QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QMenu, QFileDialog, QProgressDialog
 )
 from PyQt6.QtCore import Qt, QCoreApplication, QTimer, QObject, QPoint, pyqtSignal, QThread, QUrl
 from PyQt6.QtGui import QDoubleValidator, QAction, QTextCursor
-from PyQt6.uic import loadUi
 
 from mainwindow import Ui_MainWindow
 from Default_Gen import DefaultGenerator
@@ -25,24 +24,20 @@ from weather_data_renewal import DataSenderThread
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 
-from langchain_community.utilities import SQLDatabase
-from langchain_community.tools import QuerySQLDataBaseTool
-from langchain_core.output_parsers import StrOutputParser
-from sqlalchemy import create_engine, inspect
+from langfuse import get_client
+from dotenv import load_dotenv
 
 #Query Routing
 from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 #tokenizer
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
-from typing import List
+
 from transformers import AutoTokenizer
-from datetime import datetime
+
 
 sitmap_streamlit_process = None
 dashboard_streamlit_process = None
@@ -372,6 +367,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.weather_data = None
 
         self.ship_count = {}
+
+        load_dotenv()
+        self.langfuse = get_client()
 
     def init_local_llm(self):
         self.local_llm = ChatOpenAI(
@@ -769,8 +767,6 @@ class Window(QMainWindow, Ui_MainWindow):
         #Client_func
         self.ui.btn_server_connect.clicked.connect(self.connect_server)
 
-        self.ui.ship_btn.clicked.connect(self.debug_ais_llm_query)
-
         #program restart
         self.ui.reset_program.clicked.connect(self.restart_program)
 
@@ -1013,26 +1009,35 @@ class Window(QMainWindow, Ui_MainWindow):
         return route_prompt | structured_llm_router
 
     def query_routing_report(self, question):
-        question_router = self.init_query_routing()
+        trace_id = self.langfuse.create_trace_id()
 
-        retriever_route = {
-            'ship_report': lambda a1, a2: self.start_ais_llm_query(True, a1, a2),
-            'ship_info': lambda a1, a2: self.start_ais_llm_query(False, a1, a2),
-            'vector_store': lambda a1, a2: self.rag_btn_llm(a1)
-        }
+        with self.langfuse.start_as_current_observation(
+            as_type="span",
+            name="vector_store_result",
+            input={"question": question},
+            trace_context={"trace_id": trace_id}
+        )as final_span:
+            question_router = self.init_query_routing()
 
-        selected_data_source = question_router.invoke({"question": question})        
+            retriever_route = {
+                'ship_report': lambda a1, a2: self.start_ais_llm_query(True, a1, a2),
+                'ship_info': lambda a1, a2: self.start_ais_llm_query(False, a1, a2),
+                'vector_store': lambda a1, a2: self.rag_btn_llm(a1)
+            }
 
-        print("쿼리라우팅 디버깅" + "*" * 35)
-        print(selected_data_source.datasource)
-        print("*" * 55)
+            selected_data_source = question_router.invoke({"question": question})        
 
-        mmsi_list = [
-            i['mmsi']
-            for i in selected_data_source.target_ships
-        ]
+            print("쿼리라우팅 디버깅" + "*" * 35)
+            print(selected_data_source.datasource)
+            print("*" * 55)
 
-        retriever_route[selected_data_source.datasource](question, mmsi_list)
+            mmsi_list = [
+                i['mmsi']
+                for i in selected_data_source.target_ships
+            ]
+
+            retriever_route[selected_data_source.datasource](question, mmsi_list)
+            final_span.update(output={"status": "finished"})
     
     def apply_api_key(self):
         if self.ui.api_key_txt.text().strip():
@@ -1057,6 +1062,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.show_status_messages(f"keyword is apply successful")
         else:
             self.current_chat_room.m_keyword = None
+    
     
     def rag_btn_llm(self, question):
         if self.rag_indexing != self.current_chat_room.rag_apply_indexing:
@@ -1084,20 +1090,32 @@ class Window(QMainWindow, Ui_MainWindow):
         print(self.rag_transformation)
         generator = generator_map[self.rag_transformation]()
 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", f"{self.current_chat_room.m_prompt}\n"
-                "당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다."
-                "문서 내용에 기반하여 대한 답변을 제공하세요."
-                # "만약 문서에 질문에 대한 정보가 없다면, '제공된 문서에는 이 질문에 대한 정보가 없습니다.'라고 답변하세요."
-                "최대한 문서에 있는 내용을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다."
-                "답변은 영어로 표현된 원래 의미가 최대한 바뀌지 않도록 모두 한글로 번역해서 응답하세요"
-                "기존의 답변의 markdown 형식도 그대로 유지하면서 번역해주세요"
-                "문서 내용: {context}"),
-                ("placeholder", "{history}"),
-                ("human", "질문: {question}"),
-            ]
+        # prompt = ChatPromptTemplate.from_messages(
+        #     [
+        #         ("system", f"{self.current_chat_room.m_prompt}\n"
+        #         "당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다."
+        #         "문서 내용에 기반하여 대한 답변을 제공하세요."
+        #         # "만약 문서에 질문에 대한 정보가 없다면, '제공된 문서에는 이 질문에 대한 정보가 없습니다.'라고 답변하세요."
+        #         "최대한 문서에 있는 내용을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다."
+        #         "답변은 영어로 표현된 원래 의미가 최대한 바뀌지 않도록 모두 한글로 번역해서 응답하세요"
+        #         "기존의 답변의 markdown 형식도 그대로 유지하면서 번역해주세요"
+        #         "문서 내용: {context}"),
+        #         ("placeholder", "{history}"),
+        #         ("human", "질문: {question}"),
+        #     ]
+        # )
+        
+        #langfuse 프롬프트 통합
+        langfuse_prompt = self.langfuse.get_prompt("RAG_answer_prompt", label="latest")
+        prompt = ChatPromptTemplate(
+            langfuse_prompt.get_langchain_prompt(),
+            metadata={"langfuse_prompt": langfuse_prompt}
         )
+        final_prompt = prompt.partial(user_prompt=self.current_chat_room.m_prompt)
+        
+
+        print("*" * 20 + "langfuse 프롬프트 가져오기" + "*" * 20)
+        print(langfuse_prompt.prompt[0]['content'])
 
         similary = None
         keywords = None
@@ -1109,7 +1127,7 @@ class Window(QMainWindow, Ui_MainWindow):
             split_list = keyword.split(',')
             keywords = [item.strip() for item in split_list]
 
-        rag_chain = generator.build_rag_chain(prompt, self.worker.copy_retriever(), similary, keywords, self.ui.reciprocal_rank_fusion.isChecked())
+        rag_chain = generator.build_rag_chain(final_prompt, self.worker.copy_retriever(), similary, keywords, self.ui.reciprocal_rank_fusion.isChecked())
 
         rag_history_chain = RunnableWithMessageHistory(
             rag_chain,
@@ -1118,7 +1136,10 @@ class Window(QMainWindow, Ui_MainWindow):
             history_messages_key="history",
         )
 
-        self.stream_worker = LLMStreamThread(question, self.local_llm, rag_history_chain)
+        trace_id = self.langfuse.get_current_trace_id()
+        parent_span_id = self.langfuse.get_current_observation_id()
+
+        self.stream_worker = LLMStreamThread(question, self.local_llm, rag_history_chain, trace_id, parent_span_id)
         self.stream_worker.text_chunk_received.connect(self.handle_rag_response)
         self.stream_worker.stream_finished.connect(self.handle_rag_response_finished)
         self.stream_worker.finished.connect(self.stream_worker.deleteLater)
@@ -1241,7 +1262,10 @@ class Window(QMainWindow, Ui_MainWindow):
             print("이전작업이 아직 실행중입니다.")
             return
                 
-        self.llm_worker = GenerateAISReport(flag, self.local_llm, question, self.weather_data, mmsi_list, self.start_server_time, self.curr_server_time)
+        trace_id = self.langfuse.get_current_trace_id()
+        parent_span_id = self.langfuse.get_current_observation_id()
+
+        self.llm_worker = GenerateAISReport(flag, self.local_llm, question, self.weather_data, mmsi_list, self.start_server_time, self.curr_server_time, trace_id, parent_span_id)
 
         self.llm_worker.report_chunk_fin.connect(self.handle_ais_response)
         self.llm_worker.report_finished.connect(self.handle_ais_finished)
@@ -1559,7 +1583,7 @@ def start_streamlit():
     global geo_dashboard_streamlit_process
 
     # Streamlit 앱 실행 명령어
-    cmd = ["streamlit", "run", "./previous_files/fast_change.py", "--server.port=8501"]
+    cmd = ["streamlit", "run", "./simulation_map.py", "--server.port=8501"]
     cmd2 = ["streamlit", "run", "./dashboard.py", "--server.headless=True", "--server.port=8502"]
     cmd3 = ["streamlit", "run", "./geo_dashboard.py", "--server.headless=True", "--server.port=8503"]
 
