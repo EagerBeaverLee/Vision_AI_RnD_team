@@ -1,0 +1,21 @@
+📊 [최종 시스템별 평균 점수 요약]
+     지표 (Metric)  Naive RAG 평균  ReWOO Agent 평균
+    Faithfulness      0.689075         0.80000
+Answer Relevance      0.718040         0.72033
+  Context Recall      0.000000         0.84166
+
+
+llama 8b 1회차
+📊 [최종 시스템별 평균 점수 요약]
+     지표 (Metric)  Naive RAG 평균  ReWOO Agent 평균
+    Faithfulness      0.479978         0.95370
+Answer Relevance      0.787660         0.52832
+  Context Recall      0.000000         0.62737
+
+
+llama 8b 2회차
+📊 [최종 시스템별 평균 점수 요약]
+     지표 (Metric)  Naive RAG 평균  ReWOO Agent 평균
+    Faithfulness       0.36508        0.994787
+Answer Relevance       0.75359        0.672840
+  Context Recall       0.00000        0.556070

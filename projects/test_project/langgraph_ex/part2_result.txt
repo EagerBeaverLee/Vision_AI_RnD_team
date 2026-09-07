@@ -1,0 +1,199 @@
+================================ Human Message =================================
+
+Hi there, what time is my flight?
+================================== Ai Message ==================================
+
+Your flight (LX0112) is scheduled to depart from Charles de Gaulle Airport (CDG) at 09:32 AM and arrive at Basel Airport (BSL) at 11:02 AM, local time. 
+
+As it is currently 09:28 AM, your flight will be departing in approximately 4 minutes. Please make sure you are at the gate!
+================================ Human Message =================================
+
+Am i allowed to update my flight to something sooner? I want to leave later today.
+================================== Ai Message ==================================
+Tool Calls:
+  lookup_policy (call_mYVNAChYueaSGRGfF51I8JlY)
+ Call ID: call_mYVNAChYueaSGRGfF51I8JlY
+  Args:
+    query: updating flight to an earlier flight
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+Update my flight to sometime next week then
+================================== Ai Message ==================================
+Tool Calls:
+  search_flights (call_PqhIfUPLkX77n5bGWJzqaplw)
+ Call ID: call_PqhIfUPLkX77n5bGWJzqaplw
+  Args:
+    departure_airport: CDG
+    arrival_airport: BSL
+    start_time: 2026-06-26
+    end_time: 2026-06-30
+    limit: 5
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+The next available option is great
+================================== Ai Message ==================================
+Tool Calls:
+  update_ticket_to_new_flight (call_FMruWbl9eZ67lrBopygc4Lvo)
+ Call ID: call_FMruWbl9eZ67lrBopygc4Lvo
+  Args:
+    ticket_no: 7240005432906569
+    new_flight_id: 19242
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+what about lodging and transportation?
+================================== Ai Message ==================================
+Tool Calls:
+  search_hotels (call_0sPaKNVVLajoCvAm9nxhVSMf)
+ Call ID: call_0sPaKNVVLajoCvAm9nxhVSMf
+  Args:
+    location: Basel
+    checkin_date: 2026-06-27
+    checkout_date: 2026-06-30
+    price_tier: Midscale
+  search_car_rentals (call_9a1NXZjpNZZFBwXVa5IORPVq)
+ Call ID: call_9a1NXZjpNZZFBwXVa5IORPVq
+  Args:
+    location: Basel
+    start_date: 2026-06-27
+    end_date: 2026-06-30
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+Yeah i think i'd like an affordable hotel for my week-long stay (7 days). And I'll want to rent a car.
+================================== Ai Message ==================================
+Tool Calls:
+  book_hotel (call_BbX0pyXRMt2DL2n4vYSIqnKP)
+ Call ID: call_BbX0pyXRMt2DL2n4vYSIqnKP
+  Args:
+    hotel_id: 8
+  book_car_rental (call_gLFML0ZHdj2HV9fmfBDP2xkX)
+ Call ID: call_gLFML0ZHdj2HV9fmfBDP2xkX
+  Args:
+    rental_id: 1
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+OK could you place a reservation for your recommended hotel? It sounds nice.
+================================== Ai Message ==================================
+Tool Calls:
+  book_hotel (call_VXUSYF1dANiUhdVsAJCe2IIx)
+ Call ID: call_VXUSYF1dANiUhdVsAJCe2IIx
+  Args:
+    hotel_id: 3
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+yes go ahead and book anything that's moderate expense and has availability.
+================================== Ai Message ==================================
+Tool Calls:
+  book_hotel (call_x50WtdfKzQAsS1BE3Kmj7Ezr)
+ Call ID: call_x50WtdfKzQAsS1BE3Kmj7Ezr
+  Args:
+    hotel_id: 1
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+Now for a car, what are my options?
+================================== Ai Message ==================================
+Tool Calls:
+  search_car_rentals (call_hU0h3l249IYmtyQQwXGY9Pnr)
+ Call ID: call_hU0h3l249IYmtyQQwXGY9Pnr
+  Args:
+    location: Basel
+    start_date: 2026-06-27
+    end_date: 2026-07-04
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+Awesome let's just get the cheapest option. Go ahead and book for 7 days
+================================== Ai Message ==================================
+Tool Calls:
+  book_car_rental (call_ZLRP8Ihls59VRvedscgwULHa)
+ Call ID: call_ZLRP8Ihls59VRvedscgwULHa
+  Args:
+    rental_id: 9
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+Cool so now what recommendations do you have on excursions?
+================================== Ai Message ==================================
+Tool Calls:
+  search_trip_recommendations (call_tlLq55pfSnwLiVRBYglSAPit)
+ Call ID: call_tlLq55pfSnwLiVRBYglSAPit
+  Args:
+    location: Basel
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+Are they available while I'm there?
+================================== Ai Message ==================================
+Tool Calls:
+  search_trip_recommendations (call_anz1oZ0FZBAx9J9PqRztzUOm)
+ Call ID: call_anz1oZ0FZBAx9J9PqRztzUOm
+  Args:
+    location: Basel
+    keywords: Basel Minster
+  search_trip_recommendations (call_D3mspL412lq4t0iSzrkAd1TJ)
+ Call ID: call_D3mspL412lq4t0iSzrkAd1TJ
+  Args:
+    location: Basel
+    keywords: Kunstmuseum Basel
+  search_trip_recommendations (call_lI9Rtrvcz8YUIa3iqvMJrp7T)
+ Call ID: call_lI9Rtrvcz8YUIa3iqvMJrp7T
+  Args:
+    location: Basel
+    keywords: Basel Zoo
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+interesting - i like the museums, what options are there? 
+================================== Ai Message ==================================
+Tool Calls:
+  search_trip_recommendations (call_jNztdmonoIHEuzXd8UJKNwit)
+ Call ID: call_jNztdmonoIHEuzXd8UJKNwit
+  Args:
+    location: Basel
+    keywords: museum
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y
+================================ Human Message =================================
+
+OK great pick one and book it for my second day there.
+================================== Ai Message ==================================
+Tool Calls:
+  book_excursion (call_jXp9GmPif5XbQUKHMK4Fd4JM)
+ Call ID: call_jXp9GmPif5XbQUKHMK4Fd4JM
+  Args:
+    recommendation_id: 2
+Do you approve of the above actions? Type 'y' to continue; otherwise, explain your requested changed.
+
+ y

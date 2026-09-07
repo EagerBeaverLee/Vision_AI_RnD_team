@@ -1,0 +1,28 @@
+[
+    {
+        "ID":1,
+        "Question":"Analyze how NK’s nuclear deterrence and forward-deployed forces mutually reinforce threats to Seoul.",
+        "Ground Truth":"North Korea’s nuclear deterrence and forward-deployed conventional forces are designed to be mutually reinforcing threats, especially to Seoul. The nuclear weapons program, with delivery systems capable of striking regional targets, serves as a strategic deterrent against attacks or regime change, making adversaries wary of escalation. Simultaneously, North Korea’s large, heavily armed, and forward-deployed military presents a constant, credible threat to the Greater Seoul Metropolitan Area. The threat of massive conventional attack on Seoul deters military action, while the nuclear capability deters broader intervention or retaliation, ensuring that the threat posed by one supports and amplifies the deterrent effect of the other (see para 1-88).",
+        "Naive_Response":"The provided text **does not contain information** regarding North Korea’s (NK) nuclear deterrence or its strategic intent towards Seoul. The document focuses on the organization, equipment, and likely missions of North Korean Army (KPA) engineer, reconnaissance, and airborne units. \n\nTherefore, I cannot analyze how NK’s nuclear deterrence and forward-deployed forces mutually reinforce threats to Seoul based on this context. \n\nThe text *does* detail forward-deployed forces like airborne and reconnaissance brigades capable of infiltrating rear areas to attack high-value targets (airfields, C2 nodes, etc.). However, it doesn’t link these actions to a broader nuclear strategy or a direct threat to Seoul. It also describes hardened artillery sites (HARTS) which, while posing a conventional threat, are not discussed in relation to nuclear capabilities.\n\n\n\n",
+        "Naive_Faithfulness":1.0,
+        "Naive_Answer_Relevance":0.6481,
+        "Naive_Context_Recall":0.0,
+        "ReWOO_Response":"```tool_code\nVectorDB(\"North Korea nuclear deterrence strategy doctrine capabilities operational concepts\")\n```",
+        "ReWOO_Faithfulness":1.0,
+        "ReWOO_Answer_Relevance":0.11,
+        "ReWOO_Context_Recall":0.0
+    },
+    {
+        "ID":2,
+        "Question":"If NK faces a tech-superior coalition, how might adaptive ops exploit terrain and disrupt enemy C2?",
+        "Ground Truth":"If North Korea faces a technologically superior coalition, its adaptive operations would exploit terrain—such as mountains, poor weather, and night conditions—to minimize the enemy’s technological advantages. North Korean planners would identify times and locations that optimize their own capabilities and degrade those of the enemy. They would also focus on disrupting, defeating, or destroying the enemy’s command and control (C2) framework and logistics, using tailored forces and methods like guerrilla warfare, infiltration, and ambushes, often operating from subterranean facilities and leveraging the environment to hinder enemy movement and communication.",
+        "Naive_Response":"Based on the provided text, here's how a force (implied to be NK, given the question) might exploit terrain and disrupt enemy command and control (C2) against a technologically superior coalition:\n\n*   **Utilize Complex Terrain:** The text highlights the use of tunnel complexes (CBP) with obstacles designed to hinder enemy reconnaissance systems (remote-controlled wheeled, tracked, or aerial). This suggests exploiting underground or complex terrain to negate the coalition's technological advantages in sensing and reconnaissance.\n*   **Degrade Reconnaissance:** Employing impediments like mesh, nets, and traps within passageways directly aims to disrupt enemy reconnaissance efforts.\n*   **Indirect Fire & Kill Zones:** The text emphasizes using integrated fires (direct and indirect) to \"fix or isolate the enemy\" and create \"kill zones\" covering obstacles. This suggests focusing on disrupting enemy advances and C2 nodes with concentrated fire.\n*   **Fight for Information:** Reconnaissance detachments are task-organized to \"fight for information,\" implying active measures to deny the enemy intelligence while gathering their own. This could involve disrupting enemy observation posts or communication relays.\n*   **Exploit Limited Enemy Knowledge:** The text notes that an enemy attempting a breach with \"limited knowledge\" of the complex is vulnerable. This suggests operations focused on deception and exploiting the enemy's lack of situational awareness.\n\n\n\nIt's important to note that the text doesn't *explicitly* address a \"tech-superior coalition\" scenario, but these tactics are presented as effective defensive measures against an assault force, and would logically be more valuable when facing a technologically advanced enemy.",
+        "Naive_Faithfulness":0.3571,
+        "Naive_Answer_Relevance":0.7334,
+        "Naive_Context_Recall":0.0,
+        "ReWOO_Response":"```tool_code\nVectorDB.search(query=\"North Korea adaptive operations doctrine principles\")\n```",
+        "ReWOO_Faithfulness":1.0,
+        "ReWOO_Answer_Relevance":0.0903,
+        "ReWOO_Context_Recall":1.0
+    }
+]

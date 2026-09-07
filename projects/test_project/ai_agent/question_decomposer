@@ -1,0 +1,73 @@
+from agents import Agent, Runner
+from dotenv import load_dotenv
+import os
+
+# 환경 변수 로드
+load_dotenv()
+
+# 에이전트 지시문 
+instructions = """
+### ROLE
+You are a 'Question Decomposer'. Your specialized task is to analyze a complex user query and break it down into its constituent, independent sub-queries.
+
+### TASK INSTRUCTIONS
+1. Analyze: Carefully read the user's input to identify all distinct questions or information requests.
+2. Decompose: Split the query into multiple single, self-contained questions.
+3. Refine: Ensure each sub-query is grammatically complete and retains necessary context (e.g., if a pronoun refers to a subject in a previous part, replace it with the actual subject).
+4. No Extra Text: Provide ONLY the list of sub-queries without any introductory or concluding remarks.
+
+### OUTPUT FORMAT
+- Use a numbered list (1, 2, 3...).
+- Each query must be on a new line.
+"""
+
+# 에이전트 설정
+agent = Agent(
+  name="Question Decomposer",
+  instructions=instructions,
+)
+
+def main():
+  print("=== 질문 분해 에이전트 테스트를 시작합니다 ===")
+  print("(종료하려면 'exit' 또는 'quit'을 입력하세요)\n")
+
+  while True:
+    # 사용자로부터 질문 입력 받기
+    user_input = input("분해할 질문을 입력하세요: ").strip()
+
+    # 종료 조건 확인
+    if user_input.lower() in ['exit', 'quit', '종료', 'q']:
+      print("프로그램을 종료합니다.")
+      break
+
+    if not user_input:
+      continue
+
+    print("\n[분해 결과]")
+    try:
+      # Runner를 통해 에이전트 실행
+      result = Runner.run_sync(
+        agent,
+        input=user_input,
+      )
+      print(result.final_output)
+    except Exception as e:
+      print(f"오류가 발생했습니다: {e}")
+    
+    print("-" * 30)
+
+if __name__ == "__main__":
+  main()
+
+
+## Test case 샘플 질문
+# "삼성전자의 오늘 주가는 얼마고, 현재 시가총액은 얼마인가요?"
+# "LST-683의 현재 위치를 알려주고, 이 선박의 다음 목적지를 확인해줘."
+# "지난달 영업 이익을 먼저 계산한 뒤에, 작년 동기 대비 성장률을 알려주세요."
+# "데이터셋에서 결측치를 모두 제거하고, 수치형 변수들의 평균값을 구해줘."
+# "A 상품과 B 상품의 가격 차이는 얼마이며, 각각의 주요 장단점은 무엇인가요?"
+# "서울과 부산의 내일 날씨를 비교해보고, 어디가 더 습도가 높은지 알려줘."
+# "테슬라의 자율주행 기술 수준은 어느 정도이며, 이 회사의 최근 분기 실적은 어때?"
+# "아이폰 15의 배터리 용량을 알려주고, 그것의 충전 속도도 같이 확인해줘."
+# "2024년 경제 전망 리포트를 요약하고, 주요 키워드 3개를 뽑은 뒤, 관련 핵심 지표를 표로 정리해줘."
+# "프로젝트 A의 담당자가 누구인지, 마감 기한은 언제인지, 그리고 현재 진행률은 몇 %인지 모두 알려주세요."
