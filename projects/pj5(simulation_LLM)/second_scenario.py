@@ -11,9 +11,6 @@ import numpy as np
 import matplotlib.font_manager as fm
 # 시스템에 설치된 나눔고딕 폰트 경로를 찾아서 설정
 font_path = 'C:/Windows/Fonts/malgun.ttf'  # Windows 기준
-# 만약 Linux/macOS 환경이라면 다음 경로를 시도해 보세요.
-# font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'  # Linux
-# font_path = '/Library/Fonts/AppleGothic.ttf'  # macOS
 font_name = fm.FontProperties(fname=font_path, size=10).get_name()
 plt.rc('font', family=font_name)
 plt.rcParams['axes.unicode_minus'] = False # 마이너스 기호 깨짐 방지
