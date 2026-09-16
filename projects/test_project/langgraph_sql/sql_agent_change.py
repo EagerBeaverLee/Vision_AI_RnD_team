@@ -231,12 +231,12 @@ if len(sys.argv) > 1:
 # question = "유의파고가 1.5m를 초과하여 소형 선박 운항이 위험할 것으로 예상되는 부이 목록을 중복 없이 5개정도 뽑아주세요"
 # question = "전체 관측 데이터 중 수온이 가장 높게 기록된 곳의 지점명과 수온을 알려주세요."
 # question = "동해57 부이의 기압 변화 추이를 알고 싶습니다. 기압이 계속 상승하고 있나요?"
-# question = "25년 5월 3일 삼척 해역의 파주기(Wave Period)와 파향 상태를 알려주세요."
+question = "25년 5월 3일 삼척 해역의 파주기(Wave Period)와 파향 상태를 알려주세요."
 
 # question = "포항 앞바다의 습도가 가장 낮았던 시각은 몇 시인가요?"
 
 for step in agent.stream(
-    {"messages": [{"role": "user", "content": param1}]},
+    {"messages": [{"role": "user", "content": question}]},
     stream_mode="values",
 ):
     step["messages"][-1].pretty_print()

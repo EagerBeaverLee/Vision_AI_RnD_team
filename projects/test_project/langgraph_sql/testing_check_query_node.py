@@ -27,7 +27,7 @@ llm = ChatOpenAI(
 toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 tools = toolkit.get_tools()
 
-# binding_llm = llm.bind_tools(tools)
+binding_llm = llm.bind_tools(tools)
 execute_tool = ToolNode(tools)
 
 run_query_tool = next(tool for tool in tools if tool.name == "sql_db_query")
@@ -44,6 +44,7 @@ class SqlAgentState(TypedDict):
 
 def get_Database_info(state: SqlAgentState):
     msg = state["messages"][-1]
+    print(msg)
     get_schema = {
             "name": "sql_db_schema",
             "args": {"table_names": "weather_data"},
@@ -54,7 +55,7 @@ def get_Database_info(state: SqlAgentState):
     get_schema_tool = next(tool for tool in tools if tool.name == "sql_db_schema")
     db_schema = get_schema_tool.invoke(get_schema)
 
-    return {"table_schema": [db_schema.content], "verification_count": 0, "user_question" : msg.content}
+    return {"table_schema": [db_schema.content], "verification_count": 0}
 
 def generate_query(state: SqlAgentState):
     verification_count = state.get("verification_count")
@@ -84,92 +85,49 @@ def generate_query(state: SqlAgentState):
         verification_error_message = verification_error_message,
     )[0]
     binded_llm = llm.bind_tools([run_query_tool])
-    response = binded_llm.invoke([query_gen_template] + state["messages"])
-    # print("gen 결과" + "*" * 44)
-    # print(response)
     # print("*" * 55)
-    # print(type(response))
+    # print(query_gen_template)
+    # print("*" * 55)
+    response = binded_llm.invoke([query_gen_template] + state["messages"])
+    print("gen 결과" + "*" * 44)
+    print(response)
+    print("*" * 55)
+    return {"messages" : [response], "generated_query": response.tool_calls[0]["args"]["query"]}
 
-    if not response.tool_calls:
-        return {"messages" : [response]}
-    else:
-        return {"messages" : [response], "generated_query": response.tool_calls[0]["args"]["query"]}
-
-def should_continue(state: MessagesState) -> Literal["run_query", END]:
+def should_continue(state: MessagesState) -> Literal["run_query", "generate_query"]:
     messages = state["messages"]
     last_message = messages[-1]
     if last_message.tool_calls:
         return "run_query"
-    return END
-
-class isAnswerable(BaseModel):
-    """제공되는 쿼리 실행 결과를 바탕으로 질문에 대한 답변 생성이 가능한지 판단합니다"""
-    query_check: bool = Field(
-        description="'제공된 질문', '생성한 SQL 쿼리'를 바탕으로 제공된 질문에 답변이 가능한 쿼리가 잘 생성됐는지 판단하세요. 생성한 쿼리를 실행한 결과로 제공된 질문에 답변이 가능하면 True, 아닐 경우 False로 답하세요"
-    )
-    query_check_reason: str = Field(
-        description="제공된 질문에 대한 답변 가능 여부를 True 혹은 False로 평가한 이유에 대해 최대 3줄 이내로 한글로 설명하세요."
-    )
-    answerable: bool = Field(
-        description="'제공된 질문', 'SQL 쿼리 실행 결과'를 바탕으로 제공된 질문에 대한 답변이 가능한지 판단하세요. 제공된 질문에 대한 답변이 가능하면 True, 아닐 경우 False로 답하세요."
-    )
-    answerable_reason: str = Field(
-        description="제공된 질문에 대한 답변 가능 여부를 True 혹은 False로 평가한 이유에 대해 최대 3줄 이내로 한글로 설명하세요."
-    )
+    return "generate_query"
 
 def execute_verification(state: SqlAgentState):
     messages = state["messages"]
     last_message = messages[-1] # run_query가 추가한 ToolMessage
+
+    print("run_query가 추가한 ToolMessage" + "*" * 22)
+    print(last_message)
+    print("*" * 55)
     
-    # 1.쿼리 실행 간 에러 발생 시 쿼리 다시 생성
+    # 1.쿼리 실행 후 내용에 에러 문구가 포함되어 있다면 쿼리 다시 생성
     content = str(last_message.content).lower()
     if "error" in content or "exception" in content or "operationalerror" in content:
         return{"verfication_count": state.get("verification_count", 0) + 1, "verification_error_content": content}
-
-    answerable_checker = llm.with_structured_output(isAnswerable)
-
-    verification_template = ChatPromptTemplate.from_messages([
-        ("system", verification_query_system_prompt),
-        ("human", "{question}")
-    ]).partial(
-        generated_query = state["generated_query"],
-        execute_result = last_message.content
-    )
-
-    chain = verification_template | answerable_checker
-    result = chain.invoke({"question" : state["user_question"]})
-
-    # print("Answerable 결과" + "*" * 33)
-    # print(result.query_check)
-    # print(result.answerable)
-    # print("*" * 55)
-
-    # 2.쿼리 실행 간 문제x, 빈값이 반환될 경우
-    if not result.query_check:
-        return{"verification_count": state.get("verification_count", 0) + 1, "verification_error_content": result.query_check_reason}
-
-    # 3.쿼리 실행 간 문제x, 값도 반환되지만 질문에 답할 수 없는 경우
-    if not result.answerable:
-        return{"verification_count": state.get("verification_count", 0) + 1, "verification_error_content": result.answerable_reason}
-    ai_msg = AIMessage(content=result.model_dump_json())
-    return {"messages" : [ai_msg], "verification_count": 0, "verification_error_content": ""}
-
-    # verified_prompt = verification_query_system_prompt.format(
-    #     dialect=db.dialect,
-    #     generated_query = state["generated_query"]
-    # )    
-    # system_message = {
-    #     "role": "system",
-    #     "content": verified_prompt,
-    # }
-    # user_message = {"role": "user", "content": state["generated_query"]}
-    # response = llm.invoke([system_message, user_message])
-    # return {"messages" : [response], "verfication_count": 0, "verification_error_content": ""}
+  
+    verified_prompt = verification_query_system_prompt.format(
+        dialect=db.dialect
+    )    
+    system_message = {
+        "role": "system",
+        "content": verified_prompt,
+    }
+    user_message = {"role": "user", "content": state["generated_query"]}
+    response = llm.invoke([system_message, user_message])
+    return {"messages" : [response], "verfication_count": 0, "verification_error_content": ""}
 
 def route_verified_query(state: SqlAgentState) -> Literal["generate_query", "generate_answer"]:
-    count = state.get("verification_count", 0)
-    if count > 0:
-        print(f"ver_count: {state["verification_count"]}")
+    if state["verification_count"] > 0:
+        print("ver_count: " + state["verification_count"])
         return "generate_query"
     return "generate_answer"    
 
@@ -253,39 +211,32 @@ Q38. 바람 방향(풍향)과 파도의 방향(파향)이 거의 일치하여 �
 Q39. 태풍이나 풍랑에 대비하기 위해 **동해 해안선과 가장 멀리 떨어진 먼바다 부이(외해 부이)**의 기압 상태를 확인해 주세요.
 Q40. 수온이 급격히 변화하는 조경수역(물덩어리가 만나는 곳)을 예측하기 위해 인접한 부이 중 수온 차가 가장 심한 구역을 알려주세요.
 """
-# question =[
-#     "25년 1월 2일 울릉도(지점 21229) 부이에서 관측된 기온은 몇 도인가요?",
-#     "2025년 3월 8일 오전 10시 기준으로 마라도 해역의 풍속과 풍향을 알려주세요.",
-#     "25년 1월 2일 인천 앞바다의 현재 수온은 기온보다 높게 기록되어 있나요?",
-#     "25년 1월 2일 가거도 지점의 최근 유의파고와 평균파고는 각각 얼마인가요?",
-#     "25년 1월 2일 포항 앞바다의 습도가 가장 낮았던 시각은 몇 시인가요?",
-#     "3월 8일 오후 3시에 거문도 부이에서 관측된 GUST풍속은 얼마였나요?",
-#     "25년 5월 13일 동해57 부이의 기압 변화 추이를 알고 싶습니다. 기압이 계속 상승하고 있나요?",
-#     "25년 1월 2일 삼척 해역의 파주기(Wave Period)와 파향 상태를 알려주세요.",
-#     "25년 1월 2일 구엄 부이 관측 데이터 중에서 수온이 15°C를 넘는 시간대가 존재하나요?",
-#     "25년 1월 2일 울진 부이에서 측정된 최대파고가 가장 높았던 시각은 언제인가요?"
-# ]
 
 # question = "2025년 3월 8일 오전 10시 기준으로 마라도 해역의 풍속과 풍향을 알려주세요."
 # question = "포항 앞바다의 습도가 가장 낮았던 시각은 몇 시인가요?"
 # question = "2025년 3월 8일 오전 10시 기준으로 강릉 부이와 삼척 부이의 수온 추세가 서로 비슷하게 움직이고 있나요?"
 # question = "25년 1월 2일 동해 부이와 서해170 부이의 기압 값을 비교해서 더 큰 곳을 알려주세요"
 # question = "전체 부이 관측소 중에서 25년 1월 2일 가장 강한 Gust풍속이 기록된 곳은 어디인가요?"
-# question = "25년 1월 2일 기준 최근 몇 시간 동안 기압이 급격히 떨어지면서 풍속이 강해지는 등 풍랑주의보 징후를 보이는 곳이 있나요?"
+question = "최근 몇 시간 동안 기압이 급격히 떨어지면서 풍속이 강해지는 등 풍랑주의보 징후를 보이는 곳이 있나요?"
 # question = "전체 부이 관측소 중에서 25년 1월 2일 가장 강한 Gust풍속이 기록된 곳은 어디이고 그 값은 어떻게 되나요?"
-question = "25년 5월 15일 동해57 부이의 기압 변화 추이를 알고 싶습니다. 기압이 계속 상승하고 있나요?"
 
 
-# for q in question:
-#     for step in sql_agent.stream(
-#         {"messages": [{"role": "user", "content": q}]},
-#         stream_mode="values",
-#     ):
-#         step["messages"][-1].pretty_print()
 
 for step in sql_agent.stream(
     {"messages": [{"role": "user", "content": question}]},
     stream_mode="values",
 ):
     step["messages"][-1].pretty_print()
+
+
+
+
+
+error_query = """SELECT 지점명, MAX(CAST(기온 AS REAL)) - MIN(CAST(기온 AS REAL)) AS temp_diff
+    FROM weather
+    WHERE "일시" LIKE '2025-03-08%'
+    GROUP BY 지점명
+    ITERATOR BY temp_diff DESC
+    LIMIT 5;
+"""
 
