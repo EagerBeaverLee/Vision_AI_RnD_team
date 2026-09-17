@@ -1,3 +1,4 @@
+import time
 from typing import TypedDict, Literal, Annotated
 from langchain_core.messages import AIMessage, AnyMessage
 from langchain_core.runnables import RunnableConfig
@@ -14,6 +15,7 @@ from langchain_community.utilities import SQLDatabase
 from sql_agent_prompt import verification_query_system_prompt
 from sql_agent_prompt import gen_query_prompt
 from sql_agent_prompt import answer_system_prompt
+from sql_agent_prompt import end_system_prompt
 
 db = SQLDatabase.from_uri("sqlite:///weather_db.db")
 
@@ -21,7 +23,8 @@ llm = ChatOpenAI(
     api_key="ai",
     model="openai/gpt-oss-20b",
     base_url="http://192.168.0.110:8000/v1",
-    temperature=0
+    temperature=0,
+    max_tokens=8192
 )
 
 toolkit = SQLDatabaseToolkit(db=db, llm=llm)
@@ -63,14 +66,7 @@ def generate_query(state: SqlAgentState):
 
     # 검증노드에서 온 로직 처리
     if verification_count > 3:
-        end_system_prompt = """
-            오류가 {error_count}번 발생하여 오류 발생 상한을 초과하였으므로
-            사용자의 질문에 답변할 수 없다는 응답을 생성하세요
-        """.format(
-            error_count = verification_count
-        )
         end_message = {"role": "system", "content": end_system_prompt}
-        # 도구를 바인딩하지 않고 일반 LLM으로 호출하여 친절한 답변만 생성하게 함
         response = llm.invoke([end_message] + state["messages"])
         return {"messages": [response]}
 
@@ -79,42 +75,47 @@ def generate_query(state: SqlAgentState):
         template_format="jinja2",
     ).format_messages(
         dialect=db.dialect,
-        # spot_name=db.run("SELECT DISTINCT 지점명 from weather_data"),
         table_schema = table_schema,
         verification_error_message = verification_error_message,
     )[0]
     binded_llm = llm.bind_tools([run_query_tool])
+    print("gen 전")
     response = binded_llm.invoke([query_gen_template] + state["messages"])
+    print("gen 후")
     # print("gen 결과" + "*" * 44)
     # print(response)
     # print("*" * 55)
     # print(type(response))
 
     if not response.tool_calls:
+        print("응답결과 출력" + "*" * 33)
+        print(response.content)
+        print("*"*55)
         return {"messages" : [response]}
     else:
         return {"messages" : [response], "generated_query": response.tool_calls[0]["args"]["query"]}
 
-def should_continue(state: MessagesState) -> Literal["run_query", END]:
+def should_continue(state: MessagesState) -> Literal["run_query", "__end__"]:
     messages = state["messages"]
     last_message = messages[-1]
     if last_message.tool_calls:
         return "run_query"
-    return END
+    
+    return "__end__"
 
 class isAnswerable(BaseModel):
     """제공되는 쿼리 실행 결과를 바탕으로 질문에 대한 답변 생성이 가능한지 판단합니다"""
     query_check: bool = Field(
-        description="'제공된 질문', '생성한 SQL 쿼리'를 바탕으로 제공된 질문에 답변이 가능한 쿼리가 잘 생성됐는지 판단하세요. 생성한 쿼리를 실행한 결과로 제공된 질문에 답변이 가능하면 True, 아닐 경우 False로 답하세요"
+        description="'제공된 질문', '생성한 SQL 쿼리'를 바탕으로 제공된 질문에 답변이 가능한 쿼리가 잘 생성됐는지 판단하세요. 생성한 쿼리가 질문에서 요구하는 조건이나 값을 잘 반영하고 있으면 True, 아닐 경우 False로 답하세요"
     )
     query_check_reason: str = Field(
-        description="제공된 질문에 대한 답변 가능 여부를 True 혹은 False로 평가한 이유에 대해 최대 3줄 이내로 한글로 설명하세요."
+        description="query_check 판단 이유 (한 문장으로 간결히 한글로 작성)"
     )
     answerable: bool = Field(
         description="'제공된 질문', 'SQL 쿼리 실행 결과'를 바탕으로 제공된 질문에 대한 답변이 가능한지 판단하세요. 제공된 질문에 대한 답변이 가능하면 True, 아닐 경우 False로 답하세요."
     )
     answerable_reason: str = Field(
-        description="제공된 질문에 대한 답변 가능 여부를 True 혹은 False로 평가한 이유에 대해 최대 3줄 이내로 한글로 설명하세요."
+        description="answerable 판단 이유 (한 문장으로 간결히 한글로 작성)"
     )
 
 def execute_verification(state: SqlAgentState):
@@ -124,25 +125,45 @@ def execute_verification(state: SqlAgentState):
     # 1.쿼리 실행 간 에러 발생 시 쿼리 다시 생성
     content = str(last_message.content).lower()
     if "error" in content or "exception" in content or "operationalerror" in content:
+        print("쿼리 실행 오류 디버깅" + "*" * 22)
+        print(content)
+        print("*" * 55)
         return{"verfication_count": state.get("verification_count", 0) + 1, "verification_error_content": content}
 
     answerable_checker = llm.with_structured_output(isAnswerable)
 
+    verification_human_prompt = """
+    [질문]
+    {question}
+
+    [생성된 SQL 쿼리]
+    {generated_query}
+
+    [쿼리 실행 결과]
+    {execute_result}
+    """
+
     verification_template = ChatPromptTemplate.from_messages([
         ("system", verification_query_system_prompt),
-        ("human", "{question}")
+        ("human", verification_human_prompt)
     ]).partial(
         generated_query = state["generated_query"],
         execute_result = last_message.content
     )
-
+    print("ver 전")
     chain = verification_template | answerable_checker
-    result = chain.invoke({"question" : state["user_question"]})
+    result = chain.invoke({
+        "question" : state["user_question"],
+        "generate_query": state["generated_query"],
+        "execute_result": last_message.content
+    })
+    print("ver 후")
 
-    # print("Answerable 결과" + "*" * 33)
+    print("Answerable 결과" + "*" * 33)
+    print(result)
     # print(result.query_check)
     # print(result.answerable)
-    # print("*" * 55)
+    print("*" * 55)
 
     # 2.쿼리 실행 간 문제x, 빈값이 반환될 경우
     if not result.query_check:
@@ -236,6 +257,7 @@ Q23. 오늘 현지기압이 1030 hPa 이상으로 가장 높게 측정된 지점
 Q24. 풍향이 북풍 계열(315도~45도 사이)로만 지속적으로 불고 있는 해역이 있나요?
 Q25. 기온과 수온의 차이(기온 - 수온)가 가장 크게 벌어진 지점과 시간은 언제인가요?
 Q26. 유의파고 대비 최대파고의 비율이 가장 높게 나타난 변칙적인 해역이 있나요?
+
 4. 관리관서 및 위치 메타데이터 결합 (공간 결합 패턴)
 Q27. **'부산지방기상청'**에서 관리하는 부이 중 유의파고가 가장 높은 지점명은 무엇인가요?
 Q28. '강릉' 관리관서 소속 부이들의 실시간 평균 기온은 현재 몇 도인가요?
@@ -243,6 +265,7 @@ Q29. 위도 37도 이상의 북쪽 해역에 위치한 부이들의 수온 분�
 Q30. **'목포기상대'**가 관리하는 관할 해역 부이들 중 풍속이 가장 센 곳은 어디인가요?
 Q31. 제주지방기상청 소속 부이들의 위경도 좌표와 해당 지점들의 평균파고를 같이 보여주세요.
 Q32. 관측을 개시한 지 가장 오래된(시작일이 가장 빠른) 역사적인 부이 지점은 어디이고, 현재 날씨는 어떤가요?
+
 5. 실생활 조업 및 해상 안전 시나리오 (맥락적 패턴)
 Q33. 지금 소매물도 부근으로 낚시를 가려고 하는데, 바람과 파고가 안전한 수준인가요?
 Q34. 오늘 가거도 근해에서 어업 조업을 하기에 파주기와 파향이 적절한 상태인가요?
@@ -266,26 +289,72 @@ Q40. 수온이 급격히 변화하는 조경수역(물덩어리가 만나는 곳
 #     "25년 1월 2일 울진 부이에서 측정된 최대파고가 가장 높았던 시각은 언제인가요?"
 # ]
 
+# question = [
+#     "25년 1월 2일 울릉도 해역과 동해 해역 중 어느 곳의 수온이 더 높나요?",
+#     "25년 1월 2일 인천 앞바다와 울산 앞바다의 유의파고를 비교했을 때 어디의 파도가 더 높나요?",
+#     "25년 1월 2일 남해의 거제도와 서해의 덕적도 중 어느 해역의 풍속(바람)이 더 강하게 부나요?",
+#     "25년 1월 2일 마라도와 추자도 부이의 기온 편차는 얼마나 발생하고 있나요?",
+#     "25년 1월 2일 동해 부이와 서해170 부이의 기압 값을 비교해서 고기압 영향권에 더 가까운 곳을 알려주세요.",
+#     "25년 1월 2일 강릉 부이와 삼척 부이의 수온 추세가 서로 비슷하게 움직이고 있나요?",
+#     "25년 1월 2일 칠발도와 거문도 중 평균파고를 기준으로 어디가 더 바다가 잔잔한가요?",
+#     "25년 1월 2일 내륙 해안과 먼 서해206 부이와 내만 지역 부이의 습도 차이는 얼마나 되나요?"
+# ]
+
+# question = [
+#     "전체 부이 관측소 중에서 25년 1월 2일 가장 강한 Gust풍속이 기록된 곳은 어디인가요?",
+#     "25년 1월 2일 전체 관측 데이터 중 수온이 가장 낮게 기록된 부이의 이름과 수온을 알려주세요.",
+#     "3월 8일 하루 동안 **기온의 일교차(최고 기온 - 최저 기온)**가 가장 컸던 지역은 어디인가요?",
+#     "25년 1월 2일 유의파고가 1.5m를 초과하여 소형 선박 운항이 위험할 것으로 예상되는 부이 목록을 뽑아주세요.",
+#     "25년 1월 2일 현지기압이 1030 hPa 이상으로 가장 높게 측정된 지점은 어디인가요?",
+#     "25년 1월 2일 풍향이 북풍 계열(315도~45도 사이)로만 지속적으로 불고 있는 해역이 있나요?",
+#     "25년 1월 2일 기온과 수온의 차이(기온 - 수온)가 가장 크게 벌어진 지점과 시간은 언제인가요?",
+#     "25년 1월 2일 유의파고 대비 최대파고의 비율이 가장 높게 나타난 변칙적인 해역이 있나요?"
+# ]
+
+question = [
+    "7월 28일 소매물도 부근으로 낚시를 가려고 하는데, 바람과 파고가 안전한 수준인가요?",
+    "7월 28일 가거도 근해에서 어업 조업을 하기에 파주기와 파향이 적절한 상태인가요?",
+    "7월 28일 최근 몇 시간 동안 기압이 급격히 떨어지면서 풍속이 강해지는 등 풍랑주의보 징후를 보이는 곳이 있나요?",
+    "7월 28일 이수도와 지심도 인근 거제 양식장의 수온이 물고기들이 활동하기에 적절한 온도를 유지하고 있나요?",
+    "7월 28일 인천, 풍도, 연평도 등 서해 중부 해역의 습도 상태를 볼 때 해무(바다 안개)가 발생할 가능성이 높나요?",
+    "7월 28일 바람 방향(풍향)과 파도의 방향(파향)이 거의 일치하여 파도가 거세질 위험이 있는 지점은 어디인가요?",
+    "7월 28일 태풍이나 풍랑에 대비하기 위해 **동해 해안선과 가장 멀리 떨어진 먼바다 부이(외해 부이)**의 기압 상태를 확인해 주세요.",
+    "7월 28일 수온이 급격히 변화하는 조경수역(물덩어리가 만나는 곳)을 예측하기 위해 인접한 부이 중 수온 차가 가장 심한 구역을 알려주세요."
+]
+
 # question = "2025년 3월 8일 오전 10시 기준으로 마라도 해역의 풍속과 풍향을 알려주세요."
-# question = "포항 앞바다의 습도가 가장 낮았던 시각은 몇 시인가요?"
 # question = "2025년 3월 8일 오전 10시 기준으로 강릉 부이와 삼척 부이의 수온 추세가 서로 비슷하게 움직이고 있나요?"
 # question = "25년 1월 2일 동해 부이와 서해170 부이의 기압 값을 비교해서 더 큰 곳을 알려주세요"
 # question = "전체 부이 관측소 중에서 25년 1월 2일 가장 강한 Gust풍속이 기록된 곳은 어디인가요?"
-# question = "25년 1월 2일 기준 최근 몇 시간 동안 기압이 급격히 떨어지면서 풍속이 강해지는 등 풍랑주의보 징후를 보이는 곳이 있나요?"
-# question = "전체 부이 관측소 중에서 25년 1월 2일 가장 강한 Gust풍속이 기록된 곳은 어디이고 그 값은 어떻게 되나요?"
-question = "25년 5월 15일 동해57 부이의 기압 변화 추이를 알고 싶습니다. 기압이 계속 상승하고 있나요?"
+# question = "25년 1월 2일 15시 기준 최근 몇 시간 동안 기압이 급격히 떨어지면서 풍속이 강해지는 등 풍랑주의보 징후를 보이는 곳이 있나요?"
+# question = "25년 1월 2일 강릉 부이와 삼척 부이의 수온 추세가 서로 비슷하게 움직이고 있나요?"
+# question = "25년 5월 15일 동해57 부이의 기압 변화 추이를 알고 싶습니다. 기압이 계속 상승하고 있나요?"
+
+# question = "오늘 현지기압이 1030 hPa 이상으로 가장 높게 측정된 지점은 어디인가요?"
+# question = "전체 부이 관측소 중에서 1월 21일 가장 강한 Gust풍속이 기록된 곳은 어디인가요?"
+# question = "25년 1월 2일 풍향이 북풍 계열(315도~45도 사이)로만 지속적으로 불고 있는 해역이 있나요?"
+# question = "25년 1월 2일 기온과 수온의 차이(기온 - 수온)가 가장 크게 벌어진 지점과 시간은 언제인가요?"
+# question = "25년 1월 2일 유의파고 대비 최대파고의 비율이 가장 높게 나타난 변칙적인 해역이 있나요?"
 
 
-# for q in question:
-#     for step in sql_agent.stream(
-#         {"messages": [{"role": "user", "content": q}]},
-#         stream_mode="values",
-#     ):
-#         step["messages"][-1].pretty_print()
 
-for step in sql_agent.stream(
-    {"messages": [{"role": "user", "content": question}]},
-    stream_mode="values",
-):
-    step["messages"][-1].pretty_print()
+for q in question:
+    start_time = time.perf_counter()
+    for step in sql_agent.stream(
+        {"messages": [{"role": "user", "content": q}]},
+        stream_mode="values",
+    ):
+        step["messages"][-1].pretty_print()
+    total_duration = time.perf_counter() - start_time
+    print(f"\n⏱️ 전체 실행 소요 시간: {total_duration:.2f}초")
 
+
+# start_time = time.perf_counter()
+# for step in sql_agent.stream(
+#     {"messages": [{"role": "user", "content": question}]},
+#     stream_mode="values",
+# ):
+#     step["messages"][-1].pretty_print()
+
+# total_duration = time.perf_counter() - start_time
+# print(f"\n⏱️ 전체 실행 소요 시간: {total_duration:.2f}초")
