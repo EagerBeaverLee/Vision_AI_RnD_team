@@ -1,0 +1,14 @@
+[project]
+name = "crewai-test"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "crewai>=1.15.21",
+    "crewai-tools>=1.15.21",
+    "jupyter>=1.1.1",
+    "langfuse>=4.15.2",
+    "openlit>=1.45.0",
+    "websockets>=17.1",
+]
