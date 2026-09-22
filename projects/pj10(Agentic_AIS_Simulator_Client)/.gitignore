@@ -1,0 +1,9 @@
+.venv/
+cache/
+.env
+__pycache__/
+lib/
+.DS_Store
+src/my_battlefield_crew/data/doctrine_data/faiss_index/
+src/my_battlefield_crew/data/doctrine_data/parent_faiss_index/
+src/my_battlefield_crew/data/doctrine_data/parent_docstore/

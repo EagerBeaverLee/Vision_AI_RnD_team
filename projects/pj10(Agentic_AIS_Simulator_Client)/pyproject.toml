@@ -1,0 +1,37 @@
+[project]
+name = "my_battlefield_crew"
+version = "0.1.0"
+description = "pmy_battlefield_crew using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[tools]==1.14.7",
+    "docx2txt>=0.9",
+    "faiss-cpu>=1.15.1",
+    "geopandas>=1.1.4",
+    "kiwipiepy>=0.23.2",
+    "langchain>=1.4.2",
+    "langchain-community>=0.4.2",
+    "langchain-openai>=1.6.2",
+    "langchain-together>=0.4.0",
+    "litellm>=1.95.1",
+    "movingpandas>=0.23.0",
+    "pypdf>=6.19.0",
+    "rank-bm25>=0.2.2",
+]
+
+[project.scripts]
+kickoff = "my_battlefield_crew.main:kickoff"
+run_crew = "my_battlefield_crew.main:kickoff"
+plot = "my_battlefield_crew.main:plot"
+run_with_trigger = "my_battlefield_crew.main:run_with_trigger"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "flow"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/my_battlefield_crew"]
