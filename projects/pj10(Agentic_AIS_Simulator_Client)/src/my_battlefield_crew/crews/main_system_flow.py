@@ -2,11 +2,23 @@ import asyncio
 from pydantic import BaseModel
 from crewai.flow.flow import Flow, listen, router, start
 
-from crews.master_router_crew import MasterRouterCrew
-from crews.marine_weather_flow import MarineWeatherFlow
-from crews.battlefield_crew import BattlefieldCrew
-from crews.battlefield_router_crew import RouterCrew
-from crews.rag_crew import RAGCrew
+# from crews.master_router_crew import MasterRouterCrew
+# from crews.marine_weather_flow import MarineWeatherFlow
+# from crews.battlefield_crew import BattlefieldCrew
+# from crews.battlefield_router_crew import RouterCrew
+# from crews.rag_crew import RAGCrew
+
+from master_router_crew import MasterRouterCrew
+from marine_weather_flow import MarineWeatherFlow
+from battlefield_crew import BattlefieldCrew
+from battlefield_router_crew import RouterCrew
+from rag_crew import RAGCrew
+
+######### LANGFUSE #############
+from dotenv import load_dotenv
+from langfuse import get_client
+import openlit
+################################
 
 # from master_router_crew import MasterRouterCrew
 # from marine_weather_flow import MarineWeatherFlow
@@ -98,6 +110,21 @@ if __name__ == "__main__":
     async def run_test_cases(test_cases: list[str]):
         results={}
 
+        ######### langfuse 통합 #########
+        load_dotenv()
+
+        langfuse = get_client()
+
+        # Verify connection
+        if langfuse.auth_check():
+            print("Langfuse client is authenticated and ready!")
+        else:
+            print("Authentication failed. Please check your credentials and host.")
+            return
+
+        openlit.init()
+        ################################
+
         print(f"총 {len(test_cases)}개의 테스트 케이스 실행을 시작합니다. \n")
 
         for idx, user_query in enumerate(test_cases, 1):
@@ -119,8 +146,8 @@ if __name__ == "__main__":
     test_cases = [
         #BattleCrew 관련 질문
       
-        # "선박들의 이동 방향 데이터와 함께 트래픽 가중치 분포가 편중되어 있는 주요 항로 구간을 식별해 주십시오.",
-        # "구역별 주 이동 침로 방향과 주요 항로 흐름 세부 현황을 알려줘.",
+        "선박들의 이동 방향 데이터와 함께 트래픽 가중치 분포가 편중되어 있는 주요 항로 구간을 식별해 주십시오.",
+        "구역별 주 이동 침로 방향과 주요 항로 흐름 세부 현황을 알려줘.",
         #  "현재시점 기준 동해57 부이의 기압 변화 추이를 알고 싶습니다. 기압이 계속 상승하고 있나요?", 
         #  "현재 삼척 해역의 파주기(Wave Period)와 파향 상태를 알려주세요.",
         #  "현재 시점 기준 부이 관측 데이터 중에서 수온이 21°C를 넘는 지점이 존재하나요?", 
@@ -132,9 +159,9 @@ if __name__ == "__main__":
         # "인천 앞바다의 현재 수온은 기온보다 높게 기록되어 있나요?",
 
         #RagCrew 관련 질문
-        "출항 전 2항사가 일부 고속 고박(lashing) 장치가 마모되어 화물의 쏠림이 우려된다고 보고했습니다. 선사는 항만 일정을 이유로 출항을 독촉하고 있습니다. 이때 선장이 매뉴얼상 복원력 유지 대원칙을 근거로 선사와 조타실 요원들에게 내려야 할 즉각적인 의사결정은 무엇입니까?",
-        "출항 시 복원성 계산서상의 KG(무게중심 높이) 수치는 안전 범위를 만족했습니다. 하지만 일등항해사가 장기 항해 도중 연료와 청수가 절반 이하로 소모되면 선박이 뒤집힐 위험이 있다고 우려합니다. 매뉴얼에서 경고하는 어떤 물리적 감축 현상 때문이며, 이를 방지하기 위한 대안은 무엇입니까?",
-        "태풍 권역 인근을 항해할 예정인 화물선에서 갑판장에게 상갑판 배수구(Scupper) 주변 적재물을 정리하고 물길을 터놓으라고 긴급 지시하는 선장의 명령서입니다. 매뉴얼 상 상갑판 배수장치 상태가 복원성 소실과 어떻게 직접적으로 연관되는지 그 인과관계를 설명해 보세요.",
+        # "출항 전 2항사가 일부 고속 고박(lashing) 장치가 마모되어 화물의 쏠림이 우려된다고 보고했습니다. 선사는 항만 일정을 이유로 출항을 독촉하고 있습니다. 이때 선장이 매뉴얼상 복원력 유지 대원칙을 근거로 선사와 조타실 요원들에게 내려야 할 즉각적인 의사결정은 무엇입니까?",
+        # "출항 시 복원성 계산서상의 KG(무게중심 높이) 수치는 안전 범위를 만족했습니다. 하지만 일등항해사가 장기 항해 도중 연료와 청수가 절반 이하로 소모되면 선박이 뒤집힐 위험이 있다고 우려합니다. 매뉴얼에서 경고하는 어떤 물리적 감축 현상 때문이며, 이를 방지하기 위한 대안은 무엇입니까?",
+        # "태풍 권역 인근을 항해할 예정인 화물선에서 갑판장에게 상갑판 배수구(Scupper) 주변 적재물을 정리하고 물길을 터놓으라고 긴급 지시하는 선장의 명령서입니다. 매뉴얼 상 상갑판 배수장치 상태가 복원성 소실과 어떻게 직접적으로 연관되는지 그 인과관계를 설명해 보세요.",
         # "선박 복원성이 무너지는 임계점을 현장에서 신속히 구분하고자 합니다. 매뉴얼 상 선박이 좌우로 기울어져 결국 뒤집히는 '전복(Capsize)'의 물리적 경계 기준과, 해수 유입으로 가라앉는 '침몰(Sinking)'의 기하학적 판단 기준은 각각 무엇입니까?",
         # "선령 23년인 화물선을 인수한 신임 선장입니다. 최근 거친 황천 항해 이후 외판 용접부 주변 미세한 부식이 관찰되었습니다. 선장으로서 매뉴얼상 선령 요건에 근거해 선사와 본선 안전관리를 위해 취해야 할 구체적인 행동은 무엇입니까?",
         # "우리 배에 탑재된 '적하지침기기(Loading Computer)'와 '손상복원자료집(Damage Stability Booklet)'을 평상시 항해사들과 선장이 반드시 정기적으로 검토하고 숙지해야 하는 의무적 이유는 무엇입니까?"

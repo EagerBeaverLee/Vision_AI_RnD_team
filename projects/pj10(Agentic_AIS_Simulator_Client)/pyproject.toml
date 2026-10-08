@@ -5,7 +5,7 @@ description = "pmy_battlefield_crew using crewAI"
 authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.10,<3.14"
 dependencies = [
-    "crewai[tools]==1.14.7",
+    "crewai[tools]>=1.14.7",
     "docx2txt>=0.9",
     "faiss-cpu>=1.15.1",
     "geopandas>=1.1.4",
@@ -14,8 +14,10 @@ dependencies = [
     "langchain-community>=0.4.2",
     "langchain-openai>=1.6.2",
     "langchain-together>=0.4.0",
+    "langfuse>=4.15.4",
     "litellm>=1.95.1",
     "movingpandas>=0.23.0",
+    "openlit>=1.45.0",
     "pypdf>=6.19.0",
     "rank-bm25>=0.2.2",
 ]

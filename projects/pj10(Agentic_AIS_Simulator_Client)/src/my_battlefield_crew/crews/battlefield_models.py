@@ -156,34 +156,35 @@ def format_maritime_report(report: MaritimeSituationReport) -> str:
 
     # 최종 템플릿 완성
     return f"""1. [분석 대상 시간]:
-    - 수집된 AIS 데이터 기반 집계 결과입니다.
+        - 수집된 AIS 데이터 기반 집계 결과입니다.
 
-2. [구역별 밀집 현황]:
-{clusters_table}
+        2. [구역별 밀집 현황]:
+        {clusters_table}
 
-3. [구역별 선박 이동 속도 현황]:
-{speed_text}
+        3. [구역별 선박 이동 속도 현황]:
+        {speed_text}
 
-4. [주요 교통 흐름 요약]:
-{direction_text}
+        4. [주요 교통 흐름 요약]:
+        {direction_text}
 
-5. [구역 간 주요 항로(OD Flow) 현황]:
-{routes_text}
+        5. [구역 간 주요 항로(OD Flow) 현황]:
+        {routes_text}
 
-6. [선박 유형별 통계]:
-{shiptype_table}
+        6. [선박 유형별 통계]:
+        {shiptype_table}
 
-7. [주요 항만별 선박 입출항 현황]:
-{ports_text}
-8. [선박 상태별 현황 요약]:
-    ▶ 순항 중인 선박 리스트: {moving_str}
-    ▶ 정박/대기 중인 선박 리스트: {stopping_str}
-    ▶ 저속 운항 중인 선박 리스트: {slow_str}
+        7. [주요 항만별 선박 입출항 현황]:
+        {ports_text}
+        8. [선박 상태별 현황 요약]:
+            ▶ 순항 중인 선박 리스트: {moving_str}
+            ▶ 정박/대기 중인 선박 리스트: {stopping_str}
+            ▶ 저속 운항 중인 선박 리스트: {slow_str}
 
-9. [주요 선박 특이 기동 상세 분석]:
-{unusual_text}
-10. [종합 결론]:
-{report.final_answer}"""
+        9. [주요 선박 특이 기동 상세 분석]:
+        {unusual_text}
+        10. [종합 결론]:
+        {report.final_answer}
+    """
 
 
 
