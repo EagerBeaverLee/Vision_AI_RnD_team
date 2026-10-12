@@ -1,5 +1,5 @@
 import os
-from crewai import Agent, Task, Crew, Process
+from crewai import Agent, Task, Crew, Process, LLM
 from crewai.project import CrewBase, agent, task, crew
 from tools.maritime_density_async import analyze_maritime_density
 from tools.maritime_speed_async import analyze_mean_speed
@@ -10,6 +10,7 @@ from tools.maritime_ships_voyage_status_async import ship_status_extraction
 from tools.maritime_unusual_ships_detection_async import unusual_ships_detector
 from crews.battlefield_models import MaritimeSituationReport
 # from battlefield_models import MaritimeSituationReport
+from setting.LLM_model_set import lms_llm
 from typing import List
 
 
@@ -61,7 +62,10 @@ from typing import List
 
 ############################## TESTING ENDS
 
-
+# lmstudio_llm = LLM(
+#     model="hosted_vllm/google/gemma-4-26b-a4b",
+#     base_url="http://192.168.0.110:9000/v1"
+# )
 
 @CrewBase
 class BattlefieldCrew:
@@ -70,9 +74,11 @@ class BattlefieldCrew:
     agents_config = 'config/battlefield_agents.yaml'
     tasks_config = 'config/battlefield_tasks.yaml'
 
-    def __init__(self, needed_categories: List[str] = None): #newly added 08/12/2026 for 병렬처리
+    def __init__(self, needed_categories: List[str] = None, step_callback=None, task_callback=None): #newly added 08/12/2026 for 병렬처리
         self.needed_categories = needed_categories or []
-     
+        self.step_callback = step_callback     
+        self.task_callback = task_callback
+
     @agent
     def maritime_situation_analyst(self) -> Agent:
 
@@ -110,7 +116,7 @@ class BattlefieldCrew:
         return Agent(
             config=self.agents_config['maritime_situation_analyst'],
             tools=active_tools,
-            # llm=tllm,
+            llm=lms_llm,
             verbose=True,
             # cache=False,
             max_iter=2
@@ -130,6 +136,8 @@ class BattlefieldCrew:
             agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
+            step_callback=self.step_callback,
+            task_callback=self.task_callback,
             verbose=True
         )
 

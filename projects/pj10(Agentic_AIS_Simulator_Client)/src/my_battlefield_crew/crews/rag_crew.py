@@ -10,6 +10,7 @@ from crewai import LLM
 from dotenv import load_dotenv
 
 import crewai.llms.cache as crewai_cache
+from setting.LLM_model_set import lms_llm
 
 crewai_cache.mark_cache_breakpoint = lambda msg: msg
 
@@ -35,12 +36,16 @@ class RAGCrew:
     agents_config = 'config/rag_agents.yaml'
     tasks_config = 'config/rag_tasks.yaml'  
 
+    def __init__(self, step_callback = None, task_callback = None):
+            self.step_callback = step_callback     
+            self.task_callback = task_callback
+
     @agent
     def document_researcher(self) -> Agent:
         return Agent(
             config=self.agents_config['document_researcher'],
             tools=[search_document_tool],
-            # llm=tllm, #this is for testing open source models; if wanting to use open AI models, deactivate this line!
+            llm=lms_llm, #this is for testing open source models; if wanting to use open AI models, deactivate this line!
             verbose=True
             )
     
@@ -56,7 +61,9 @@ class RAGCrew:
         return Crew(
             agents=self.agents,
             tasks=self.tasks,
-            process=Process.sequential,
+            process=Process.sequential,            
+            step_callback=self.step_callback,
+            task_callback=self.task_callback,
             verbose=True
         )
 

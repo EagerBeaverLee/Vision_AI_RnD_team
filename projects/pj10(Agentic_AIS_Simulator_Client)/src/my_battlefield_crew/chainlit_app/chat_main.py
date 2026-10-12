@@ -1,0 +1,51 @@
+import sys
+from pathlib import Path
+import chainlit as cl
+from chainlit_handler import ChainlitCrewHandler
+
+# 현재 파일(chat_main.py) 기준으로 프로젝트 최상위 루트 디렉토리 찾기
+# chat_main.py(파일) -> chainlit_app(parent) -> 프로젝트 루트(parent.parent)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# sys.path 최상단에 프로젝트 루트 추가
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from crews.battlefield_router_crew import RouterCrew
+from crews.battlefield_crew import BattlefieldCrew
+# from crews.rag_crew import RAGCrew
+
+@cl.on_chat_start
+async def start():
+    await cl.Message(content="👋 안녕하세요! 해상 기상 및 안전 매뉴얼 검색 시스템입니다.").send()
+
+@cl.on_message
+async def main(message: cl.Message):
+    # 💡 async with 컨텍스트로 cl.Step을 열어야 '사용 중' 활성 상태가 유지됩니다.
+    async with cl.Step(name="🚀 질문 분석 및 에이전트 구동 중...", type="run") as step:
+        handler = ChainlitCrewHandler(step=step)
+
+        router_crew = RouterCrew(
+            step_callback=handler.agent_step_callback,
+            task_callback=handler.task_callback
+        )
+
+        router_output = await router_crew.crew().kickoff_async(
+            inputs={"user_question": message.content}
+        )
+        actual_categories = router_output.pydantic.needed_categories
+
+        bf_crew = BattlefieldCrew(
+            needed_categories=actual_categories,
+            step_callback=handler.agent_step_callback,
+            task_callback=handler.task_callback
+        )
+        result = await bf_crew.crew().kickoff_async(inputs={"user_question": message.content})
+
+        # result = RAGCrew().crew().kickoff(inputs={"user_question": message.content})
+
+
+        handler.finish_main_step()        
+
+    # 4. 전체 태스크 이력 아코디언 출력 및 최종 답변 타이핑 스트리밍    
+    await handler.stream_final_response(result.pydantic.final_answer)

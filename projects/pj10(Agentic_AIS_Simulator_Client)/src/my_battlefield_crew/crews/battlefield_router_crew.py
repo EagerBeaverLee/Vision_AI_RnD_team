@@ -1,12 +1,12 @@
 from typing import List, Literal
 from pydantic import BaseModel, Field
-from crewai import Agent, Crew, Process, Task
+from crewai import Agent, Crew, Process, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
+from setting.LLM_model_set import lms_llm
 
 
 ################### TESTING STARTS (Trying various open source LLM models which could be utilized in a local environment)
 import os
-from crewai import LLM 
 from dotenv import load_dotenv
 
 
@@ -50,6 +50,11 @@ load_dotenv()
 #     temperature=0
 # )
 
+# lmstudio_llm = LLM(
+#     model="hosted_vllm/google/gemma-4-26b-a4b",
+#     base_url="http://192.168.0.110:9000/v1"
+# )
+
 ############################## TESTING ENDS
 
 
@@ -88,11 +93,15 @@ class RouterCrew():
     agents_config = 'config/battlefield_router_agents.yaml'
     tasks_config = 'config/battlefield_router_tasks.yaml'
 
+    def __init__(self, step_callback=None, task_callback=None): #newly added 08/12/2026 for 병렬처리
+        self.step_callback = step_callback     
+        self.task_callback = task_callback
+
     @agent
     def tactical_operations_router(self) -> Agent:
         return Agent(
             config=self.agents_config['tactical_operations_router'],
-            # llm=tllm,
+            llm=lms_llm,
             verbose=True
         )
     @task
@@ -109,5 +118,7 @@ class RouterCrew():
             agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
+            step_callback=self.step_callback,
+            task_callback=self.task_callback,
             verbose=True
         )
