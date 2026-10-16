@@ -1,20 +1,34 @@
+import sys
+from pathlib import Path
 from crewai import Crew, Process
 from crewai.flow.flow import Flow, listen, router, start
-from marine_weather_models import SqlFlowState
-from marine_weather_crew import MarineWeatherCrew
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from crews.marine_weather_models import SqlFlowState
+from crews.marine_weather_crew import MarineWeatherCrew
+from chainlit_app.chainlit_handler import ChainlitCrewHandler
 
 class MarineWeatherFlow(Flow[SqlFlowState]):
     """해상 날씨 분석 오케스트레이션 Flow"""
 
-    def __init__(self):
+    def __init__(self, handler: ChainlitCrewHandler=None, message: str=None):
         super().__init__()
+        self.handler = handler
         self.weather_crew = MarineWeatherCrew()
+        self.state.user_query = message
 
     @start()
     def generate_sql(self):
+        self.handler.logs_history.append(f"\n---\n"+ f"#### ⬇️ [MarineWeatherFlow 시작]: `해상 날씨 분석 Flow`시작\n")
+        self.handler.update_step_status(icon="square-play", type_str="llm", name="[MarineWeatherFlow 시작]: 해상 날씨 분석 Flow 시작", delay=1.0)
         print(
             f"\n [Step 1] SQL 생성 시도({self.state.retry_count + 1}회차)"
         )
+        self.handler.logs_history.append(f"\n---\n"+ f"#### ⬇️ [MarineWeatherFlow 진행 중]: SQL 생성 시도({self.state.retry_count + 1}회차)\n")
+        self.handler.update_step_status(icon="square-play", type_str="llm", name=f"[MarineWeatherFlow 진행 중]: SQL 생성 시도({self.state.retry_count + 1}회차)", delay=1.0)
 
         # 피드백이 존재하는 경우 Task 프롬프트에 동적 추가
         feedback_prompt = ""
@@ -25,9 +39,16 @@ class MarineWeatherFlow(Flow[SqlFlowState]):
             위의 피드백/오류 원인을 정확히 반영하여 올바른 SQLite SELECT 쿼리로 수정하세요!
             """     
 
+        self.handler.on_agent_start(agent_name="쿼리 생성 에이전트", agent_role="질문을 바탕으로 SQL 쿼리 생성")
+        self.handler.on_agent_progress(agent_name="쿼리 생성 에이전트", status_desc="질문을 바탕 SQL 쿼리 생성")
+        self.handler.on_task_start(task_name="generate_sql_task", task_desc="질문을 분석하여 정확한 SQL쿼리를 생성합니다.")
+        self.handler.on_task_progress(task_name="generate_sql_task", status_desc="질문을 분석하여 정확한 SQL쿼리를 생성합니다.", delay=2)
+        
         crew = Crew(
             agents=[self.weather_crew.sql_generator_agent()], 
             tasks=[self.weather_crew.generate_sql_task()], 
+            step_callback=self.handler.agent_step_callback,
+            task_callback=self.handler.task_callback,
             process=Process.sequential
         )
 
@@ -38,23 +59,39 @@ class MarineWeatherFlow(Flow[SqlFlowState]):
                 "feedback_prompt": feedback_prompt
             }
         )
+        self.handler.on_task_complete("generate_sql_task")
+        self.handler.on_task_result("generate_sql_task", result)
+        self.handler.on_agent_complete("쿼리 생성 에이전트", agent_role="질문을 바탕으로 SQL 쿼리 생성")
 
         self.state.generated_sql = result.raw
-        self.state.retry_count += 1
 
     @listen(generate_sql)
     def validate_and_execute_sql(self):
-        print("\n⚙️ [Step 2] 생성된 SQL 검증 및 DB 실행 중...") 
+        print("\n⚙️ [Step 2] 생성된 SQL 검증 및 DB 실행 중...")
+
+        self.handler.logs_history.append(f"\n---\n"+ f"#### ⬇️ [MarineWeatherFlow 진행 중]: 생성된 SQL 검증 및 DB 실행 중...\n")
+        self.handler.update_step_status(icon="square-play", type_str="llm", name="[MarineWeatherFlow 진행 중]: 생성된 SQL 검증 및 DB 실행 중...", delay=1.0)
+
+        self.handler.on_agent_start(agent_name="쿼리 실행 에이전트", agent_role="생성된 SQL을 실행 후 결과 반환")
+        self.handler.on_agent_progress(agent_name="쿼리 실행 에이전트", status_desc="생성된 SQL을 실행 후 결과 반환")
+        self.handler.on_task_start(task_name="validate_and_execute_sql_task", task_desc="SQL쿼리 실행 후 성공한 결과 값 또는 실패한 에러메세지를 반환합니다.")
+        self.handler.on_task_progress(task_name="validate_and_execute_sql_task", status_desc="SQL쿼리 실행 후 성공한 결과 값 또는 실패한 에러메세지를 반환합니다.", delay=2)
 
         crew = Crew(
             agents=[self.weather_crew.sql_executor_agent()],
             tasks=[self.weather_crew.validate_and_execute_sql_task()],
+            step_callback=self.handler.agent_step_callback,
+            task_callback=self.handler.task_callback,
             process=Process.sequential
         )
 
         result = crew.kickoff(inputs={
             "generated_sql":self.state.generated_sql
         })
+
+        self.handler.on_task_complete("validate_and_execute_sql_task")
+        self.handler.on_task_result("validate_and_execute_sql_task", result)
+        self.handler.on_agent_complete("쿼리 실행 에이전트", agent_role="생성된 SQL을 실행 후 결과 반환")
 
         raw_result = result.raw
 
@@ -65,23 +102,32 @@ class MarineWeatherFlow(Flow[SqlFlowState]):
             self.state.feedback = f"SQL 구분 오류 발생: {raw_result}"
             self.state.execution_result = "SQL 실행 에러"
             print(f"❌ DB 실행 에러 감지 (시도 횟수: {self.state.retry_count}/3)")
+            self.handler.logs_history.append(f"\n---\n"+ f"#### ⬇️ [MarineWeatherFlow 진행 중]: DB 실행 에러 감지 (시도 횟수: {self.state.retry_count}/3)\n")
+            self.handler.update_step_status(icon="triangle-alert", type_str="llm", name=f"[MarineWeatherFlow 진행 중]: DB 실행 에러 감지 (시도 횟수: {self.state.retry_count}/3)", delay=1.0)
 
         # 검증 통과
         else:
             self.state.is_valid = True
             self.state.execution_result = (result.pydantic.model_dump_json(indent=2) if result.pydantic else raw_result)
-            self.state.feedback = "" # 성공시 피드백 초기화
+            self.state.retry_count = 0  # 성공시 재시도 횟수 초기화
+            self.state.feedback = ""    # 성공시 피드백 초기화
         
     @router(validate_and_execute_sql)
     def check_validation_result(self):
         if self.state.is_valid:
             print("[Validation Passed] SQL 실행 성공")
+            self.handler.logs_history.append(f"\n---\n"+ f"#### ⬇️ [MarineWeatherFlow 진행 중]: SQL 실행 성공\n")
+            self.handler.update_step_status(icon="check", type_str="llm", name=f"[MarineWeatherFlow 진행 중]: SQL 실행 성공", delay=1.0)
             return "success"
         elif self.state.retry_count >= 3:
             print("[Validation Failed] 최대 재시도 횟수(3회) 초과!")
+            self.handler.logs_history.append(f"\n---\n"+ f"#### ⬇️ [MarineWeatherFlow 진행 중]: 최대 재시도 횟수(3회) 초과!\n")
+            self.handler.update_step_status(icon="triangle-alert", type_str="llm", name=f"[MarineWeatherFlow 진행 중]: 최대 재시도 횟수(3회) 초과!", delay=1.0)
             return "max_retries_exceeded"
         else:
             print(f"[ValidationFailed] SQL 재생성 진행. 이유: {self.state.feedback}")
+            self.handler.logs_history.append(f"\n---\n"+ f"#### ⬇️ [MarineWeatherFlow 진행 중]: SQL 재생성 진행.\n")
+            self.handler.update_step_status(icon="recycle", type_str="llm", name=f"[MarineWeatherFlow 진행 중]: SQL 재생성 진행. 이유: {self.state.feedback}", delay=1.0)
             return "retry"
 
     @listen("retry")
@@ -93,10 +139,19 @@ class MarineWeatherFlow(Flow[SqlFlowState]):
     @listen("success")
     def generate_final_answer(self):
         print("\n [Step 3] 검증된 데이터를 기반으로 최종 자연어 답변 생성 중...")
+        self.handler.on_agent_start(agent_name="답변 생성 에이전트", agent_role="최종 답변 생성")
+        self.handler.on_agent_progress(agent_name="답변 생성 에이전트", status_desc="최종 답변 생성")
+        self.handler.on_task_start(task_name="generate_final_answer_task", task_desc="SQL 실행 결과를 바탕으로 사용자의 질문에 가장 적합한 최종 답변을 생성합니다.")
+        self.handler.on_task_progress(task_name="generate_final_answer_task", status_desc="SQL 실행 결과를 바탕으로 사용자의 질문에 가장 적합한 최종 답변을 생성합니다.", delay=2)
+
+        self.handler.logs_history.append(f"\n---\n"+ f"#### ⬇️ [MarineWeatherFlow 진행 중]: 검증된 데이터를 기반으로 최종 자연어 답변 생성 중...\n")
+        self.handler.update_step_status(icon="check", type_str="llm", name=f"[MarineWeatherFlow 진행 중]: 검증된 데이터를 기반으로 최종 자연어 답변 생성 중...", delay=1.0)
 
         crew = Crew(
             agents=[self.weather_crew.data_analyst_agent()],
             tasks=[self.weather_crew.generate_final_answer_task()],
+            step_callback=self.handler.agent_step_callback,
+            task_callback=self.handler.task_callback,
             process=Process.sequential
         )
 
@@ -105,11 +160,16 @@ class MarineWeatherFlow(Flow[SqlFlowState]):
             "execution_result": self.state.execution_result
         })
 
-        self.state.final_answer = result.raw
-        return self.state.final_answer
+        self.handler.on_task_complete("generate_final_answer_task")
+        self.handler.on_task_result("generate_final_answer_task", result)
+        self.handler.on_agent_complete("답변 생성 에이전트", agent_role="최종 답변 생성")
+
+        return result.raw
 
     @listen("max_retries_exeeded")
     def handle_max_retries(self):
+        self.handler.logs_history.append(f"\n---\n"+ f"#### ❌ [MarineWeatherFlow 오류]: 최대 재시도 횟수(3회) 초과.\n")
+        self.handler.update_step_status(icon="x", type_str="llm", name=f"[MarineWeatherFlow 진행 중]: 최대 재시도 횟수(3회) 초과", delay=1.0)
         failure_msg = (
             "죄송합니다. 데이터 베이스 조회에 실패했습니다."
             f" (마지막 오류: {self.state.feedback})"

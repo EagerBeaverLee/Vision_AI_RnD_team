@@ -1,6 +1,7 @@
 from crewai import LLM
 
 lms_llm = LLM(
-    model="hosted_vllm/google/gemma-4-26b-a4b",
-    base_url="http://192.168.0.110:9000/v1"
+    model="hosted_vllm/RedHatAI/gemma-4-26B-A4B-it-FP8-dynamic",
+    base_url="http://192.168.0.110:8000/v1",
+    api_key="ai"
 )

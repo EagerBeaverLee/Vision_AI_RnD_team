@@ -13,6 +13,8 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from crews.battlefield_router_crew import RouterCrew
 from crews.battlefield_crew import BattlefieldCrew
+from crews.battlefield_models import format_maritime_report
+from crews.main_system_flow import MainSystemFlow
 # from crews.rag_crew import RAGCrew
 
 @cl.on_chat_start
@@ -22,30 +24,17 @@ async def start():
 @cl.on_message
 async def main(message: cl.Message):
     # 💡 async with 컨텍스트로 cl.Step을 열어야 '사용 중' 활성 상태가 유지됩니다.
-    async with cl.Step(name="🚀 질문 분석 및 에이전트 구동 중...", type="run") as step:
+    async with cl.Step(name="🚀 질문 분석 및 에이전트 구동 중...", type="run", default_open=False, auto_collapse=True) as step:
         handler = ChainlitCrewHandler(step=step)
 
-        router_crew = RouterCrew(
-            step_callback=handler.agent_step_callback,
-            task_callback=handler.task_callback
+        mainsystemflow = MainSystemFlow(
+            ui_handler=handler,
+            message=message.content
         )
 
-        router_output = await router_crew.crew().kickoff_async(
-            inputs={"user_question": message.content}
-        )
-        actual_categories = router_output.pydantic.needed_categories
+        result = await mainsystemflow.kickoff_async()
 
-        bf_crew = BattlefieldCrew(
-            needed_categories=actual_categories,
-            step_callback=handler.agent_step_callback,
-            task_callback=handler.task_callback
-        )
-        result = await bf_crew.crew().kickoff_async(inputs={"user_question": message.content})
-
-        # result = RAGCrew().crew().kickoff(inputs={"user_question": message.content})
-
-
-        handler.finish_main_step()        
+        handler.finish_main_step()
 
     # 4. 전체 태스크 이력 아코디언 출력 및 최종 답변 타이핑 스트리밍    
-    await handler.stream_final_response(result.pydantic.final_answer)
+    await handler.stream_final_response(result)

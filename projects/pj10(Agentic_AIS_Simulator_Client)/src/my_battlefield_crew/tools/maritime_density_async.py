@@ -8,7 +8,9 @@ from crewai.tools import tool
 from data.spatial_data.zone_config import get_zones_gdf
 
 
-def _run_maritime_density_analysis() -> str:
+def _run_maritime_density_analysis(handler=None) -> str:
+    if handler:
+        handler.on_tool_progress("밀집도 및 혼잡도", "구역별 정박 밀집도 정보를 통계적 요약 정보를 반환합니다")
     cluster_path = "./cache/clusters.geojson"
 
     if not os.path.exists(cluster_path):
@@ -27,21 +29,28 @@ def _run_maritime_density_analysis() -> str:
     result = {
         "cluster_density": cluster_summary.to_dict(orient="records")
     }
+    if handler:
+        handler.on_tool_complete("밀집도 및 혼잡도")
+        handler.on_tool_result("밀집도 및 혼잡도")
     
     return json.dumps(result, ensure_ascii=False, indent=4)
 
-@tool("Maritime Zone Density Analyzer")
-async def analyze_maritime_density() -> str:
-    """
-    미리 분석되어 저장된 해상 클러스터(Cluster) 데이터를 로드하고
-    지정된 서·남해안 군사 관심 구역(Zone)과 공간 조인(Spatial Join)하여 
-    구역별 정박 밀집도 정보를 통계적 요약 JSON 문자열로 반환합니다.
-    """
-    # 동기 로직을 별도 쓰레드에서 비동기로 실행하여 파이프라인(이벤트 루프) 멈춤을 방지
-    output_json = await asyncio.to_thread(_run_maritime_density_analysis)
-    
-    print(output_json)
-    return output_json
+def analyze_maritime_density(ui_handler=None):
+    @tool("Maritime Zone Density Analyzer")
+    async def _analyze_maritime_density() -> str:
+        """
+        미리 분석되어 저장된 해상 클러스터(Cluster) 데이터를 로드하고
+        지정된 서·남해안 군사 관심 구역(Zone)과 공간 조인(Spatial Join)하여 
+        구역별 정박 밀집도 정보를 통계적 요약 JSON 문자열로 반환합니다.
+        """
+        if ui_handler:
+            ui_handler.on_tool_start("밀집도 및 혼잡도", "구역별 정박 밀집도 정보를 통계적 요약 정보를 반환합니다")
+        # 동기 로직을 별도 쓰레드에서 비동기로 실행하여 파이프라인(이벤트 루프) 멈춤을 방지
+        output_json = await asyncio.to_thread(_run_maritime_density_analysis, handler=ui_handler)
+        
+        print(output_json)
+        return output_json
+    return _analyze_maritime_density
 
 
 

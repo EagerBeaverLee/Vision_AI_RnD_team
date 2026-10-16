@@ -1,0 +1,50 @@
+:root {
+    --stop-icon-animation: my-pulse 2s ease-in-out infinite;
+    --loading-cursor-animation: my-breathe 2s ease-in-out infinite;
+    --loading-cursor-size: 1.25rem;
+}
+@keyframes my-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.92); }
+}
+@keyframes my-breathe {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.85); }
+}
+
+
+/* ===================================================
+   Chainlit Step 타이틀 전환 애니메이션 (Fade & Slide)
+   =================================================== */
+
+/* 1. 왼쪽에서 서서히 밀려오며 나타나는 키프레임 */
+
+/* @keyframes stepFadeSlideIn {
+  0% {
+    opacity: 0.1;
+    transform: translateX(-12px);
+    filter: blur(2px); 
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+} */
+
+/* 텍스트 갱신 시 강제 적용할 애니메이션 클래스 */
+/* .step-animate-trigger {
+  display: inline-block !important;
+  animation: stepFadeSlideIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: transform, opacity, filter;
+} */
+
+/* 2. Chainlit Step의 이름/제목 요소 타겟팅 */
+/* Step 아이콘 옆에 위치한 제목 텍스트 컨테이너 */
+/* div[id^="step-"] > div > span,
+div[id^="step-"] button span,
+.step-title {
+  display: inline-block;
+  animation: stepFadeSlideIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, filter;
+} */

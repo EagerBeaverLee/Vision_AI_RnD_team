@@ -7,7 +7,9 @@ import geopandas as gpd
 from shapely.geometry import Point
 
 
-def _run_ship_status_extraction() -> str:
+def _run_ship_status_extraction(handler=None) -> str:
+    if handler:
+        handler.on_tool_progress("기동 상태별 현황", "선박들의 상태를 추출 하여 이동/통과, 저속 운항, 정박/대기 카테고리로 분류한 정보를 반환합니다")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_root = os.path.dirname(current_dir)
 
@@ -67,20 +69,26 @@ def _run_ship_status_extraction() -> str:
         "stop_ships": stop_ships, 
         "slow_ships": slow_ships
     }
+    if handler:
+        handler.on_tool_complete("기동 상태별 현황")
+        handler.on_tool_result("기동 상태별 현황")
 
     return json.dumps(final_report, ensure_ascii=False, indent=4)
 
 
-@tool('Maritime Ships Voyage Status Analyzer')
-async def ship_status_extraction() -> str:
-    """
-    현재 시점 기준 선박들의 상태를 추출 하여 이동/통과, 저속 운항, 정박/대기 카테고리로 분류하여 분석합니다.
-    선박들의 현재 상태를 묻는 질문이나 선박 유형별 통계 관련 질문이 들어올 때 이 도구를 사용하세요.
-    """
-    # 데이터 처리 및 필터링 연산을 백그라운드 쓰레드에서 비동기 실행
-    output_json = await asyncio.to_thread(_run_ship_status_extraction)
-    return output_json
-
+def ship_status_extraction(ui_handler=None):
+    @tool('Maritime Ships Voyage Status Analyzer')
+    async def _ship_status_extraction() -> str:
+        """
+        현재 시점 기준 선박들의 상태를 추출 하여 이동/통과, 저속 운항, 정박/대기 카테고리로 분류하여 분석합니다.
+        선박들의 현재 상태를 묻는 질문이나 선박 유형별 통계 관련 질문이 들어올 때 이 도구를 사용하세요.
+        """
+        if ui_handler:
+            ui_handler.on_tool_start("기동 상태별 현황", "선박들의 상태를 추출 하여 이동/통과, 저속 운항, 정박/대기 카테고리로 분류한 정보를 반환합니다")
+        # 데이터 처리 및 필터링 연산을 백그라운드 쓰레드에서 비동기 실행
+        output_json = await asyncio.to_thread(_run_ship_status_extraction, handler=ui_handler)
+        return output_json
+    return _ship_status_extraction
 
 
 #####################

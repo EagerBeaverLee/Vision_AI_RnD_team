@@ -2,7 +2,12 @@
 from crewai import Agent, Task, Crew, Process
 from tools.doc_search_tool import search_document_tool
 from crewai.project import CrewBase, agent, task, crew
-
+import sys
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from chainlit_app.chainlit_handler import ChainlitCrewHandler
 
 ################### TESTING STARTS (Trying various open source LLM models which could be utilized in a local environment)
 import os
@@ -36,15 +41,15 @@ class RAGCrew:
     agents_config = 'config/rag_agents.yaml'
     tasks_config = 'config/rag_tasks.yaml'  
 
-    def __init__(self, step_callback = None, task_callback = None):
-            self.step_callback = step_callback     
-            self.task_callback = task_callback
+    def __init__(self, handler: ChainlitCrewHandler=None):
+        self.handler = handler
+        self.active_tool = [search_document_tool(self.handler)]
 
     @agent
     def document_researcher(self) -> Agent:
         return Agent(
             config=self.agents_config['document_researcher'],
-            tools=[search_document_tool],
+            tools=self.active_tool,
             llm=lms_llm, #this is for testing open source models; if wanting to use open AI models, deactivate this line!
             verbose=True
             )
@@ -61,9 +66,9 @@ class RAGCrew:
         return Crew(
             agents=self.agents,
             tasks=self.tasks,
-            process=Process.sequential,            
-            step_callback=self.step_callback,
-            task_callback=self.task_callback,
+            process=Process.sequential,
+            step_callback=self.handler.agent_step_callback,
+            task_callback=self.handler.task_callback,
             verbose=True
         )
 

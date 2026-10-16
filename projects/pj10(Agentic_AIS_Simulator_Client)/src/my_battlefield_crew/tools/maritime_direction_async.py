@@ -7,7 +7,9 @@ import pandas as pd
 import geopandas as gpd
 
 
-def _run_direction_analysis() -> str:
+def _run_direction_analysis(handler=None) -> str:
+    if handler:
+        handler.on_tool_progress("주요 방향 분석", "관심 해역에서 선박들의 주요 이동향 정보를 반환합니다")
     preprocessed_path = "./cache/ais_compressed_step2.parquet"
 
     if not os.path.exists(preprocessed_path):
@@ -71,20 +73,26 @@ def _run_direction_analysis() -> str:
                 "average_speed_knot": round(curr_avg_speed, 1),
                 "vector_course_deg": round(vec_avg, 1)
             })
+    if handler:
+        handler.on_tool_complete("주요 방향 분석")
+        handler.on_tool_result("주요 방향 분석")
 
     return json.dumps(flow_reports, ensure_ascii=False, indent=4)
 
 
-
-@tool("Maritime Traffic Direction Analyzer")
-async def get_direction_analysis() -> str:
-    """
-    미리 분석되어 저장된 해상 주요 선박 향(Direction) 데이터를 로드하고
-    관심 해역에서 선박들의 주요 이동향 정보를 요약하여 JSON문자열로 반환합니다.
-    """
-    # 동기식 파이썬 연산을 쓰레드풀로 넘겨 비동기 이벤트 루프 멈춤 현상 방지
-    output_json = await asyncio.to_thread(_run_direction_analysis)
-    return output_json
+def get_direction_analysis(ui_handler=None):
+    @tool("Maritime Traffic Direction Analyzer")
+    async def _get_direction_analysis() -> str:
+        """
+        미리 분석되어 저장된 해상 주요 선박 향(Direction) 데이터를 로드하고
+        관심 해역에서 선박들의 주요 이동향 정보를 요약하여 JSON문자열로 반환합니다.
+        """
+        if ui_handler:
+            ui_handler.on_tool_start("주요 방향 분석", "관심 해역에서 선박들의 주요 이동향 정보를 반환합니다")
+        # 동기식 파이썬 연산을 쓰레드풀로 넘겨 비동기 이벤트 루프 멈춤 현상 방지
+        output_json = await asyncio.to_thread(_run_direction_analysis, handler=ui_handler)
+        return output_json
+    return _get_direction_analysis
 
 
 

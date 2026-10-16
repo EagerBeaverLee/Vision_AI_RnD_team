@@ -8,11 +8,20 @@ from crewai.project import CrewBase, agent, crew, task
 
 
 ################### TESTING STARTS (Trying various open source LLM models which could be utilized in a local environment)
-import os
+import os, sys
+from pathlib import Path
 from crewai import LLM 
 from dotenv import load_dotenv
 
 import crewai.llms.cache as crewai_cache
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# sys.path 최상단에 프로젝트 루트 추가
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from chainlit_app.chainlit_handler import ChainlitCrewHandler
 
 crewai_cache.mark_cache_breakpoint = lambda msg: msg
 
@@ -61,6 +70,11 @@ class MasterRouterCrew:
     agents_config = 'config/master_router_agents.yaml'
     tasks_config = 'config/master_router_tasks.yaml'
 
+    def __init__(self, handler: ChainlitCrewHandler=None):
+        # self.step_callback = handler.agent_step_callback
+        # self.task_callback = handler.task_callback
+        self.handler = handler
+
     @agent
     def master_operations_router(self) -> Agent:
         return Agent(
@@ -83,6 +97,8 @@ class MasterRouterCrew:
             agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
+            step_callback=self.handler.agent_step_callback,
+            task_callback=self.handler.task_callback,
             verbose=True
         )
        

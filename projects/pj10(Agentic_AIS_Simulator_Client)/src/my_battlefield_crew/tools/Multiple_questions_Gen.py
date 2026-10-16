@@ -27,15 +27,16 @@ class LineListOutputParser(BaseOutputParser[List[str]]):
         return [line.strip() for line in lines if line.strip()]
 
 
-api_key = os.getenv("OPENAI_API_KEY")
-model_name = os.getenv("MODEL")
+# api_key = os.getenv("OPENAI_API_KEY")
+# model_name = os.getenv("MODEL")
 
-if model_name.startswith("openai/"):
-    model_name = model_name.replace("openai/", "")
+# if model_name.startswith("openai/"):
+#     model_name = model_name.replace("openai/", "")
 
 vllm = ChatOpenAI(
-    model=model_name, 
-    api_key=api_key,
+    model="RedHatAI/gemma-4-26B-A4B-it-FP8-dynamic",
+    base_url="http://192.168.0.110:8000/v1",
+    api_key="ai",
 )
 
 

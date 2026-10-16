@@ -7,7 +7,9 @@ from crewai.tools import tool
 from data.spatial_data.zone_config import get_zones_gdf
 
 
-def _run_mean_speed_analysis() -> str:
+def _run_mean_speed_analysis(handler=None) -> str:
+    if handler:
+        handler.on_tool_progress("구역별 속도", "해상 작전 통제 구역(Zone)별 선박들의 평균 속도, 최고 속도 및 트래픽 수에 대한 정보를 반환합니다")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_root = os.path.dirname(current_dir)
     
@@ -32,19 +34,23 @@ def _run_mean_speed_analysis() -> str:
     
     # 4. JSON 변환 및 리턴
     data_dict_speed = zone_speed_stats.to_dict(orient="records")
-    
+    if handler:
+        handler.on_tool_complete("구역별 속도")
+        handler.on_tool_result("구역별 속도")
     return json.dumps(data_dict_speed, ensure_ascii=False, indent=4)
 
 
-
-@tool("Maritime Zone Mean Speed Analyzer")
-async def analyze_mean_speed() -> str:
-    """해상 작전 통제 구역(Zone)별 선박들의 평균 속도, 최고 속도 및 트래픽 수를 분석합니다. 
-    구역별 속도 통계나 속도 요약 관련 질문이 들어왔을 때 반드시 이 도구를 사용해야 합니다."""
-    
-    # 공간 조인 및 속도 통계 연산을 백그라운드 쓰레드에서 비동기 실행
-    output_json = await asyncio.to_thread(_run_mean_speed_analysis)
-    return output_json
+def analyze_mean_speed(ui_handler=None):
+    @tool("Maritime Zone Mean Speed Analyzer")
+    async def _analyze_mean_speed() -> str:
+        """해상 작전 통제 구역(Zone)별 선박들의 평균 속도, 최고 속도 및 트래픽 수를 분석합니다. 
+        구역별 속도 통계나 속도 요약 관련 질문이 들어왔을 때 반드시 이 도구를 사용해야 합니다."""
+        if ui_handler:
+            ui_handler.on_tool_start("구역별 속도", "해상 작전 통제 구역(Zone)별 선박들의 평균 속도, 최고 속도 및 트래픽 수에 대한 정보를 반환합니다")
+        # 공간 조인 및 속도 통계 연산을 백그라운드 쓰레드에서 비동기 실행
+        output_json = await asyncio.to_thread(_run_mean_speed_analysis, handler=ui_handler)
+        return output_json
+    return _analyze_mean_speed
 
 
 

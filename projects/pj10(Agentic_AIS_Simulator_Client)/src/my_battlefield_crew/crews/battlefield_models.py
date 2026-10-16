@@ -77,114 +77,165 @@ class MaritimeSituationReport(BaseModel):
 # 전체상황 요약 템플릿   
 
 def format_maritime_report(report: MaritimeSituationReport) -> str:
-    """Pydantic 모델(report)에서 데이터를 꺼내 제시된 템플릿 포맷 문자열로 변환합니다."""
+    """Pydantic 모델(report)에서 데이터를 꺼내 깨짐 없는 표준 Markdown 문자열로 변환합니다."""
     if not report:
         return "분석 결과 데이터가 존재하지 않습니다."
 
-    # 2. 구역별 밀집 현황 (테이블 형태)
-    clusters_table = "| 해역명 | 총 정박 지수 | 비고 |\n|---|---|---|\n"
+    # 2. 구역별 밀집 현황 (표 앞뒤 빈 줄 보장)
     if report.top_dense_zones:
-        for z in report.top_dense_zones[:3]: # 상위 3개
-            mil = getattr(z, 'military_implication', '주요 해역')
-            clusters_table += f"| {z.name} | {z.total_stay_index} | {mil} |\n"
+        clusters_rows = [
+            f"| {z.name} | {z.total_stay_index} | {getattr(z, 'military_implication', '주요 해역')} |"
+            for z in report.top_dense_zones[:3]
+        ]
+        clusters_table = (
+            "| 해역명 | 총 정박 지수 | 비고 |\n|---|---|---|\n"
+            + "\n".join(clusters_rows)
+        )
     else:
         clusters_table = "집계된 밀집 구역 데이터 없음"
 
     # 3. 구역별 이동 속도 현황
-    speed_text = ""
     if report.zone_speeds:
-        speed_text = "\n".join([f"- {s.name}: 평균 {s.mean:.2f} Knot (최대 {s.max:.2f} Knot)" for s in report.zone_speeds])
+        speed_text = "\n".join(
+            [
+                f"- {s.name}: 평균 {s.mean:.2f} Knot (최대 {s.max:.2f} Knot)"
+                for s in report.zone_speeds
+            ]
+        )
     else:
-        speed_text = "속도 분석 데이터 없음"
+        speed_text = "- 속도 분석 데이터 없음"
 
     # 4. 주요 교통 흐름
-    direction_text = ""
     if report.main_directions:
-        direction_text = "\n".join([f"- {d.direction} 방향: {d.ship_count}척 (평균 속도 {d.average_speed_knot} Knot)" for d in report.main_directions])
+        direction_text = "\n".join(
+            [
+                f"- {d.direction} 방향: {d.ship_count}척 (평균 속도 {d.average_speed_knot} Knot)"
+                for d in report.main_directions
+            ]
+        )
     else:
-        direction_text = "교통 흐름 데이터 없음"
+        direction_text = "- 교통 흐름 데이터 없음"
 
     # 5. 구역 간 주요 항로(OD Flow)
-    routes_text = ""
     if report.main_routes:
-        routes_text = "\n".join([f"- {r.origin_zone} -> {r.dest_zone} (가중치: {r.weight})" for r in report.main_routes[:5]])
+        routes_text = "\n".join(
+            [
+                f"- {r.origin_zone} -> {r.dest_zone} (가중치: {r.weight})"
+                for r in report.main_routes[:5]
+            ]
+        )
     else:
-        routes_text = "주요 항로 데이터 없음"
+        routes_text = "- 주요 항로 데이터 없음"
 
     # 6. 선박 유형별 통계 (Markdown 테이블)
-    shiptype_table = "| 선박 유형 | 수량 |\n|---|---|\n"
-    if report.ship_voyage_status and getattr(report.ship_voyage_status, 'ship_types', None):
-        for stype, count in report.ship_voyage_status.ship_types.items():
-            shiptype_table += f"| {stype} | {count} |\n"
+    if (
+        report.ship_voyage_status
+        and getattr(report.ship_voyage_status, "ship_types", None)
+    ):
+        type_rows = [
+            f"| {stype} | {count} |"
+            for stype, count in report.ship_voyage_status.ship_types.items()
+        ]
+        shiptype_table = "| 선박 유형 | 수량 |\n|---|---|\n" + "\n".join(
+            type_rows
+        )
     else:
         shiptype_table = "선박 유형 통계 데이터 없음"
 
-    # 7. 주요 항만별 입출항 현황
-    ports_text = ""
+    # 7. 주요 항만별 입출항 현황 (표준 중첩 리스트 문법 적용: 2칸 공백 들여쓰기)
     if report.port_activities:
+        port_blocks = []
         for p in report.port_activities:
-            ports_text += f"▶ {p.port_name}\n"
-            if getattr(p, 'anchored_ships_detail', None):
-                ports_text += f"  ▶ 정박/대기 중인 선박: 총 {p.anchored_count}척\n" + "\n".join([f"    - {s}" for s in p.anchored_ships_detail]) + "\n"
-            if getattr(p, 'departures_detail', None):
-                ports_text += f"  ▶ 출발/기동 선박: 총 {p.departure_count}척\n" + "\n".join([f"    - {s}" for s in p.departures_detail]) + "\n"
-            if getattr(p, 'arrivals_detail', None):
-                ports_text += f"  ▶ 도착/진입 선박: 총 {p.arrival_count}척\n" + "\n".join([f"    - {s}" for s in p.arrivals_detail]) + "\n"
+            lines = [f"* **{p.port_name}**"]
+            if getattr(p, "anchored_ships_detail", None):
+                lines.append(
+                    f"  * **정박/대기 중인 선박 (총 {p.anchored_count}척)**"
+                )
+                lines.extend([f"    - {s}" for s in p.anchored_ships_detail])
+            if getattr(p, "departures_detail", None):
+                lines.append(
+                    f"  * **출발/기동 선박 (총 {p.departure_count}척)**"
+                )
+                lines.extend([f"    - {s}" for s in p.departures_detail])
+            if getattr(p, "arrivals_detail", None):
+                lines.append(
+                    f"  * **도착/진입 선박 (총 {p.arrival_count}척)**"
+                )
+                lines.extend([f"    - {s}" for s in p.arrivals_detail])
+            port_blocks.append("\n".join(lines))
+        ports_text = "\n\n".join(port_blocks)
     else:
-        ports_text = "항만 활동 데이터 없음"
+        ports_text = "- 항만 활동 데이터 없음"
 
-    # 8. 선박 상태별 현황 요약 (리스트 형식)
-    moving_str = "없음"
-    stopping_str = "없음"
-    slow_str = "없음"
+    # 8. 선박 상태별 현황 요약 (표준 마크다운 리스트 형태로 안전하게 감싸기)
+    def format_status_group(title: str, ships: list) -> str:
+        if not ships:
+            return f"* **{title}**: 없음"
+        ship_lines = "\n".join([f"  * {s.ShipName}({s.mmsi})" for s in ships])
+        return f"* **{title}**\n{ship_lines}"
+
+    status_blocks = []
     if report.ship_voyage_status:
         v = report.ship_voyage_status
-        if getattr(v, 'moving_ships', None):
-            moving_str = "\n" + "\n".join([f"    - {s.ShipName}({s.mmsi})" for s in v.moving_ships])
-        if getattr(v, 'stop_ships', None):
-            stopping_str = "\n" + "\n".join([f"    - {s.ShipName}({s.mmsi})" for s in v.stop_ships])
-        if getattr(v, 'slow_ships', None):
-            slow_str = "\n" + "\n".join([f"    - {s.ShipName}({s.mmsi})" for s in v.slow_ships])
+        status_blocks.append(
+            format_status_group(
+                "순항 중인 선박 리스트", getattr(v, "moving_ships", [])
+            )
+        )
+        status_blocks.append(
+            format_status_group(
+                "정박/대기 중인 선박 리스트", getattr(v, "stop_ships", [])
+            )
+        )
+        status_blocks.append(
+            format_status_group(
+                "저속 운항 중인 선박 리스트", getattr(v, "slow_ships", [])
+            )
+        )
+        status_text = "\n\n".join(status_blocks)
+    else:
+        status_text = "- 선박 상태 데이터 없음"
 
     # 9. 특이 기동 선박
-    unusual_text = ""
     if report.unusual_ships:
-        for u in report.unusual_ships:
-            unusual_text += f"  - [{u.ShipName}]: {u.turn_count}회의 변침과 {u.speed_change_count}회의 속도 변화 포착.\n"
+        unusual_text = "\n".join(
+            [
+                f"- **[{u.ShipName}]**: {u.turn_count}회의 변침과 {u.speed_change_count}회의 속도 변화 포착."
+                for u in report.unusual_ships
+            ]
+        )
     else:
-        unusual_text = "식별된 특이 기동 선박 없음"
+        unusual_text = "- 식별된 특이 기동 선박 없음"
 
-    # 최종 템플릿 완성
-    return f"""1. [분석 대상 시간]:
-        - 수집된 AIS 데이터 기반 집계 결과입니다.
+    # 최종 템플릿 반환 (각 섹션 사이 빈 줄 확보)
+    return f"""### 1. [분석 대상 시간]
+- 수집된 AIS 데이터 기반 집계 결과입니다.
 
-        2. [구역별 밀집 현황]:
-        {clusters_table}
+### 2. [구역별 밀집 현황]
 
-        3. [구역별 선박 이동 속도 현황]:
-        {speed_text}
+{clusters_table}
 
-        4. [주요 교통 흐름 요약]:
-        {direction_text}
+### 3. [구역별 선박 이동 속도 현황]
+{speed_text}
 
-        5. [구역 간 주요 항로(OD Flow) 현황]:
-        {routes_text}
+### 4. [주요 교통 흐름 요약]
+{direction_text}
 
-        6. [선박 유형별 통계]:
-        {shiptype_table}
+### 5. [구역 간 주요 항로(OD Flow) 현황]
+{routes_text}
 
-        7. [주요 항만별 선박 입출항 현황]:
-        {ports_text}
-        8. [선박 상태별 현황 요약]:
-            ▶ 순항 중인 선박 리스트: {moving_str}
-            ▶ 정박/대기 중인 선박 리스트: {stopping_str}
-            ▶ 저속 운항 중인 선박 리스트: {slow_str}
+### 6. [선박 유형별 통계]
 
-        9. [주요 선박 특이 기동 상세 분석]:
-        {unusual_text}
-        10. [종합 결론]:
-        {report.final_answer}
-    """
+{shiptype_table}
 
+### 7. [주요 항만별 선박 입출항 현황]
+{ports_text}
 
+### 8. [선박 상태별 현황 요약]
+{status_text}
 
+### 9. [주요 선박 특이 기동 상세 분석]
+{unusual_text}
+
+### 10. [종합 결론]
+{report.final_answer}"""

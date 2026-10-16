@@ -7,7 +7,9 @@ from crewai.tools import tool
 from data.spatial_data.zone_config import get_zones_gdf
 
 
-def _run_traffic_flow_analysis() -> str:
+def _run_traffic_flow_analysis(handler=None) -> str:
+    if handler:
+        handler.on_tool_progress("주요 교통 흐름", "구역간 주요 교통 흐름 정보를 반환합니다")
     flow_path = "./cache/flows.geojson"
 
     if not os.path.exists(flow_path):
@@ -45,21 +47,26 @@ def _run_traffic_flow_analysis() -> str:
     result = {
         "main_routes": flow_summary.to_dict(orient="records")
     }
-
+    if handler:
+        handler.on_tool_complete("주요 교통 흐름")
+        handler.on_tool_result("주요 교통 흐름")
     return json.dumps(result, ensure_ascii=False, indent=4)
 
 
-
-@tool("Maritime Traffic Flow Analyzer")
-async def analyze_traffic_flow() -> str:
-    """
-    미리 분석되어 저장된 해상 주요 선박 흐름(Flow) 데이터를 로드하고
-    지정된 서·남해안 군사 관심 구역(Zone)과 공간 조인(Spatial Join)하여 
-    구역간 주요 교통 흐름 정보를 통계적 요약 JSON 문자열로 반환합니다.
-    """
-    # 무거운 공간 조인 연산을 별도 쓰레드로 분리하여 비동기 실행
-    output_json = await asyncio.to_thread(_run_traffic_flow_analysis)
-    return output_json
+def analyze_traffic_flow(ui_handler=None):
+    @tool("Maritime Traffic Flow Analyzer")
+    async def _analyze_traffic_flow() -> str:
+        """
+        미리 분석되어 저장된 해상 주요 선박 흐름(Flow) 데이터를 로드하고
+        지정된 서·남해안 군사 관심 구역(Zone)과 공간 조인(Spatial Join)하여 
+        구역간 주요 교통 흐름 정보를 통계적 요약 JSON 문자열로 반환합니다.
+        """
+        if ui_handler:
+            ui_handler.on_tool_start("주요 교통 흐름", "구역간 주요 교통 흐름 정보를 반환합니다")
+        # 무거운 공간 조인 연산을 별도 쓰레드로 분리하여 비동기 실행
+        output_json = await asyncio.to_thread(_run_traffic_flow_analysis, handler=ui_handler)
+        return output_json
+    return _analyze_traffic_flow
 
 
 

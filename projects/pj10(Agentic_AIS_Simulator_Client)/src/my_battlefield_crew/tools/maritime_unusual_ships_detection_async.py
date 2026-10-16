@@ -4,7 +4,9 @@ import asyncio
 import pandas as pd
 from crewai.tools import tool
 
-def _run_unusual_ships_detection() -> str:
+def _run_unusual_ships_detection(handler=None) -> str:
+    if handler:
+        handler.on_tool_progress("특이 기동 선박 현황", "특이/이상 기동 선박에 대한 정보를 반환합니다")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_root = os.path.dirname(current_dir)
     preprocessed_path = os.path.join(parent_root, "cache", "ais_compressed_step2.parquet")
@@ -29,25 +31,30 @@ def _run_unusual_ships_detection() -> str:
 
     # 5. JSON 변환
     unusual_ships_json = unusual_ships_df.to_dict(orient='records')
-
+    if handler:
+        handler.on_tool_complete("특이 기동 선박 현황")
+        handler.on_tool_result("특이 기동 선박 현황")
     return json.dumps(unusual_ships_json, ensure_ascii=False, indent=4)
 
+def unusual_ships_detector(ui_handler=None):
+    # 2. CrewAI Tool을 async def로 작성하고 백그라운드 쓰레드로 실행
+    @tool('Maritime Unusual Ships Detector')
+    async def _unusual_ships_detector() -> str:
+        """
+        기능:
+            수집된 선박 항해 데이터(AIS)를 분석하여 급선회(우선회/좌선회) 또는 급변속(가속/감속)이 
+            빈번하게 발생한 '특이/이상 기동 선박' 목록을 추출하고 JSON 리포트로 반환합니다.
 
-# 2. CrewAI Tool을 async def로 작성하고 백그라운드 쓰레드로 실행
-@tool('Maritime Unusual Ships Detector')
-async def unusual_ships_detector() -> str:
-    """
-    기능:
-        수집된 선박 항해 데이터(AIS)를 분석하여 급선회(우선회/좌선회) 또는 급변속(가속/감속)이 
-        빈번하게 발생한 '특이/이상 기동 선박' 목록을 추출하고 JSON 리포트로 반환합니다.
-
-    사용 시점 (Trigger Conditions):
-        - 사용자가 '이상 기동', '특이 기동', '지그재그 항해', '급선회', '급변속' 선박에 대해 질문할 때
-        - 의심스러운 항해 패턴을 보이거나 위험 기동을 수행 중인 선박 현황 요청 시
-    """
-    # 이상 기동 분석 및 집계 연산을 백그라운드 쓰레드에서 비동기 실행
-    output_json = await asyncio.to_thread(_run_unusual_ships_detection)
-    return output_json
+        사용 시점 (Trigger Conditions):
+            - 사용자가 '이상 기동', '특이 기동', '지그재그 항해', '급선회', '급변속' 선박에 대해 질문할 때
+            - 의심스러운 항해 패턴을 보이거나 위험 기동을 수행 중인 선박 현황 요청 시
+        """
+        if ui_handler:
+            ui_handler.on_tool_start("특이 기동 선박 현황", "특이/이상 기동 선박에 대한 정보를 반환합니다")
+        # 이상 기동 분석 및 집계 연산을 백그라운드 쓰레드에서 비동기 실행
+        output_json = await asyncio.to_thread(_run_unusual_ships_detection, handler=ui_handler)
+        return output_json
+    return _unusual_ships_detector
 
 
 

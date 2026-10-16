@@ -1,0 +1,13 @@
+:root {
+    --stop-icon-animation: my-pulse 2s ease-in-out infinite;
+    --loading-cursor-animation: my-breathe 2s ease-in-out infinite;
+    --loading-cursor-size: 1.25rem;
+}
+@keyframes my-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.92); }
+}
+@keyframes my-breathe {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.85); }
+}

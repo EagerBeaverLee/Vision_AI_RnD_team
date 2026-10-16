@@ -12,7 +12,9 @@ from crewai.tools import tool
 from engine.loader import load_shp_file
 
 
-def _run_major_ports_status_analysis() -> str:
+def _run_major_ports_status_analysis(handler=None) -> str:
+    if handler:
+        handler.on_tool_progress("주요 항만별 입출항", "기동 중인 선박들의 주요 항구별 입출항(출발/도착) 및 정박 현황 정보를 반환합니다")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_root = os.path.dirname(current_dir)
 
@@ -117,18 +119,24 @@ def _run_major_ports_status_analysis() -> str:
         
         port_summary_list.append(port_entry)
 
+    if handler:
+        handler.on_tool_complete("주요 항만별 입출항")
+        handler.on_tool_result("주요 항만별 입출항")
+
     return json.dumps(port_summary_list, ensure_ascii=False, indent=4)
 
 
-
-@tool("Maritime Major Ports Status")
-async def get_major_ports_status() -> str:
-    """현재 기동 중인 선박들의 주요 항구별 입출항(출발/도착) 및 정박 현황을 분석합니다.
-    항만 현황, 입출항 선박 수, 정박 대기 관련 질문이 들어올 때 이 도구를 사용하세요"""
-    
-    # MovingPandas Trajectory 분할 및 항구 공간 연산을 백그라운드 쓰레드에서 실행
-    output_json = await asyncio.to_thread(_run_major_ports_status_analysis)
-    return output_json
+def get_major_ports_status(ui_handler=None):
+    @tool("Maritime Major Ports Status")
+    async def _get_major_ports_status() -> str:
+        """현재 기동 중인 선박들의 주요 항구별 입출항(출발/도착) 및 정박 현황을 분석합니다.
+        항만 현황, 입출항 선박 수, 정박 대기 관련 질문이 들어올 때 이 도구를 사용하세요"""
+        if ui_handler:
+            ui_handler.on_tool_start("주요 항만별 입출항", "기동 중인 선박들의 주요 항구별 입출항(출발/도착) 및 정박 현황 정보를 반환합니다")
+        # MovingPandas Trajectory 분할 및 항구 공간 연산을 백그라운드 쓰레드에서 실행
+        output_json = await asyncio.to_thread(_run_major_ports_status_analysis, handler=ui_handler)
+        return output_json
+    return _get_major_ports_status
 
 
 #######################
