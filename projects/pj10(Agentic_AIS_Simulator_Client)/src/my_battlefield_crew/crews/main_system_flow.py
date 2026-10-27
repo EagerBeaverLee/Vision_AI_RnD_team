@@ -12,6 +12,7 @@ from crews.battlefield_crew import BattlefieldCrew
 from crews.battlefield_router_crew import RouterCrew
 from crews.rag_crew import RAGCrew
 from crews.battlefield_models import format_maritime_report
+from RAG.rag_config import RAGConfig
 
 from chainlit_app.chainlit_handler import ChainlitCrewHandler
 
@@ -35,10 +36,11 @@ class MainSystemState(BaseModel):
 
 
 class MainSystemFlow(Flow[MainSystemState]):
-    def __init__(self, ui_handler: ChainlitCrewHandler=None, message: str=None):
+    def __init__(self, ui_handler: ChainlitCrewHandler=None, message: str=None, config: RAGConfig=None):
         super().__init__()
         self.handler = ui_handler
         self.state.user_query = message
+        self.config = config
 
     @start()
     def route_at_entry(self):

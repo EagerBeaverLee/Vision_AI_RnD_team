@@ -8,6 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from chainlit_app.chainlit_handler import ChainlitCrewHandler
+from RAG.rag_config import RAGConfig
 
 ################### TESTING STARTS (Trying various open source LLM models which could be utilized in a local environment)
 import os
@@ -41,9 +42,11 @@ class RAGCrew:
     agents_config = 'config/rag_agents.yaml'
     tasks_config = 'config/rag_tasks.yaml'  
 
-    def __init__(self, handler: ChainlitCrewHandler=None):
+    def __init__(self, handler: ChainlitCrewHandler=None, config: RAGConfig=None):
+        self.config = config
         self.handler = handler
-        self.active_tool = [search_document_tool(self.handler)]
+        self.active_tool = [search_document_tool(ui_handler=self.handler, config=self.config)]
+        
 
     @agent
     def document_researcher(self) -> Agent:
