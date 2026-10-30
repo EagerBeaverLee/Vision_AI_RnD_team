@@ -1,23 +1,12 @@
 import json
-import asyncio, sys
-from pathlib import Path
+import asyncio
 from typing import Dict, List, Any
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI # this is for using openai models (e.g., gpt-4o-mini, gpt-5-nano)
-
-# 현재 파일(chat_main.py) 기준으로 프로젝트 최상위 루트 디렉토리 찾기
-# chat_main.py(파일) -> chainlit_app(parent) -> 프로젝트 루트(parent.parent)
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-# sys.path 최상단에 프로젝트 루트 추가
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-from crews.battlefield_router_crew import RouterCrew
-from crews.battlefield_crew import BattlefieldCrew
-from crews.battlefield_models import format_maritime_report
-
-from tests.test_data_loading import test_dataset_loading
+from my_battlefield_crew.crews.battlefield_router_crew import RouterCrew
+from my_battlefield_crew.crews.battlefield_crew import BattlefieldCrew
+from my_battlefield_crew.crews.battlefield_models import format_maritime_report
+from my_battlefield_crew.tests.test_data_loading import test_dataset_loading
 
 
 import random

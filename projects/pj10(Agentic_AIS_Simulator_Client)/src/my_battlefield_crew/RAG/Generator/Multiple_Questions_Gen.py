@@ -7,8 +7,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from typing import List
 from langchain_core.output_parsers import BaseOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-from DocumentPostProcessor_by_Scores_Keywords import DocumentPostProcessor
-from Reciprocal_Rank_Fusion_Post_Processing import ReciprocalRankFusionClass
+from my_battlefield_crew.RAG.DocumentPostProcessor import DocumentPostProcessor
+from my_battlefield_crew.RAG.Reciprocal_Rank_Fusion_Post_Processing import ReciprocalRankFusionClass
 
 # from langchain_together.chat_models import ChatTogether
 

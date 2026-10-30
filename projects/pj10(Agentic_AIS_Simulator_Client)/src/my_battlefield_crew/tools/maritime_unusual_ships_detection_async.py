@@ -3,40 +3,43 @@ import json
 import asyncio
 import pandas as pd
 from crewai.tools import tool
+from my_battlefield_crew.engine.preprocessor import compress_ship_data_duckdb_further
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 
-def _run_unusual_ships_detection(handler=None) -> str:
-    if handler:
-        handler.on_tool_progress("특이 기동 선박 현황", "특이/이상 기동 선박에 대한 정보를 반환합니다")
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_root = os.path.dirname(current_dir)
-    preprocessed_path = os.path.join(parent_root, "cache", "ais_compressed_step2.parquet")
+def _run_unusual_ships_detection(context: SimulationContext) -> str:
+    if context.ui_handler:
+        context.ui_handler.on_tool_progress("특이 기동 선박 현황", "특이/이상 기동 선박에 대한 정보를 반환합니다")
 
-    if not os.path.exists(preprocessed_path):
-        return json.dumps({"error": "선행 분석 데이터가 없습니다. 파이프라인을 돌려주세요"}, ensure_ascii=False)
+    df = compress_ship_data_duckdb_further(db_path=context.db_path, table_name="ship_logs", min_time=context.start_time, max_time=context.end_time)
 
-    # 1. 필요한 컬럼만 I/O 로딩
-    df = pd.read_parquet(preprocessed_path, columns=['ShipName', 'status'])
+    # 1) 분석 키워드 정의
+    turn_keywords = ['우선회', '좌선회']
+    speed_keywords = ['가속', '감속']
 
-    # 2. C-level 고속 문자열 매칭
-    df['turn_count'] = df['status'].str.contains('우선회|좌선회', regex=True, na=False).astype(int)
-    df['speed_change_count'] = df['status'].str.contains('가속|감속', regex=True, na=False).astype(int)
+    # 2) 각 행별로 특이 기동여부 체크
+    df['is_turning'] = df['status'].str.contains('|'.join(turn_keywords))
+    df['is_speed_changing'] = df['status'].str.contains('|'.join(speed_keywords))
 
-    # 3. C-level 수치 고속 집계
-    summary = df.groupby('ShipName', as_index=False)[['turn_count', 'speed_change_count']].sum()
+    # 3) ShipName별로 그룹화하여 특이 기동 횟수 집계
+    behavior_summary = df.groupby('ShipName').agg(
+        turn_count = ('is_turning', 'sum'),
+        speed_change_count = ('is_speed_changing', 'sum'),
+        total_records = ('status', 'count'),
+        status_list=('status', lambda x: list(x.unique()))
+    ).reset_index()
 
-    # 4. 필터링 (선회 또는 변속 20회 이상)
-    unusual_ships_df = summary[
-        (summary['turn_count'] >= 20) | (summary['speed_change_count'] >= 20)
-    ].sort_values(by='turn_count', ascending=False)
+    unusual_ships_df = behavior_summary[
+        (behavior_summary['turn_count'] >= 4) | 
+        (behavior_summary['speed_change_count'] >= 4)
+        ].sort_values(by='turn_count', ascending=False)
 
-    # 5. JSON 변환
-    unusual_ships_json = unusual_ships_df.to_dict(orient='records')
-    if handler:
-        handler.on_tool_complete("특이 기동 선박 현황")
-        handler.on_tool_result("특이 기동 선박 현황")
+    unusual_ships_json = unusual_ships_df[['ShipName','turn_count','speed_change_count', 'status_list']].to_dict(orient='records')
+    if context.ui_handler:
+        context.ui_handler.on_tool_complete("특이 기동 선박 현황")
+        context.ui_handler.on_tool_result("특이 기동 선박 현황")
     return json.dumps(unusual_ships_json, ensure_ascii=False, indent=4)
 
-def unusual_ships_detector(ui_handler=None):
+def unusual_ships_detector(context: SimulationContext):
     # 2. CrewAI Tool을 async def로 작성하고 백그라운드 쓰레드로 실행
     @tool('Maritime Unusual Ships Detector')
     async def _unusual_ships_detector() -> str:
@@ -49,10 +52,10 @@ def unusual_ships_detector(ui_handler=None):
             - 사용자가 '이상 기동', '특이 기동', '지그재그 항해', '급선회', '급변속' 선박에 대해 질문할 때
             - 의심스러운 항해 패턴을 보이거나 위험 기동을 수행 중인 선박 현황 요청 시
         """
-        if ui_handler:
-            ui_handler.on_tool_start("특이 기동 선박 현황", "특이/이상 기동 선박에 대한 정보를 반환합니다")
+        if context.ui_handler:
+            context.ui_handler.on_tool_start("특이 기동 선박 현황", "특이/이상 기동 선박에 대한 정보를 반환합니다")
         # 이상 기동 분석 및 집계 연산을 백그라운드 쓰레드에서 비동기 실행
-        output_json = await asyncio.to_thread(_run_unusual_ships_detection, handler=ui_handler)
+        output_json = await asyncio.to_thread(_run_unusual_ships_detection, context=context)
         return output_json
     return _unusual_ships_detector
 

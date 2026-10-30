@@ -2,19 +2,18 @@ import asyncio
 from pydantic import BaseModel
 import sys
 from pathlib import Path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 from crewai.flow.flow import Flow, listen, router, start
-from crews.master_router_crew import MasterRouterCrew
-from crews.marine_weather_flow import MarineWeatherFlow
-from crews.battlefield_crew import BattlefieldCrew
-from crews.battlefield_router_crew import RouterCrew
-from crews.rag_crew import RAGCrew
-from crews.battlefield_models import format_maritime_report
-from RAG.rag_config import RAGConfig
-
-from chainlit_app.chainlit_handler import ChainlitCrewHandler
+from langchain_community.vectorstores import FAISS
+from my_battlefield_crew.crews.master_router_crew import MasterRouterCrew
+from my_battlefield_crew.crews.marine_weather_flow import MarineWeatherFlow
+from my_battlefield_crew.crews.battlefield_crew import BattlefieldCrew
+from my_battlefield_crew.crews.battlefield_router_crew import RouterCrew
+from my_battlefield_crew.crews.rag_crew import RAGCrew
+from my_battlefield_crew.crews.battlefield_models import format_maritime_report
+from my_battlefield_crew.setting.rag_config import RAGConfig
+from my_battlefield_crew.setting.llm_config import LLMConfig
+from my_battlefield_crew.chainlit_app.chainlit_handler import ChainlitCrewHandler
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 
 ######### LANGFUSE #############
 from dotenv import load_dotenv
@@ -36,32 +35,31 @@ class MainSystemState(BaseModel):
 
 
 class MainSystemFlow(Flow[MainSystemState]):
-    def __init__(self, ui_handler: ChainlitCrewHandler=None, message: str=None, config: RAGConfig=None):
+    def __init__(self, context: SimulationContext):
         super().__init__()
-        self.handler = ui_handler
-        self.state.user_query = message
-        self.config = config
+        self.context = context
+        self.state.user_query = context.user_question
 
     @start()
     def route_at_entry(self):
         print(f"\n🧭 [초입 라우팅] 질문 분석 중: '{self.state.user_query}'")
 
-        self.handler.on_agent_start(agent_name="마스터 라우터 에이전트", agent_role="질문 의도에 따른 Agent 라우팅")
-        self.handler.on_agent_progress(agent_name="마스터 라우터 에이전트", status_desc="질문 의도에 따른 Agent 라우팅")
-        self.handler.on_task_start(task_name="master_route_task", task_desc="사용자의 질문을 분석하여 하위 분석 시스템 중 어떤 전문 Crew를 가동할지 결정")
-        self.handler.on_task_progress(task_name="master_route_task", status_desc="사용자의 질문을 분석하여 하위 분석 시스템 중 어떤 전문 Crew를 가동할지 결정", delay=2)
+        self.context.ui_handler.on_agent_start(agent_name="마스터 라우터 에이전트", agent_role="질문 의도에 따른 Agent 라우팅")
+        self.context.ui_handler.on_agent_progress(agent_name="마스터 라우터 에이전트", status_desc="질문 의도에 따른 Agent 라우팅")
+        self.context.ui_handler.on_task_start(task_name="master_route_task", task_desc="사용자의 질문을 분석하여 하위 분석 시스템 중 어떤 전문 Crew를 가동할지 결정")
+        self.context.ui_handler.on_task_progress(task_name="master_route_task", status_desc="사용자의 질문을 분석하여 하위 분석 시스템 중 어떤 전문 Crew를 가동할지 결정", delay=2)
 
         # 1. 최상단 라우터 실행
         router_crew = MasterRouterCrew(
-            handler=self.handler
+            context=self.context
         )
         result = router_crew.crew().kickoff(
             inputs={"user_question": self.state.user_query}
         )
 
-        self.handler.on_task_complete("master_route_task")
-        self.handler.on_task_result("master_route_task", result)
-        self.handler.on_agent_complete("마스터 라우터 에이전트", agent_role="질문 의도에 따른 Agent 라우팅")
+        self.context.ui_handler.on_task_complete("master_route_task")
+        self.context.ui_handler.on_task_result("master_route_task", result)
+        self.context.ui_handler.on_agent_complete("마스터 라우터 에이전트", agent_role="질문 의도에 따른 Agent 라우팅")
 
         # Pydantic 결과 저장
         self.state.target_crew = result.pydantic.target_crew
@@ -83,69 +81,68 @@ class MainSystemFlow(Flow[MainSystemState]):
     def run_weather(self):
         print("Weather Path 실행 시작")
         weather_flow = MarineWeatherFlow(
-            handler=self.handler,
-            message=self.state.user_query
+            context = self.context
         )
         return weather_flow.kickoff()
 
     @listen("battlefield_path")
     async def run_battlefield(self):
         print("Battlefield Path 실행 시작")
-        self.handler.on_agent_start(agent_name="전술 라우터 에이전트", agent_role="전장 질문 카테고리 분류")
-        self.handler.on_agent_progress(agent_name="전술 라우터 에이전트", status_desc="전장 질문 카테고리 분류")
-        self.handler.on_task_start(task_name="route_question_task", task_desc="사용자의 전술 질문을 분석하여 카테고리 목록을 결정해야 합니다.")
-        self.handler.on_task_progress(task_name="route_question_task", status_desc="사용자의 전술 질문을 분석하여 카테고리 목록을 결정해야 합니다.", delay=2)
+        self.context.ui_handler.on_agent_start(agent_name="전술 라우터 에이전트", agent_role="전장 질문 카테고리 분류")
+        self.context.ui_handler.on_agent_progress(agent_name="전술 라우터 에이전트", status_desc="전장 질문 카테고리 분류")
+        self.context.ui_handler.on_task_start(task_name="route_question_task", task_desc="사용자의 전술 질문을 분석하여 카테고리 목록을 결정해야 합니다.")
+        self.context.ui_handler.on_task_progress(task_name="route_question_task", status_desc="사용자의 전술 질문을 분석하여 카테고리 목록을 결정해야 합니다.", delay=2)
 
         router_crew = RouterCrew(
-            handler=self.handler
+            context=self.context
         )
         router_output = await router_crew.crew().kickoff_async(
             inputs={"user_question": self.state.user_query}
         )
-        self.handler.on_task_complete("route_question_task")
-        self.handler.on_task_result("route_question_task", router_output)
-        self.handler.on_agent_complete("전술 라우터 에이전트", agent_role="전장 질문 카테고리 분류")
+        self.context.ui_handler.on_task_complete("route_question_task")
+        self.context.ui_handler.on_task_result("route_question_task", router_output)
+        self.context.ui_handler.on_agent_complete("전술 라우터 에이전트", agent_role="전장 질문 카테고리 분류")
 
         actual_categories = router_output.pydantic.needed_categories
 
-        self.handler.on_agent_start(agent_name="전술 분석 에이전트", agent_role="전장상황 질문에 대한 분석 결과 출력")
-        self.handler.on_agent_progress(agent_name="전술 분석 에이전트", status_desc="전장상황 질문에 대한 분석 결과 출력")
-        self.handler.on_task_start(task_name="analyze_maritime_situation_task", task_desc="사용자의 전술 질문을 분석하고 적절한 도구를 사용해 분석 결과를 출력합니다.")
-        self.handler.on_task_progress(task_name="analyze_maritime_situation_task", status_desc="사용자의 전술 질문을 분석하고 적절한 도구를 사용해 분석 결과를 출력합니다.", delay=2)
+        self.context.ui_handler.on_agent_start(agent_name="전술 분석 에이전트", agent_role="전장상황 질문에 대한 분석 결과 출력")
+        self.context.ui_handler.on_agent_progress(agent_name="전술 분석 에이전트", status_desc="전장상황 질문에 대한 분석 결과 출력")
+        self.context.ui_handler.on_task_start(task_name="analyze_maritime_situation_task", task_desc="사용자의 전술 질문을 분석하고 적절한 도구를 사용해 분석 결과를 출력합니다.")
+        self.context.ui_handler.on_task_progress(task_name="analyze_maritime_situation_task", status_desc="사용자의 전술 질문을 분석하고 적절한 도구를 사용해 분석 결과를 출력합니다.", delay=2)
 
         bf_crew = BattlefieldCrew(
             needed_categories=actual_categories,
-            handler=self.handler
+            context=self.context
         )
         result = await bf_crew.crew().kickoff_async(inputs={"user_question": self.state.user_query})
 
         #전체상황 요약 요청시 사용할 템플릿(format_maritimr_report) 적용된 결과 출력
         if '전체상황 요약' in actual_categories and result:
-            result.pydantic.final_answer = format_maritime_report(result.pydantic)
+            result.pydantic.final_answer = format_maritime_report(report=result.pydantic, context=self.context)
 
-        self.handler.on_task_complete("analyze_maritime_situation_task")
-        self.handler.on_task_result("analyze_maritime_situation_task", result.pydantic)
-        self.handler.on_agent_complete("전술 분석 에이전트", agent_role="전장상황 질문에 대한 분석 결과 출력")
+        self.context.ui_handler.on_task_complete("analyze_maritime_situation_task")
+        self.context.ui_handler.on_task_result("analyze_maritime_situation_task", result.pydantic)
+        self.context.ui_handler.on_agent_complete("전술 분석 에이전트", agent_role="전장상황 질문에 대한 분석 결과 출력")
         return result.pydantic.final_answer
 
     @listen("rag_path")
     async def run_rag(self):
         print("Rag Path 실행 시작")
-        self.handler.on_agent_start(agent_name="교리교범을 검색 에이전트", agent_role="VectorDB를 바탕으로 질문에 답변")
-        self.handler.on_agent_progress(agent_name="교리교범을 검색 에이전트", status_desc="VectorDB를 바탕으로 질문에 답변")
-        self.handler.on_task_start(task_name="document_researching_task", task_desc="VectorDB에서 관련 문서를 검색하여 사용자의 질의에 정확하게 답변합니다.")
-        self.handler.on_task_progress(task_name="document_researching_task", status_desc="VectorDB에서 관련 문서를 검색하여 사용자의 질의에 정확하게 답변합니다.", delay=2)
+        self.context.ui_handler.on_agent_start(agent_name="교리교범을 검색 에이전트", agent_role="VectorDB를 바탕으로 질문에 답변")
+        self.context.ui_handler.on_agent_progress(agent_name="교리교범을 검색 에이전트", status_desc="VectorDB를 바탕으로 질문에 답변")
+        self.context.ui_handler.on_task_start(task_name="document_researching_task", task_desc="VectorDB에서 관련 문서를 검색하여 사용자의 질의에 정확하게 답변합니다.")
+        self.context.ui_handler.on_task_progress(task_name="document_researching_task", status_desc="VectorDB에서 관련 문서를 검색하여 사용자의 질의에 정확하게 답변합니다.", delay=2)
         
         rag_crew = RAGCrew(
-            handler=self.handler
+            context=self.context
         )
         result = await rag_crew.crew().kickoff_async(
             inputs={"user_question": self.state.user_query}
         )
 
-        self.handler.on_task_complete("document_researching_task")
-        self.handler.on_task_result("document_researching_task", result)
-        self.handler.on_agent_complete("교리교범을 검색 에이전트", agent_role="VectorDB를 바탕으로 질문에 답변")
+        self.context.ui_handler.on_task_complete("document_researching_task")
+        self.context.ui_handler.on_task_result("document_researching_task", result)
+        self.context.ui_handler.on_agent_complete("교리교범을 검색 에이전트", agent_role="VectorDB를 바탕으로 질문에 답변")
 
         return result.raw
     

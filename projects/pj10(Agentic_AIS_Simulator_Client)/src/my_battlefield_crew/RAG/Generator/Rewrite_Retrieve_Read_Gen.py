@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-from DocumentPostProcessor_by_Scores_Keywords import DocumentPostProcessor
+from my_battlefield_crew.RAG.DocumentPostProcessor import DocumentPostProcessor
 # from langchain_together.chat_models import ChatTogether
 import os
 from dotenv import load_dotenv

@@ -71,6 +71,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_17.addWidget(self.geospatial_board)
         self.tabWidget.addTab(self.geo_dashboard, "")
         self.dashboard = QtWidgets.QWidget()
+        self.dashboard.setMinimumSize(QtCore.QSize(700, 0))
         self.dashboard.setObjectName("dashboard")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.dashboard)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -290,10 +291,10 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.Setting.sizePolicy().hasHeightForWidth())
         self.Setting.setSizePolicy(sizePolicy)
         self.Setting.setObjectName("Setting")
-        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.Setting)
-        self.verticalLayout_4.setObjectName("verticalLayout_4")
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.Setting)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.horizontalLayout_10 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_10.setObjectName("horizontalLayout_10")
         self.label_3 = QtWidgets.QLabel(parent=self.Setting)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -304,14 +305,16 @@ class Ui_MainWindow(object):
 "    color: rgb(166, 217, 171);\n"
 "}")
         self.label_3.setObjectName("label_3")
-        self.verticalLayout_2.addWidget(self.label_3)
-        self.api_key_txt = QtWidgets.QLineEdit(parent=self.Setting)
+        self.horizontalLayout_10.addWidget(self.label_3)
+        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_10.addItem(spacerItem2)
+        self.edit_api_key = QtWidgets.QLineEdit(parent=self.Setting)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.api_key_txt.sizePolicy().hasHeightForWidth())
-        self.api_key_txt.setSizePolicy(sizePolicy)
-        self.api_key_txt.setStyleSheet("QLineEdit {\n"
+        sizePolicy.setHeightForWidth(self.edit_api_key.sizePolicy().hasHeightForWidth())
+        self.edit_api_key.setSizePolicy(sizePolicy)
+        self.edit_api_key.setStyleSheet("QLineEdit {\n"
 "    color: white;\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
 "    border: 1px solid rgb(255,255,255);\n"
@@ -321,13 +324,17 @@ class Ui_MainWindow(object):
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
 "}")
-        self.api_key_txt.setText("")
-        self.api_key_txt.setEchoMode(QtWidgets.QLineEdit.EchoMode.PasswordEchoOnEdit)
-        self.api_key_txt.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeading|QtCore.Qt.AlignmentFlag.AlignLeft|QtCore.Qt.AlignmentFlag.AlignTop)
-        self.api_key_txt.setObjectName("api_key_txt")
-        self.verticalLayout_2.addWidget(self.api_key_txt)
+        self.edit_api_key.setText("")
+        self.edit_api_key.setEchoMode(QtWidgets.QLineEdit.EchoMode.PasswordEchoOnEdit)
+        self.edit_api_key.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeading|QtCore.Qt.AlignmentFlag.AlignLeft|QtCore.Qt.AlignmentFlag.AlignTop)
+        self.edit_api_key.setObjectName("edit_api_key")
+        self.horizontalLayout_10.addWidget(self.edit_api_key)
+        self.horizontalLayout_10.setStretch(0, 1)
+        self.horizontalLayout_10.setStretch(1, 4)
+        self.horizontalLayout_10.setStretch(2, 4)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_10)
         self.label_4 = QtWidgets.QLabel(parent=self.Setting)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.label_4.sizePolicy().hasHeightForWidth())
@@ -337,16 +344,16 @@ class Ui_MainWindow(object):
 "}")
         self.label_4.setObjectName("label_4")
         self.verticalLayout_2.addWidget(self.label_4)
-        self.prompt_txt = QtWidgets.QTextEdit(parent=self.Setting)
+        self.edit_prompt = QtWidgets.QTextEdit(parent=self.Setting)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.prompt_txt.sizePolicy().hasHeightForWidth())
-        self.prompt_txt.setSizePolicy(sizePolicy)
+        sizePolicy.setHeightForWidth(self.edit_prompt.sizePolicy().hasHeightForWidth())
+        self.edit_prompt.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setBold(False)
-        self.prompt_txt.setFont(font)
-        self.prompt_txt.setStyleSheet("QTextEdit {\n"
+        self.edit_prompt.setFont(font)
+        self.edit_prompt.setStyleSheet("QTextEdit {\n"
 "    border-radius: 5px;\n"
 "    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
 "    border: 2px solid white;\n"
@@ -355,8 +362,8 @@ class Ui_MainWindow(object):
 "QTextEdit:focus {\n"
 "    border: 2px solid rgb(184, 247, 185);\n"
 "}")
-        self.prompt_txt.setObjectName("prompt_txt")
-        self.verticalLayout_2.addWidget(self.prompt_txt)
+        self.edit_prompt.setObjectName("edit_prompt")
+        self.verticalLayout_2.addWidget(self.edit_prompt)
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.label_5 = QtWidgets.QLabel(parent=self.Setting)
@@ -365,34 +372,54 @@ class Ui_MainWindow(object):
 "}")
         self.label_5.setObjectName("label_5")
         self.horizontalLayout_4.addWidget(self.label_5)
-        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_4.addItem(spacerItem2)
-        self.temp_val = QtWidgets.QLineEdit(parent=self.Setting)
-        self.temp_val.setMinimumSize(QtCore.QSize(0, 0))
-        self.temp_val.setStyleSheet("QLineEdit {\n"
+        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_4.addItem(spacerItem3)
+        self.spin_temp = QtWidgets.QDoubleSpinBox(parent=self.Setting)
+        self.spin_temp.setEnabled(True)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.spin_temp.sizePolicy().hasHeightForWidth())
+        self.spin_temp.setSizePolicy(sizePolicy)
+        self.spin_temp.setStyleSheet("QDoubleSpinBox {\n"
 "    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */\n"
-"    border: 1px solid rgb(255,255,255);\n"
-"    border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */\n"
+"    background-color: rgb(40, 40, 40);\n"
+"    border: 1px solid rgb(255, 255, 255);\n"
+"    border-radius: 5px;\n"
 "}\n"
-"QLineEdit:focus {\n"
+"\n"
+"/* 포커스 상태: 활성화 테두리 색상 변경 */\n"
+"QDoubleSpinBox:focus {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
-"    outline: none;           /* 기본 포커스 아웃라인 제거 */\n"
+"}\n"
+"\n"
+"/* 화살표 버튼(서브 컨트롤) 제거: 너비/높이를 0으로 만들어 일반 텍스트 박스처럼 표현 */\n"
+"QDoubleSpinBox::up-button,\n"
+"QDoubleSpinBox::down-button {\n"
+"    width: 0px;\n"
+"    height: 0px;\n"
+"    border: none;\n"
+"    background: transparent;\n"
+"}\n"
+"\n"
+"/* (선택 사항) 체크박스 해제 등으로 비활성화되었을 때의 스타일 */\n"
+"QDoubleSpinBox:disabled {\n"
+"    color: rgb(100, 100, 100);\n"
+"    background-color: rgb(30, 30, 30);\n"
+"    border: 1px solid rgb(70, 70, 70);\n"
 "}")
-        self.temp_val.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight|QtCore.Qt.AlignmentFlag.AlignTrailing|QtCore.Qt.AlignmentFlag.AlignVCenter)
-        self.temp_val.setObjectName("temp_val")
-        self.horizontalLayout_4.addWidget(self.temp_val)
-        self.horizontalLayout_4.setStretch(0, 1)
-        self.horizontalLayout_4.setStretch(1, 3)
-        self.horizontalLayout_4.setStretch(2, 1)
-        self.verticalLayout_2.addLayout(self.horizontalLayout_4)
-        self.temp_slider = QtWidgets.QSlider(parent=self.Setting)
+        self.spin_temp.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.spin_temp.setMaximum(1.0)
+        self.spin_temp.setSingleStep(0.01)
+        self.spin_temp.setObjectName("spin_temp")
+        self.horizontalLayout_4.addWidget(self.spin_temp)
+        self.slider_temp = QtWidgets.QSlider(parent=self.Setting)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.temp_slider.sizePolicy().hasHeightForWidth())
-        self.temp_slider.setSizePolicy(sizePolicy)
-        self.temp_slider.setStyleSheet("QSlider::groove {\n"
+        sizePolicy.setHeightForWidth(self.slider_temp.sizePolicy().hasHeightForWidth())
+        self.slider_temp.setSizePolicy(sizePolicy)
+        self.slider_temp.setStyleSheet("QSlider::groove {\n"
 "    background-color: rgb(80,80,80);\n"
 "    height: 4px;\n"
 "}\n"
@@ -413,22 +440,24 @@ class Ui_MainWindow(object):
 "QSlider::sub-page {\n"
 "    background-color: rgb(166, 217, 171);\n"
 "}")
-        self.temp_slider.setMaximum(100)
-        self.temp_slider.setSingleStep(1)
-        self.temp_slider.setProperty("value", 0)
-        self.temp_slider.setOrientation(QtCore.Qt.Orientation.Horizontal)
-        self.temp_slider.setObjectName("temp_slider")
-        self.verticalLayout_2.addWidget(self.temp_slider)
-        spacerItem3 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.verticalLayout_2.addItem(spacerItem3)
+        self.slider_temp.setMaximum(100)
+        self.slider_temp.setSingleStep(1)
+        self.slider_temp.setProperty("value", 0)
+        self.slider_temp.setOrientation(QtCore.Qt.Orientation.Horizontal)
+        self.slider_temp.setObjectName("slider_temp")
+        self.horizontalLayout_4.addWidget(self.slider_temp)
+        self.horizontalLayout_4.setStretch(0, 1)
+        self.horizontalLayout_4.setStretch(1, 5)
+        self.horizontalLayout_4.setStretch(2, 1)
+        self.horizontalLayout_4.setStretch(3, 3)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_4)
+        spacerItem4 = QtWidgets.QSpacerItem(20, 373, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.verticalLayout_2.addItem(spacerItem4)
         self.verticalLayout_2.setStretch(0, 1)
         self.verticalLayout_2.setStretch(1, 1)
-        self.verticalLayout_2.setStretch(2, 1)
-        self.verticalLayout_2.setStretch(3, 8)
-        self.verticalLayout_2.setStretch(4, 1)
-        self.verticalLayout_2.setStretch(5, 1)
-        self.verticalLayout_2.setStretch(6, 10)
-        self.verticalLayout_4.addLayout(self.verticalLayout_2)
+        self.verticalLayout_2.setStretch(2, 10)
+        self.verticalLayout_2.setStretch(3, 1)
+        self.verticalLayout_2.setStretch(4, 15)
         self.tabWidget1.addTab(self.Setting, "")
         self.RAG = QtWidgets.QWidget()
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
@@ -438,6 +467,7 @@ class Ui_MainWindow(object):
         self.RAG.setSizePolicy(sizePolicy)
         self.RAG.setObjectName("RAG")
         self.verticalLayout_16 = QtWidgets.QVBoxLayout(self.RAG)
+        self.verticalLayout_16.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.verticalLayout_16.setObjectName("verticalLayout_16")
         self.groupBox_6 = QtWidgets.QGroupBox(parent=self.RAG)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -453,6 +483,7 @@ class Ui_MainWindow(object):
 "}")
         self.groupBox_6.setObjectName("groupBox_6")
         self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.groupBox_6)
+        self.verticalLayout_6.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.verticalLayout_6.setContentsMargins(-1, 20, -1, -1)
         self.verticalLayout_6.setObjectName("verticalLayout_6")
         self.radio_qt_default = QtWidgets.QRadioButton(parent=self.groupBox_6)
@@ -569,6 +600,7 @@ class Ui_MainWindow(object):
 "}")
         self.groupBox_5.setObjectName("groupBox_5")
         self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.groupBox_5)
+        self.verticalLayout_5.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.verticalLayout_5.setContentsMargins(-1, 20, -1, -1)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.radio_idx_default = QtWidgets.QRadioButton(parent=self.groupBox_5)
@@ -596,6 +628,8 @@ class Ui_MainWindow(object):
         self.radio_idx_default.setObjectName("radio_idx_default")
         self.verticalLayout_5.addWidget(self.radio_idx_default)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
+        self.horizontalLayout.setContentsMargins(-1, 10, -1, 10)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.radio_idx_parent = QtWidgets.QRadioButton(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -621,8 +655,8 @@ class Ui_MainWindow(object):
 "")
         self.radio_idx_parent.setObjectName("radio_idx_parent")
         self.horizontalLayout.addWidget(self.radio_idx_parent)
-        spacerItem4 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout.addItem(spacerItem4)
+        spacerItem5 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout.addItem(spacerItem5)
         self.groupBox_10 = QtWidgets.QGroupBox(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -642,47 +676,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_29 = QtWidgets.QHBoxLayout(self.groupBox_10)
         self.horizontalLayout_29.setContentsMargins(4, 0, 4, 0)
         self.horizontalLayout_29.setObjectName("horizontalLayout_29")
-        self.horizontalLayout_23 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_23.setContentsMargins(-1, 1, -1, 1)
-        self.horizontalLayout_23.setObjectName("horizontalLayout_23")
-        self.label_24 = QtWidgets.QLabel(parent=self.groupBox_10)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_24.sizePolicy().hasHeightForWidth())
-        self.label_24.setSizePolicy(sizePolicy)
-        self.label_24.setStyleSheet("QLabel {\n"
-"    color: rgb(166, 217, 171);\n"
-"    background-color: rgb(40, 40, 40);\n"
-"}")
-        self.label_24.setObjectName("label_24")
-        self.horizontalLayout_23.addWidget(self.label_24)
-        self.spin_child_chunk_1 = QtWidgets.QSpinBox(parent=self.groupBox_10)
-        self.spin_child_chunk_1.setStyleSheet("QSpinBox {\n"
-"    color: rgb(184, 247, 185);\n"
-"    background-color: rgb(40, 40, 40);\n"
-"    border: 1px solid rgb(255, 255, 255);\n"
-"    border-radius: 5px;\n"
-"}\n"
-"\n"
-"/* 포커스 상태: 활성화 테두리 색상 변경 */\n"
-"QSpinBox:focus {\n"
-"    border: 1px solid rgb(184, 247, 185);\n"
-"}\n"
-"\n"
-"/* (선택 사항) 체크박스 해제 등으로 비활성화되었을 때의 스타일 */\n"
-"QSpinBox:disabled {\n"
-"    color: rgb(100, 100, 100);\n"
-"    background-color: rgb(30, 30, 30);\n"
-"    border: 1px solid rgb(70, 70, 70);\n"
-"}")
-        self.spin_child_chunk_1.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.spin_child_chunk_1.setMaximum(100000)
-        self.spin_child_chunk_1.setSingleStep(10)
-        self.spin_child_chunk_1.setProperty("value", 0)
-        self.spin_child_chunk_1.setObjectName("spin_child_chunk_1")
-        self.horizontalLayout_23.addWidget(self.spin_child_chunk_1)
-        self.horizontalLayout_29.addLayout(self.horizontalLayout_23)
         self.horizontalLayout_15 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_15.setContentsMargins(-1, 1, -1, 1)
         self.horizontalLayout_15.setObjectName("horizontalLayout_15")
@@ -723,17 +716,59 @@ class Ui_MainWindow(object):
         self.spin_parent_chunk_1.setProperty("value", 0)
         self.spin_parent_chunk_1.setObjectName("spin_parent_chunk_1")
         self.horizontalLayout_15.addWidget(self.spin_parent_chunk_1)
+        self.horizontalLayout_23 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_23.setContentsMargins(-1, 1, -1, 1)
+        self.horizontalLayout_23.setObjectName("horizontalLayout_23")
+        self.label_24 = QtWidgets.QLabel(parent=self.groupBox_10)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_24.sizePolicy().hasHeightForWidth())
+        self.label_24.setSizePolicy(sizePolicy)
+        self.label_24.setStyleSheet("QLabel {\n"
+"    color: rgb(166, 217, 171);\n"
+"    background-color: rgb(40, 40, 40);\n"
+"}")
+        self.label_24.setObjectName("label_24")
+        self.horizontalLayout_23.addWidget(self.label_24)
+        self.spin_child_chunk_1 = QtWidgets.QSpinBox(parent=self.groupBox_10)
+        self.spin_child_chunk_1.setStyleSheet("QSpinBox {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(40, 40, 40);\n"
+"    border: 1px solid rgb(255, 255, 255);\n"
+"    border-radius: 5px;\n"
+"}\n"
+"\n"
+"/* 포커스 상태: 활성화 테두리 색상 변경 */\n"
+"QSpinBox:focus {\n"
+"    border: 1px solid rgb(184, 247, 185);\n"
+"}\n"
+"\n"
+"/* (선택 사항) 체크박스 해제 등으로 비활성화되었을 때의 스타일 */\n"
+"QSpinBox:disabled {\n"
+"    color: rgb(100, 100, 100);\n"
+"    background-color: rgb(30, 30, 30);\n"
+"    border: 1px solid rgb(70, 70, 70);\n"
+"}")
+        self.spin_child_chunk_1.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.spin_child_chunk_1.setMaximum(100000)
+        self.spin_child_chunk_1.setSingleStep(10)
+        self.spin_child_chunk_1.setProperty("value", 0)
+        self.spin_child_chunk_1.setObjectName("spin_child_chunk_1")
+        self.horizontalLayout_23.addWidget(self.spin_child_chunk_1)
+        self.horizontalLayout_15.addLayout(self.horizontalLayout_23)
         self.horizontalLayout_15.setStretch(0, 1)
         self.horizontalLayout_15.setStretch(1, 1)
         self.horizontalLayout_29.addLayout(self.horizontalLayout_15)
         self.horizontalLayout_29.setStretch(0, 1)
-        self.horizontalLayout_29.setStretch(1, 1)
         self.horizontalLayout.addWidget(self.groupBox_10)
         self.horizontalLayout.setStretch(0, 1)
         self.horizontalLayout.setStretch(1, 4)
         self.horizontalLayout.setStretch(2, 5)
         self.verticalLayout_5.addLayout(self.horizontalLayout)
         self.horizontalLayout_9 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_9.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
+        self.horizontalLayout_9.setContentsMargins(-1, 10, -1, 10)
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
         self.radio_idx_summary = QtWidgets.QRadioButton(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -759,8 +794,8 @@ class Ui_MainWindow(object):
 "")
         self.radio_idx_summary.setObjectName("radio_idx_summary")
         self.horizontalLayout_9.addWidget(self.radio_idx_summary)
-        spacerItem5 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_9.addItem(spacerItem5)
+        spacerItem6 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_9.addItem(spacerItem6)
         self.groupBox_2 = QtWidgets.QGroupBox(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -796,8 +831,8 @@ class Ui_MainWindow(object):
 "}")
         self.label_10.setObjectName("label_10")
         self.horizontalLayout_14.addWidget(self.label_10)
-        self.spin_parent_chunk_2 = QtWidgets.QSpinBox(parent=self.groupBox_2)
-        self.spin_parent_chunk_2.setStyleSheet("QSpinBox {\n"
+        self.spin_summary_chunk_2 = QtWidgets.QSpinBox(parent=self.groupBox_2)
+        self.spin_summary_chunk_2.setStyleSheet("QSpinBox {\n"
 "    color: rgb(184, 247, 185);\n"
 "    background-color: rgb(40, 40, 40);\n"
 "    border: 1px solid rgb(255, 255, 255);\n"
@@ -815,12 +850,12 @@ class Ui_MainWindow(object):
 "    background-color: rgb(30, 30, 30);\n"
 "    border: 1px solid rgb(70, 70, 70);\n"
 "}")
-        self.spin_parent_chunk_2.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.spin_parent_chunk_2.setMaximum(100000)
-        self.spin_parent_chunk_2.setSingleStep(10)
-        self.spin_parent_chunk_2.setProperty("value", 0)
-        self.spin_parent_chunk_2.setObjectName("spin_parent_chunk_2")
-        self.horizontalLayout_14.addWidget(self.spin_parent_chunk_2)
+        self.spin_summary_chunk_2.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.spin_summary_chunk_2.setMaximum(100000)
+        self.spin_summary_chunk_2.setSingleStep(10)
+        self.spin_summary_chunk_2.setProperty("value", 0)
+        self.spin_summary_chunk_2.setObjectName("spin_summary_chunk_2")
+        self.horizontalLayout_14.addWidget(self.spin_summary_chunk_2)
         self.horizontalLayout_14.setStretch(0, 1)
         self.horizontalLayout_14.setStretch(1, 1)
         self.verticalLayout_9.addLayout(self.horizontalLayout_14)
@@ -830,6 +865,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_9.setStretch(2, 1)
         self.verticalLayout_5.addLayout(self.horizontalLayout_9)
         self.horizontalLayout_26 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_26.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
+        self.horizontalLayout_26.setContentsMargins(-1, 10, -1, 10)
         self.horizontalLayout_26.setObjectName("horizontalLayout_26")
         self.radio_idx_hypo = QtWidgets.QRadioButton(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -855,8 +892,8 @@ class Ui_MainWindow(object):
 "")
         self.radio_idx_hypo.setObjectName("radio_idx_hypo")
         self.horizontalLayout_26.addWidget(self.radio_idx_hypo)
-        spacerItem6 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_26.addItem(spacerItem6)
+        spacerItem7 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_26.addItem(spacerItem7)
         self.groupBox_3 = QtWidgets.QGroupBox(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -892,8 +929,8 @@ class Ui_MainWindow(object):
 "}")
         self.label_11.setObjectName("label_11")
         self.horizontalLayout_16.addWidget(self.label_11)
-        self.spin_parent_chunk_3 = QtWidgets.QSpinBox(parent=self.groupBox_3)
-        self.spin_parent_chunk_3.setStyleSheet("QSpinBox {\n"
+        self.spin_hypothetical_chunk_3 = QtWidgets.QSpinBox(parent=self.groupBox_3)
+        self.spin_hypothetical_chunk_3.setStyleSheet("QSpinBox {\n"
 "    color: rgb(184, 247, 185);\n"
 "    background-color: rgb(40, 40, 40);\n"
 "    border: 1px solid rgb(255, 255, 255);\n"
@@ -911,12 +948,12 @@ class Ui_MainWindow(object):
 "    background-color: rgb(30, 30, 30);\n"
 "    border: 1px solid rgb(70, 70, 70);\n"
 "}")
-        self.spin_parent_chunk_3.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.spin_parent_chunk_3.setMaximum(100000)
-        self.spin_parent_chunk_3.setSingleStep(10)
-        self.spin_parent_chunk_3.setProperty("value", 0)
-        self.spin_parent_chunk_3.setObjectName("spin_parent_chunk_3")
-        self.horizontalLayout_16.addWidget(self.spin_parent_chunk_3)
+        self.spin_hypothetical_chunk_3.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.spin_hypothetical_chunk_3.setMaximum(100000)
+        self.spin_hypothetical_chunk_3.setSingleStep(10)
+        self.spin_hypothetical_chunk_3.setProperty("value", 0)
+        self.spin_hypothetical_chunk_3.setObjectName("spin_hypothetical_chunk_3")
+        self.horizontalLayout_16.addWidget(self.spin_hypothetical_chunk_3)
         self.horizontalLayout_16.setStretch(0, 1)
         self.horizontalLayout_16.setStretch(1, 1)
         self.verticalLayout_10.addLayout(self.horizontalLayout_16)
@@ -926,6 +963,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_26.setStretch(2, 1)
         self.verticalLayout_5.addLayout(self.horizontalLayout_26)
         self.horizontalLayout_27 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_27.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
+        self.horizontalLayout_27.setContentsMargins(-1, 10, -1, 10)
         self.horizontalLayout_27.setObjectName("horizontalLayout_27")
         self.radio_idx_granular = QtWidgets.QRadioButton(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -951,8 +990,8 @@ class Ui_MainWindow(object):
 "")
         self.radio_idx_granular.setObjectName("radio_idx_granular")
         self.horizontalLayout_27.addWidget(self.radio_idx_granular)
-        spacerItem7 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_27.addItem(spacerItem7)
+        spacerItem8 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_27.addItem(spacerItem8)
         self.groupBox_4 = QtWidgets.QGroupBox(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -988,13 +1027,13 @@ class Ui_MainWindow(object):
 "}")
         self.label_13.setObjectName("label_13")
         self.horizontalLayout_19.addWidget(self.label_13)
-        self.spin_chunk_4 = QtWidgets.QSpinBox(parent=self.groupBox_4)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.spin_granular_chunk_4 = QtWidgets.QSpinBox(parent=self.groupBox_4)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.spin_chunk_4.sizePolicy().hasHeightForWidth())
-        self.spin_chunk_4.setSizePolicy(sizePolicy)
-        self.spin_chunk_4.setStyleSheet("QSpinBox {\n"
+        sizePolicy.setHeightForWidth(self.spin_granular_chunk_4.sizePolicy().hasHeightForWidth())
+        self.spin_granular_chunk_4.setSizePolicy(sizePolicy)
+        self.spin_granular_chunk_4.setStyleSheet("QSpinBox {\n"
 "    color: rgb(184, 247, 185);\n"
 "    background-color: rgb(40, 40, 40);\n"
 "    border: 1px solid rgb(255, 255, 255);\n"
@@ -1012,12 +1051,12 @@ class Ui_MainWindow(object):
 "    background-color: rgb(30, 30, 30);\n"
 "    border: 1px solid rgb(70, 70, 70);\n"
 "}")
-        self.spin_chunk_4.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.spin_chunk_4.setMaximum(100000)
-        self.spin_chunk_4.setSingleStep(10)
-        self.spin_chunk_4.setProperty("value", 0)
-        self.spin_chunk_4.setObjectName("spin_chunk_4")
-        self.horizontalLayout_19.addWidget(self.spin_chunk_4)
+        self.spin_granular_chunk_4.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.spin_granular_chunk_4.setMaximum(100000)
+        self.spin_granular_chunk_4.setSingleStep(10)
+        self.spin_granular_chunk_4.setProperty("value", 0)
+        self.spin_granular_chunk_4.setObjectName("spin_granular_chunk_4")
+        self.horizontalLayout_19.addWidget(self.spin_granular_chunk_4)
         self.horizontalLayout_19.setStretch(0, 1)
         self.horizontalLayout_19.setStretch(1, 1)
         self.verticalLayout_11.addLayout(self.horizontalLayout_19)
@@ -1027,6 +1066,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_27.setStretch(2, 1)
         self.verticalLayout_5.addLayout(self.horizontalLayout_27)
         self.horizontalLayout_13 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_13.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
+        self.horizontalLayout_13.setContentsMargins(-1, 10, -1, 10)
         self.horizontalLayout_13.setObjectName("horizontalLayout_13")
         self.radio_idx_k_parent = QtWidgets.QRadioButton(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -1055,8 +1096,8 @@ class Ui_MainWindow(object):
 "")
         self.radio_idx_k_parent.setObjectName("radio_idx_k_parent")
         self.horizontalLayout_13.addWidget(self.radio_idx_k_parent)
-        spacerItem8 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_13.addItem(spacerItem8)
+        spacerItem9 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_13.addItem(spacerItem9)
         self.parent_keyword_retriever_box = QtWidgets.QGroupBox(parent=self.groupBox_5)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -1081,11 +1122,11 @@ class Ui_MainWindow(object):
         self.verticalLayout_14.setSpacing(0)
         self.verticalLayout_14.setObjectName("verticalLayout_14")
         self.horizontalLayout_24 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_24.setSpacing(10)
+        self.horizontalLayout_24.setSpacing(5)
         self.horizontalLayout_24.setObjectName("horizontalLayout_24")
         self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_8.setContentsMargins(2, 1, 2, 1)
-        self.horizontalLayout_8.setSpacing(10)
+        self.horizontalLayout_8.setSpacing(3)
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
         self.label_25 = QtWidgets.QLabel(parent=self.parent_keyword_retriever_box)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
@@ -1103,7 +1144,7 @@ class Ui_MainWindow(object):
         self.label_25.setObjectName("label_25")
         self.horizontalLayout_8.addWidget(self.label_25)
         self.spin_k_5 = QtWidgets.QSpinBox(parent=self.parent_keyword_retriever_box)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.spin_k_5.sizePolicy().hasHeightForWidth())
@@ -1137,6 +1178,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_24.addLayout(self.horizontalLayout_8)
         self.horizontalLayout_22 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_22.setContentsMargins(2, 1, 2, 1)
+        self.horizontalLayout_22.setSpacing(3)
         self.horizontalLayout_22.setObjectName("horizontalLayout_22")
         self.label_23 = QtWidgets.QLabel(parent=self.parent_keyword_retriever_box)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
@@ -1154,7 +1196,7 @@ class Ui_MainWindow(object):
         self.label_23.setObjectName("label_23")
         self.horizontalLayout_22.addWidget(self.label_23)
         self.spin_key_weight_5 = QtWidgets.QDoubleSpinBox(parent=self.parent_keyword_retriever_box)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.spin_key_weight_5.sizePolicy().hasHeightForWidth())
@@ -1236,6 +1278,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_24.addWidget(self.slider_weight)
         self.horizontalLayout_30 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_30.setContentsMargins(2, 1, 2, 1)
+        self.horizontalLayout_30.setSpacing(3)
         self.horizontalLayout_30.setObjectName("horizontalLayout_30")
         self.label_26 = QtWidgets.QLabel(parent=self.parent_keyword_retriever_box)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
@@ -1253,7 +1296,7 @@ class Ui_MainWindow(object):
         self.label_26.setObjectName("label_26")
         self.horizontalLayout_30.addWidget(self.label_26)
         self.spin_similarity_weight_5 = QtWidgets.QDoubleSpinBox(parent=self.parent_keyword_retriever_box)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.spin_similarity_weight_5.sizePolicy().hasHeightForWidth())
@@ -1316,9 +1359,11 @@ class Ui_MainWindow(object):
 "}")
         self.groupBox_7.setObjectName("groupBox_7")
         self.verticalLayout_12 = QtWidgets.QVBoxLayout(self.groupBox_7)
+        self.verticalLayout_12.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.verticalLayout_12.setContentsMargins(-1, 20, -1, -1)
         self.verticalLayout_12.setObjectName("verticalLayout_12")
         self.horizontalLayout_18 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_18.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.horizontalLayout_18.setObjectName("horizontalLayout_18")
         self.chk_similarity = QtWidgets.QCheckBox(parent=self.groupBox_7)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -1347,11 +1392,11 @@ class Ui_MainWindow(object):
 "")
         self.chk_similarity.setObjectName("chk_similarity")
         self.horizontalLayout_18.addWidget(self.chk_similarity)
-        spacerItem9 = QtWidgets.QSpacerItem(20, 17, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_18.addItem(spacerItem9)
+        spacerItem10 = QtWidgets.QSpacerItem(20, 17, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_18.addItem(spacerItem10)
         self.spin_similarity = QtWidgets.QDoubleSpinBox(parent=self.groupBox_7)
         self.spin_similarity.setEnabled(True)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.spin_similarity.sizePolicy().hasHeightForWidth())
@@ -1432,6 +1477,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_18.setStretch(3, 2)
         self.verticalLayout_12.addLayout(self.horizontalLayout_18)
         self.horizontalLayout_21 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_21.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.horizontalLayout_21.setObjectName("horizontalLayout_21")
         self.chk_keywords = QtWidgets.QCheckBox(parent=self.groupBox_7)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -1460,10 +1506,10 @@ class Ui_MainWindow(object):
 "")
         self.chk_keywords.setObjectName("chk_keywords")
         self.horizontalLayout_21.addWidget(self.chk_keywords)
-        spacerItem10 = QtWidgets.QSpacerItem(20, 17, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout_21.addItem(spacerItem10)
+        spacerItem11 = QtWidgets.QSpacerItem(20, 17, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout_21.addItem(spacerItem11)
         self.edit_keywords = QtWidgets.QLineEdit(parent=self.groupBox_7)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.edit_keywords.sizePolicy().hasHeightForWidth())
@@ -1524,6 +1570,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_12.setStretch(2, 1)
         self.verticalLayout_16.addWidget(self.groupBox_7)
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_5.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.horizontalLayout_5.setSpacing(4)
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.label_6 = QtWidgets.QLabel(parent=self.RAG)
@@ -1550,7 +1597,7 @@ class Ui_MainWindow(object):
         self.edit_path.setObjectName("edit_path")
         self.horizontalLayout_5.addWidget(self.edit_path)
         self.Load_btn = QtWidgets.QPushButton(parent=self.RAG)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(1)
         sizePolicy.setHeightForWidth(self.Load_btn.sizePolicy().hasHeightForWidth())
@@ -1580,6 +1627,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.setStretch(2, 1)
         self.verticalLayout_16.addLayout(self.horizontalLayout_5)
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_6.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
         self.label_7 = QtWidgets.QLabel(parent=self.RAG)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
@@ -1593,7 +1641,7 @@ class Ui_MainWindow(object):
         self.label_7.setObjectName("label_7")
         self.horizontalLayout_6.addWidget(self.label_7)
         self.Loading_bar = QtWidgets.QProgressBar(parent=self.RAG)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.Loading_bar.sizePolicy().hasHeightForWidth())
@@ -1615,14 +1663,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6.setStretch(0, 1)
         self.horizontalLayout_6.setStretch(1, 4)
         self.verticalLayout_16.addLayout(self.horizontalLayout_6)
-        spacerItem11 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.verticalLayout_16.addItem(spacerItem11)
-        self.verticalLayout_16.setStretch(0, 4)
-        self.verticalLayout_16.setStretch(1, 6)
-        self.verticalLayout_16.setStretch(2, 3)
+        self.verticalLayout_16.setStretch(0, 6)
+        self.verticalLayout_16.setStretch(1, 12)
+        self.verticalLayout_16.setStretch(2, 5)
         self.verticalLayout_16.setStretch(3, 1)
         self.verticalLayout_16.setStretch(4, 1)
-        self.verticalLayout_16.setStretch(5, 15)
         self.tabWidget1.addTab(self.RAG, "")
         self.LLM = QtWidgets.QWidget()
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
@@ -1633,8 +1678,14 @@ class Ui_MainWindow(object):
         self.LLM.setMinimumSize(QtCore.QSize(0, 0))
         self.LLM.setObjectName("LLM")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.LLM)
+        self.verticalLayout_3.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.experiment_txt = QtWebEngineWidgets.QWebEngineView(parent=self.LLM)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.experiment_txt.sizePolicy().hasHeightForWidth())
+        self.experiment_txt.setSizePolicy(sizePolicy)
         self.experiment_txt.setUrl(QtCore.QUrl("about:blank"))
         self.experiment_txt.setObjectName("experiment_txt")
         self.verticalLayout_3.addWidget(self.experiment_txt)
@@ -1676,11 +1727,10 @@ class Ui_MainWindow(object):
         self.label_19.setText(_translate("MainWindow", "서버 메세지 / 로그:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.packet_log), _translate("MainWindow", "Packet_Log"))
         self.label_3.setText(_translate("MainWindow", "Api-key"))
-        self.api_key_txt.setPlaceholderText(_translate("MainWindow", "Enter your api key..."))
+        self.edit_api_key.setPlaceholderText(_translate("MainWindow", "Enter your api key..."))
         self.label_4.setText(_translate("MainWindow", "Prompt"))
-        self.prompt_txt.setPlaceholderText(_translate("MainWindow", "Enter your prompt..."))
+        self.edit_prompt.setPlaceholderText(_translate("MainWindow", "Enter your prompt..."))
         self.label_5.setText(_translate("MainWindow", "Temperature"))
-        self.temp_val.setText(_translate("MainWindow", "0.00"))
         self.tabWidget1.setTabText(self.tabWidget1.indexOf(self.Setting), _translate("MainWindow", "setting"))
         self.groupBox_6.setTitle(_translate("MainWindow", "Question Transformations"))
         self.radio_qt_default.setText(_translate("MainWindow", "Default"))
@@ -1690,8 +1740,8 @@ class Ui_MainWindow(object):
         self.groupBox_5.setTitle(_translate("MainWindow", "Advanced Indexing"))
         self.radio_idx_default.setText(_translate("MainWindow", "Default"))
         self.radio_idx_parent.setText(_translate("MainWindow", "ParentRetrieverPipeline"))
-        self.label_24.setText(_translate("MainWindow", "child_chunk_size:"))
         self.label_22.setText(_translate("MainWindow", "parent_chunk_size:"))
+        self.label_24.setText(_translate("MainWindow", "child_chunk_size:"))
         self.radio_idx_summary.setText(_translate("MainWindow", "Summary"))
         self.label_10.setText(_translate("MainWindow", "parent_chunk_size: "))
         self.radio_idx_hypo.setText(_translate("MainWindow", "Hypothetical"))

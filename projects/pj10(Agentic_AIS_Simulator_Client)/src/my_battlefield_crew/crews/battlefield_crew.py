@@ -1,24 +1,19 @@
 import os, sys
 from pathlib import Path
+from typing import List
 from crewai import Agent, Task, Crew, Process, LLM
 from crewai.project import CrewBase, agent, task, crew
-from tools.maritime_density_async import analyze_maritime_density
-from tools.maritime_speed_async import analyze_mean_speed
-from tools.maritime_flow_async import analyze_traffic_flow
-from tools.maritime_direction_async import get_direction_analysis
-from tools.maritime_major_ports_status_async import get_major_ports_status
-from tools.maritime_ships_voyage_status_async import ship_status_extraction
-from tools.maritime_unusual_ships_detection_async import unusual_ships_detector
-from crews.battlefield_models import MaritimeSituationReport
+from my_battlefield_crew.tools.maritime_density_async import analyze_maritime_density
+from my_battlefield_crew.tools.maritime_speed_async import analyze_mean_speed
+from my_battlefield_crew.tools.maritime_flow_async import analyze_traffic_flow
+from my_battlefield_crew.tools.maritime_direction_async import get_direction_analysis
+from my_battlefield_crew.tools.maritime_major_ports_status_async import get_major_ports_status
+from my_battlefield_crew.tools.maritime_ships_voyage_status_async import ship_status_extraction
+from my_battlefield_crew.tools.maritime_unusual_ships_detection_async import unusual_ships_detector
+from my_battlefield_crew.crews.battlefield_models import MaritimeSituationReport
 # from battlefield_models import MaritimeSituationReport
-from setting.LLM_model_set import lms_llm
-from typing import List
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-from chainlit_app.chainlit_handler import ChainlitCrewHandler
+from my_battlefield_crew.setting.LLM_model_set import lms_llm
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 
 ################### TESTING STARTS (Trying various open source LLM models which could be utilized in a local environment)
 # import os
@@ -80,35 +75,32 @@ class BattlefieldCrew:
     agents_config = 'config/battlefield_agents.yaml'
     tasks_config = 'config/battlefield_tasks.yaml'
 
-    def __init__(self, needed_categories: List[str] = None, handler: ChainlitCrewHandler=None): #newly added 08/12/2026 for 병렬처리
+    def __init__(self, needed_categories: List[str] = None, context: SimulationContext=None):
         self.needed_categories = needed_categories or []
-        self.handler = handler
+        self.context = context
 
     @agent
     def maritime_situation_analyst(self) -> Agent:
-
-        needed_categories = getattr(self, 'needed_categories', [])
-
         category_to_tools_map = {
-            '밀집도 및 혼잡도': [analyze_maritime_density(self.handler)],
-            '구역별 속도': [analyze_mean_speed(self.handler)],
-            '주요 교통 흐름': [analyze_traffic_flow(self.handler), get_direction_analysis(self.handler)],
-            '기동 상태별 현황': [ship_status_extraction(self.handler)],
-            '주요 항만별 입출항': [get_major_ports_status(self.handler)],
-            '특이 기동 선박 현황': [unusual_ships_detector(self.handler)]
+            '밀집도 및 혼잡도': [analyze_maritime_density(self.context)],
+            '구역별 속도': [analyze_mean_speed(self.context)],
+            '주요 교통 흐름': [analyze_traffic_flow(self.context), get_direction_analysis(self.context)],
+            '기동 상태별 현황': [ship_status_extraction(self.context)],
+            '주요 항만별 입출항': [get_major_ports_status(self.context)],
+            '특이 기동 선박 현황': [unusual_ships_detector(self.context)]
         }
 
         active_tools = []
 
         if '전체상황 요약' in self.needed_categories:
              active_tools = [
-                analyze_maritime_density(self.handler), 
-                analyze_mean_speed(self.handler),
-                analyze_traffic_flow(self.handler), 
-                get_direction_analysis(self.handler),
-                ship_status_extraction(self.handler), 
-                get_major_ports_status(self.handler),
-                unusual_ships_detector(self.handler)
+                analyze_maritime_density(self.context), 
+                analyze_mean_speed(self.context),
+                analyze_traffic_flow(self.context), 
+                get_direction_analysis(self.context),
+                ship_status_extraction(self.context), 
+                get_major_ports_status(self.context),
+                unusual_ships_detector(self.context)
                 ]
         else: 
             for category in self.needed_categories:
@@ -141,8 +133,8 @@ class BattlefieldCrew:
             agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
-            step_callback=self.handler.agent_step_callback,
-            task_callback=self.handler.task_callback,
+            step_callback=self.context.ui_handler.agent_step_callback,
+            task_callback=self.context.ui_handler.task_callback,
             verbose=True
         )
 

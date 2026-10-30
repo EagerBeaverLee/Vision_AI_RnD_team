@@ -14,14 +14,7 @@ from crewai import LLM
 from dotenv import load_dotenv
 
 import crewai.llms.cache as crewai_cache
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-# sys.path 최상단에 프로젝트 루트 추가
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-from chainlit_app.chainlit_handler import ChainlitCrewHandler
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 
 crewai_cache.mark_cache_breakpoint = lambda msg: msg
 
@@ -70,10 +63,8 @@ class MasterRouterCrew:
     agents_config = 'config/master_router_agents.yaml'
     tasks_config = 'config/master_router_tasks.yaml'
 
-    def __init__(self, handler: ChainlitCrewHandler=None):
-        # self.step_callback = handler.agent_step_callback
-        # self.task_callback = handler.task_callback
-        self.handler = handler
+    def __init__(self, context: SimulationContext):
+        self.handler = context.ui_handler
 
     @agent
     def master_operations_router(self) -> Agent:

@@ -10,7 +10,9 @@ import pandas as pd
 import subprocess
 import atexit
 import requests
-
+import shutil
+import threading
+from multiprocessing import shared_memory
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QMenu, QFileDialog, QProgressDialog
 )
@@ -33,31 +35,47 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 
 
 from my_battlefield_crew.ui.mainwindow import Ui_MainWindow
-# from Default_Gen import DefaultGenerator
-# from DefaultRetriever import DefaultRetriever
-# from ParentChildDocumentRetriever import ParentRetriverPipeline
-# from SummaryDocumentRetriever import SummaryDocumentRetrieverPipeline
-# from HypotheticalQuestionRetrieverPipeline import HypotheticalQuestionRetrieverPipeline
-# from GranularChunkExpansionRetriever import GranularChunkExpansionRetriverPipeline
-# from Rewrite_Retrieve_Read_Gen import RewriteRetrieveReadQuestionGenerator
-# from Step_Back_Question_Gen import StepBackQuestionGenerator
-# from Multiple_Questions_Gen import MultipleQuestionGenerator
+from my_battlefield_crew.RAG.Generator.Default_Gen import DefaultGenerator
+from my_battlefield_crew.RAG.Generator.Rewrite_Retrieve_Read_Gen import RewriteRetrieveReadQuestionGenerator
+from my_battlefield_crew.RAG.Generator.Step_Back_Question_Gen import StepBackQuestionGenerator
+from my_battlefield_crew.RAG.Generator.Multiple_Questions_Gen import MultipleQuestionGenerator
+
+from my_battlefield_crew.RAG.Retriever.DefaultRetriever import DefaultRetriever
+from my_battlefield_crew.RAG.Retriever.ParentChildDocumentRetriever import ParentRetriverPipeline
+from my_battlefield_crew.RAG.Retriever.SummaryDocumentRetriever import SummaryDocumentRetrieverPipeline
+from my_battlefield_crew.RAG.Retriever.HypotheticalQuestionRetrieverPipeline import HypotheticalQuestionRetrieverPipeline
+from my_battlefield_crew.RAG.Retriever.GranularChunkExpansionRetriever import GranularChunkExpansionRetriverPipeline
+from my_battlefield_crew.setting.weather_data_sender import DataSenderThread
+
 # from LLMStreamThread import LLMStreamThread
 # from AIS_Trajectory_compression import GenerateAISReport
-# from weather_data_renewal import DataSenderThread
 
-from my_battlefield_crew.RAG.rag_config import RAGConfig, IndexingConfig, PostProcessingConfig
-from my_battlefield_crew.RAG.rag_setting_tab import RAGSettingManager
+from my_battlefield_crew.setting.rag_config import RAGConfig, IndexingConfig, PostProcessingConfig
+from my_battlefield_crew.setting.llm_config import LLMConfig
+from my_battlefield_crew.setting.rag_setting_tab import RAGSettingManager
+from my_battlefield_crew.setting.setting_tab import SettingTabManager
 
 sitmap_streamlit_process = None
 dashboard_streamlit_process = None
 geo_dashboard_streamlit_process = None
-FAISS_SAVE_DIR = os.path.abspath("cache/faiss_index")
-CHAINLIT_CONFIG_URL = "http://127.0.0.1:8000/api/rag/config"
+chainlit_process = None
+
+CHAINLIT_LLM_CONFIG_URL = "http://127.0.0.1:8504/api/llm/config"
+CHAINLIT_RAG_CONFIG_URL = "http://127.0.0.1:8504/api/rag/config"
+CHAINLIT_VECTORSTORE_URL = "http://127.0.0.1:8504/api/rag/vectorstore"
+
+SHM_NAME = "ais_sim_server_time"
+SHM_SIZE = 32
+SHM_NAME_2 = "ais_start_server_time"
+SHM_SIZE_2 = 32
+SHM_DB_PATH_NAME = "db_path"
+SHM_DB_PATH_LEN = 256
+
+DB_PATH = "src/my_battlefield_crew/data/ships.db"
 
 # DB 핸들링 함수
 def init_db():
-    db_path = "src/my_battlefield_crew/data/ships.db"
+    db_path = DB_PATH
 
     if os.path.exists(db_path):
         try:
@@ -117,7 +135,7 @@ class ReceiveThread(QThread):
 
     def run(self):
         # 스레드 내에서 DB 연결 (SQLite는 스레드 간 연결 공유 불가 원칙)
-        conn = sqlite3.connect("ships.db")
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
         while self.running:
@@ -200,6 +218,17 @@ class Window(QMainWindow):
 
         # 💡 MainWindow의 self.ui를 그대로 주입하여 RAG 전담 매니저 생성
         self.rag_manager = RAGSettingManager(self.ui, parent=self)
+        self.setting_manager = SettingTabManager(self.ui, parent=self)
+
+        # 💡 1. 프로세스 간 공유 메모리 블록 생성 (이전 프로세스 잔존물 안전 처리)
+        try:
+            self.shm = shared_memory.SharedMemory(name=SHM_NAME, create=True, size=SHM_SIZE)
+            self.shm2 = shared_memory.SharedMemory(name=SHM_NAME_2, create=True, size=SHM_SIZE_2)
+            self.shm_db_path = shared_memory.SharedMemory(name=SHM_DB_PATH_NAME, create=True, size=SHM_DB_PATH_LEN)
+        except FileExistsError:
+            self.shm = shared_memory.SharedMemory(name=SHM_NAME)
+            self.shm2 = shared_memory.SharedMemory(name=SHM_NAME_2)
+            self.shm_db_path = shared_memory.SharedMemory(name=SHM_DB_PATH_NAME)
 
         #######################################  채팅방 변수  ##############################################
         # self.name = name
@@ -237,9 +266,7 @@ class Window(QMainWindow):
         self.m_loading_bar = 0
         self.loaded_folder_path = ""
 
-        self.default_history = ChatMessageHistory()
-        self.experiment_history = ChatMessageHistory()
-
+        
         self.chat_stored = {}
         self.default_session_id = "default"
         self.experiment_session_id = "experiment"
@@ -247,11 +274,11 @@ class Window(QMainWindow):
         self.experiment_config = {"configurable": {"session_id": self.experiment_session_id}}
         ####################################################################################
 
-        validator = QDoubleValidator()
-        validator.setRange(0.00, 1.00)
-        validator.setDecimals(2)
+        # validator = QDoubleValidator()
+        # validator.setRange(0.00, 1.00)
+        # validator.setDecimals(2)
         # validator.setNotation(QDoubleValidator.StandardNotation)
-        self.ui.temp_val.setValidator(validator)
+        # self.ui.temp_val.setValidator(validator)
 
         self.connectSignalsSlots()
         self.set_web_view()                   #스트림릿 내부에 연동
@@ -283,15 +310,7 @@ class Window(QMainWindow):
         self.stream_worker = None
 
         self.init_local_llm()
-        # self.init_web_view()
-        
-        #초기 chunk값 지정
-        # self.ui.parentretreiver_parent_chunk_size.setValue(3000)
-        # self.ui.parentretreiver_child_chunk_size.setValue(500)
-        # self.ui.summary_parent_chunk_size.setValue(3000)
-        # self.ui.hypo_parent_chunk_size.setValue(3000)
-        # self.ui.granular_chunk_size.setValue(3000)
-
+                
         #전체화면 실행
         self.showMaximized()
 
@@ -319,7 +338,7 @@ class Window(QMainWindow):
 
         load_dotenv()
         self.langfuse = get_client()
-
+        
     def init_local_llm(self):
         self.local_llm = ChatOpenAI(
             api_key="ai",
@@ -337,86 +356,142 @@ class Window(QMainWindow):
             # temperature=self.current_chat_room.m_temperature,
         )
 
+    def on_rag_config_auto_sync(self, config: RAGConfig):
+        """UI 설정 변경 시 백그라운드 스레드를 통해 Chainlit으로 자동 동기화"""
+        payload = config.model_dump(mode="json")
+
+        def _send():
+            try:
+                resp = requests.post(
+                    CHAINLIT_RAG_CONFIG_URL,
+                    json=payload,
+                    timeout=1.0  # 로컬 IPC 통신이므로 1초 타임아웃
+                )
+                if resp.status_code == 200:
+                    # 메인 윈도우 하단 상태바가 있다면 2초간 안내 메시지 출력
+                    if hasattr(self, "statusBar") and self.statusBar():
+                        self.statusBar().showMessage("RAG 설정이 백엔드에 동기화되었습니다.", 2000)
+                    print(f"[Auto Sync 성공] 전략: {config.indexing.strategy}")
+                else:
+                    print(f"[Auto Sync 서버 응답 오류] 상태코드: {resp.status_code}, 메시지: {resp.text}")
+
+            except requests.exceptions.ConnectionError:
+                # Chainlit 서버가 아직 켜지지 않았을 때는 작업 흐름을 방해하지 않고 로그만 남김
+                print("[Auto Sync 알림] Chainlit 서버가 구동 중이지 않아 설정을 전송하지 못했습니다.")
+            except Exception as e:
+                print(f"[Auto Sync 예외 발생] {e}")
+
+        # UI 스레드가 블로킹되어 슬라이더가 멈칫하는 현상을 방지하기 위해 데몬 스레드로 즉시 실행
+        threading.Thread(target=_send, daemon=True).start()
+
+    def on_llm_config_auto_sync(self, config: LLMConfig):
+        """UI 설정 변경 시 백그라운드 스레드를 통해 Chainlit으로 자동 동기화"""
+        payload = config.model_dump(mode="json")
+
+        def _send():
+            try:
+                resp = requests.post(
+                    CHAINLIT_LLM_CONFIG_URL,
+                    json=payload,
+                    timeout=1.0  # 로컬 IPC 통신이므로 1초 타임아웃
+                )
+                if resp.status_code == 200:
+                    # 메인 윈도우 하단 상태바가 있다면 2초간 안내 메시지 출력
+                    if hasattr(self, "statusBar") and self.statusBar():
+                        self.statusBar().showMessage("RAG 설정이 백엔드에 동기화되었습니다.", 2000)
+                    print(f"[Auto Sync 성공] 전략: {config.indexing.strategy}")
+                else:
+                    print(f"[Auto Sync 서버 응답 오류] 상태코드: {resp.status_code}, 메시지: {resp.text}")
+
+            except requests.exceptions.ConnectionError:
+                # Chainlit 서버가 아직 켜지지 않았을 때는 작업 흐름을 방해하지 않고 로그만 남김
+                print("[Auto Sync 알림] Chainlit 서버가 구동 중이지 않아 설정을 전송하지 못했습니다.")
+            except Exception as e:
+                print(f"[Auto Sync 예외 발생] {e}")
+
+        # UI 스레드가 블로킹되어 슬라이더가 멈칫하는 현상을 방지하기 위해 데몬 스레드로 즉시 실행
+        threading.Thread(target=_send, daemon=True).start()
+
     #Crewai, Chainlilt 통합 RAG 임베딩 함수
     def on_embedding_finished(self):
         """임베딩 워커 완료 시그널 수신 시 실행"""
         try:
-            # 1. FAISS 벡터스토어 로컬 디스크 저장
-            os.makedirs(FAISS_SAVE_DIR, exist_ok=True)
-            if hasattr(self.worker, "vector_store") and self.worker.vector_store:
-                self.worker.vector_store.save_local(FAISS_SAVE_DIR)
-                print(f">>> [Qt] FAISS 인덱스 로컬 저장 완료: {FAISS_SAVE_DIR}")
+            if not (hasattr(self.worker, "vector_store") and self.worker.vector_store):
+                QMessageBox.warning(self, "오류", "임베딩된 벡터스토어가 메모리에 존재하지 않습니다.")
+                return
 
-            # 2. 현재 UI 설정값 수집[cite: 3]
-            config = self.rag_tab.get_config()
-            config.source_path = FAISS_SAVE_DIR  # 인덱스 경로를 설정 모델에 포함
+            # 1. 💡 메모리 상의 FAISS 전체(인덱스+문서)를 bytes 데이터로 변환 (디스크 쓰기 0)
+            faiss_bytes: bytes = self.worker.vector_store.serialize_to_bytes()
 
             # 3. Chainlit 서버로 최신 RAG 파라미터 전송
             resp = requests.post(
-                CHAINLIT_CONFIG_URL,
-                json=config.model_dump(mode="json"),
-                timeout=3.0
+                CHAINLIT_VECTORSTORE_URL,
+                data=faiss_bytes,
+                headers={"Content-Type":"application/octet-stream"},
+                timeout=30.0
             )
             if resp.status_code == 200:
-                print(">>> [Qt -> Chainlit] RAG 설정 및 FAISS 경로 동기화 성공")
+                print(f">>> [Qt -> Chainlit] FAISS 인메모리 DB 전송 완료 ({len(faiss_bytes) / 1024:.1f} KB)")
             else:
-                print(f">>> [Qt] 설정 동기화 실패: {resp.text}")
+                QMessageBox.critical(self, "전송 실패", f"서버 응답 오류: {resp.text}")
 
         except Exception as e:
-            QMessageBox.critical(self, "저장 및 전송 오류", f"설정 동기화 중 오류 발생: {e}")
+            QMessageBox.critical(self, "오류", f"FAISS 전송 중 예외 발생: {e}")
 
-    # def create_default_generator(self):
-    #     return DefaultGenerator(
-    #         llm=self.local_llm
-    #     )
-    # def create_rewrite_retrieve_read_generator(self):
-    #     return RewriteRetrieveReadQuestionGenerator(
-    #         llm=self.local_llm
-    #     )
-    # def create_multiple_question_generator(self):
-    #     return  MultipleQuestionGenerator(
-    #         llm=self.local_llm
-    #     )
-    # def create_step_back_question_generator(self):
-    #     return StepBackQuestionGenerator(
-    #         llm=self.local_llm
-    #         # llm=self.openai_llm
-    #     )
+    def create_default_generator(self):
+        return DefaultGenerator(
+            llm=self.local_llm
+        )
+    def create_rewrite_retrieve_read_generator(self):
+        return RewriteRetrieveReadQuestionGenerator(
+            llm=self.local_llm
+        )
+    def create_multiple_question_generator(self):
+        return  MultipleQuestionGenerator(
+            llm=self.local_llm
+        )
+    def create_step_back_question_generator(self):
+        return StepBackQuestionGenerator(
+            llm=self.local_llm
+            # llm=self.openai_llm
+        )
 
-    # def create_default_retriever(self, path):
-    #     return DefaultRetriever(
-    #         folder_path=path,
-    #         api_key=self.current_chat_room.m_api_key
-    #     )
-    
-    # def create_parent_retriever(self, path):
-    #     return ParentRetriverPipeline(
-    #         folder_path=path,
-    #         openai_api_key=self.current_chat_room.m_api_key,
-    #         parent_chunk_size=self.current_chat_room.parent_p_chunk_size,
-    #         child_chunk_size=self.current_chat_room.parent_c_chunk_size
-    #     )
-    # def create_summary_retriever(self, path):
-    #     return SummaryDocumentRetrieverPipeline(
-    #         folder_path=path,
-    #         openai_api_key=self.current_chat_room.m_api_key,
-    #         llm_model=self.local_llm
-    #     )
-    # def create_hypothetical_retriever(self, path):
-    #     return HypotheticalQuestionRetrieverPipeline(
-    #         folder_path=path,
-    #         openai_api_key=self.current_chat_room.m_api_key,
-    #         llm_model=self.local_llm,
-    #     )
-    # def create_granular_retriever(self, path):
-    #     return GranularChunkExpansionRetriverPipeline(
-    #         folder_path=path,
-    #         openai_api_key=self.current_chat_room.m_api_key,
-    #         granular_chunk_size=500,
-    #     )
+    def create_default_retriever(self, path):
+        return DefaultRetriever(
+            folder_path=path,
+            api_key=self.current_chat_room.m_api_key
+        )
+    def create_parent_retriever(self, path):
+        return ParentRetriverPipeline(
+            folder_path=path,
+            openai_api_key=self.current_chat_room.m_api_key,
+            parent_chunk_size=self.current_chat_room.parent_p_chunk_size,
+            child_chunk_size=self.current_chat_room.parent_c_chunk_size
+        )
+    def create_summary_retriever(self, path):
+        return SummaryDocumentRetrieverPipeline(
+            folder_path=path,
+            openai_api_key=self.current_chat_room.m_api_key,
+            llm_model=self.local_llm
+        )
+    def create_hypothetical_retriever(self, path):
+        return HypotheticalQuestionRetrieverPipeline(
+            folder_path=path,
+            openai_api_key=self.current_chat_room.m_api_key,
+            llm_model=self.local_llm,
+        )
+    def create_granular_retriever(self, path):
+        return GranularChunkExpansionRetriverPipeline(
+            folder_path=path,
+            openai_api_key=self.current_chat_room.m_api_key,
+            granular_chunk_size=500,
+        )
+
 
     def load_folder(self):
-        if not self.current_chat_room.m_api_key:
+        curr_config = self.setting_manager.get_config().model_dump
+
+        if curr_config.get("api_key") is None:
             QMessageBox.critical(self, "오류", "api key를 입력해주세요")
             return
         
@@ -440,7 +515,7 @@ class Window(QMainWindow):
             "Granular": self.create_granular_retriever,
         }
 
-        self.ui.path.setText(f"{folder_path}")
+        self.ui.edit_path.setText(f"{folder_path}")
 
         self.ui.Loading_bar.setValue(0)
         self.ui.Load_btn.setEnabled(False) #작업 중 버튼 비활성화
@@ -471,101 +546,12 @@ class Window(QMainWindow):
 
         self.threading.start()
 
-    def slider_temp_value(self):
-        float_val = self.ui.temp_slider.value() / 100
-        if float_val == float(self.current_chat_room.m_temperature):
-            return
-        self.current_chat_room.m_temperature = str(float_val)
-        self.sync_temp_value()
-
-    def text_temp_value(self):
-        float_val = self.ui.temp_val.text().strip()
-        if float_val == self.current_chat_room.m_temperature or float_val == "":
-            return
-        self.current_chat_room.m_temperature = float_val
-        self.sync_temp_value()
-
-    def sync_temp_value(self):
-        final_val = self.current_chat_room.m_temperature
-        if self.ui.temp_slider.value() * 0.01 != float(final_val):
-            self.ui.temp_slider.setValue(int(float(final_val) * 100))
-        if self.ui.temp_val.text().strip() != final_val:
-            self.ui.temp_val.setText(final_val)
-
-    # retrieval post processing
-    def slider_score_value(self):
-        #값이 0 이상이 될 경우 자동 체크
-        if self.ui.similarity_slider.value() != 0:
-            self.ui.similarity_post_processor.setChecked(True)
-        else:
-            self.ui.similarity_post_processor.setChecked(False)
-
-        float_val = self.ui.similarity_slider.value() / 100
-        if float_val == float(self.current_chat_room.m_similarity):
-            return
-        self.current_chat_room.m_similarity = str(float_val)
-        self.sync_score_value()
-
-    def text_score_value(self):
-        float_val = self.ui.similarity_val.text().strip()
-        if float_val == self.current_chat_room.m_similarity or float_val == "":
-            return
-        self.current_chat_room.m_similarity = float_val
-        self.sync_score_value()
-
-    def sync_score_value(self):
-        final_val = self.current_chat_room.m_similarity
-        if self.ui.similarity_slider.value() * 0.01 != float(final_val):
-            self.ui.similarity_slider.setValue(int(float(final_val) * 100))
-        if self.ui.similarity_val.text().strip() != final_val:
-            self.ui.similarity_val.setText(final_val)
-
-    def set_parent_retriever_parent_chunk_size(self):
-        self.current_chat_room.parent_p_chunk_size = self.ui.parentretreiver_parent_chunk_size.value()
-
-    def set_parent_retriever_child_chunk_size(self):
-        self.current_chat_room.parent_c_chunk_size = self.ui.parentretreiver_child_chunk_size.value()
-
-    def set_summary_retriever_parent_chunk_size(self):
-        self.current_chat_room.summary_p_chunk_size = self.ui.summary_parent_chunk_size.value()
-
-    def set_hypothetical_retriever_parent_chunk_size(self):
-        self.current_chat_room.hypo_p_chuck_size = self.ui.hypo_parent_chunk_size.value()
-        
-    def set_granular_retriever_chunk_size(self):
-        self.current_chat_room.granular_chucnk_size = self.ui.granular_chunk_size.value()
-
     def connectSignalsSlots(self):
         # self.ui.send_btn.clicked.connect(self.load_message)
-        self.ui.api_key_txt.textChanged.connect(self.apply_api_key)
-        self.ui.prompt_txt.textChanged.connect(self.apply_prompt)
-        self.ui.temp_slider.valueChanged.connect(self.slider_temp_value)
-        self.ui.temp_val.textChanged.connect(self.text_temp_value)
         self.ui.Load_btn.clicked.connect(self.load_folder)
-
-        #Question Transformations
-        # self.ui.radio_qt_default.toggled.connect(self.apply_rag_transformation)
-        # self.ui.rewrite_generator.toggled.connect(self.apply_rag_transformation)
-        # self.ui.multiple_generator.toggled.connect(self.apply_rag_transformation)
-        # self.ui.step_back_generator.toggled.connect(self.apply_rag_transformation)
-
-        #Advanced Indexing
-        # self.ui.default_retriever.toggled.connect(self.apply_rag_indexing)
-        # self.ui.parent_retriever.toggled.connect(self.apply_rag_indexing)
-        # self.ui.summary_retriever.toggled.connect(self.apply_rag_indexing)
-        # self.ui.hypothetical_retriever.toggled.connect(self.apply_rag_indexing)
-        # self.ui.granular_retriever.toggled.connect(self.apply_rag_indexing)
-        # self.ui.parentretreiver_parent_chunk_size.valueChanged.connect(self.set_parent_retriever_parent_chunk_size)
-        # self.ui.parentretreiver_child_chunk_size.valueChanged.connect(self.set_parent_retriever_child_chunk_size)
-        # self.ui.summary_parent_chunk_size.valueChanged.connect(self.set_summary_retriever_parent_chunk_size)
-        # self.ui.hypo_parent_chunk_size.valueChanged.connect(self.set_hypothetical_retriever_parent_chunk_size)
-        # self.ui.granular_chunk_size.valueChanged.connect(self.set_granular_retriever_chunk_size)
-
-        #Retrieval Post-Processing
-        # self.ui.similarity_slider.valueChanged.connect(self.slider_score_value)
-        # self.ui.similarity_val.textChanged.connect(self.text_score_value)
-        # self.ui.keyword_txt.textChanged.connect(self.apply_keyword)
-
+        self.rag_manager.config_changed.connect(self.on_rag_config_auto_sync)
+        self.setting_manager.config_changed.connect(self.on_llm_config_auto_sync)
+        
         #Client_func
         self.ui.btn_server_connect.clicked.connect(self.connect_server)
 
@@ -669,30 +655,6 @@ class Window(QMainWindow):
 
             retriever_route[selected_data_source.datasource](question, mmsi_list)
             final_span.update(output={"status": "finished"})
-    
-    def apply_api_key(self):
-        if self.ui.api_key_txt.text().strip():
-            self.current_chat_room.m_api_key = self.ui.api_key_txt.text().strip()
-            self.show_status_messages(f"api key is apply successful")
-
-    def apply_prompt(self):
-        if self.current_chat_room.m_prompt == self.ui.prompt_txt.toPlainText().strip():
-            return
-        elif self.ui.prompt_txt.toPlainText().strip():
-            self.current_chat_room.m_prompt = self.ui.prompt_txt.toPlainText().strip()
-            self.show_status_messages(f"prompt is apply successful")
-
-    def apply_keyword(self):
-        if self.ui.keyword_txt.text():
-            self.ui.keywords.setChecked(True)
-        else:
-            self.ui.keywords.setChecked(False)
-
-        if self.ui.keyword_txt.text().strip():
-            self.current_chat_room.m_keyword = self.ui.keyword_txt.text().strip()
-            self.show_status_messages(f"keyword is apply successful")
-        else:
-            self.current_chat_room.m_keyword = None
     
     
     def rag_btn_llm(self, question):
@@ -800,50 +762,6 @@ class Window(QMainWindow):
         if self.stream_worker:
             self.stream_worker.deleteLater()
             self.stream_worker = None
-
-    def get_session_history(self, session_id: str) -> ChatMessageHistory:
-        if session_id not in self.current_chat_room.chat_stored:
-            self.current_chat_room.chat_stored[session_id] = ChatMessageHistory()
-        return self.current_chat_room.chat_stored[session_id]
-    
-    def apply_rag_transformation(self):
-        radio_btn = self.sender()
-        self.toggle_active_rrf(radio_btn.text())
-        if radio_btn.isChecked():
-            self.rag_transformation = radio_btn.text()
-            self.ui.rag_transformation.setText(f'{radio_btn.text()}')
-    
-    def apply_rag_indexing(self):
-        radio_btn = self.sender()
-        if radio_btn.isChecked():
-            self.rag_indexing = radio_btn.text()
-            self.ui.rag_indexing.setText(f'{radio_btn.text()}')
-            self.check_applied_indexing()
-
-    def check_applied_indexing(self):
-        if self.rag_indexing != self.current_chat_room.rag_apply_indexing:
-            self.ui.rag_indexing.setStyleSheet("color: red;")
-        else:
-            self.ui.rag_indexing.setStyleSheet("color: rgb(166, 217, 171);")
-
-    def toggle_active_rrf(self, val):
-        if val == "Multiple Questions Generator":
-            self.ui.reciprocal_rank_fusion.setEnabled(True)
-            self.ui.similarity_post_processor.setChecked(False)
-            self.ui.similarity_post_processor.setEnabled(False)
-            self.ui.keywords.setChecked(False)
-            self.ui.keywords.setEnabled(False)
-            self.ui.similarity_slider.setEnabled(False)
-            self.ui.similarity_val.setEnabled(False)
-            self.ui.keyword_txt.setEnabled(False)
-        else:
-            self.ui.reciprocal_rank_fusion.setChecked(False)
-            self.ui.reciprocal_rank_fusion.setEnabled(False)
-            self.ui.similarity_post_processor.setEnabled(True)
-            self.ui.keywords.setEnabled(True)
-            self.ui.similarity_slider.setEnabled(True)
-            self.ui.similarity_val.setEnabled(True)
-            self.ui.keyword_txt.setEnabled(True)
 
     def set_web_view(self):
         self.ui.weather_board.setUrl(QUrl("http://localhost:8502"))
@@ -999,6 +917,12 @@ class Window(QMainWindow):
 
         if not self.start_server_time:
             self.start_server_time = time[:19]
+            self.shm2.buf[:19] = self.start_server_time.encode("ascii")
+            path_bytes = DB_PATH.encode("utf-8")
+            # 1. 버퍼 전체를 널 바이트(0)로 초기화한 뒤
+            self.shm_db_path.buf[:] = b"\x00" * len(self.shm_db_path.buf)
+            # 2. 앞부분에 경로 바이트 대입
+            self.shm_db_path.buf[:len(path_bytes)] = path_bytes
 
         #현재 구역안에 있는 배 개수 계산
         self.counting_current_ship(packet)
@@ -1019,6 +943,7 @@ class Window(QMainWindow):
     def update_server_time(self, time):
         self.curr_server_time = time
         self.ui.server_time.setText(self.curr_server_time)
+        self.shm.buf[:19] = self.curr_server_time.encode("ascii")
 
     def counting_current_ship(self, packet):
         # packet[2]: MMSI, packet[6]: 경도, packet[7]: 위도
@@ -1106,7 +1031,6 @@ class Window(QMainWindow):
                     value_data = final_df.fillna(0).to_dict(orient='records')
 
                     url = "http://localhost:8600/update"
-                    # url = "http://localhost:8600/from_main"
 
                     # 1. 스레드 생성 및 데이터 전달
                     self.sender_thread = DataSenderThread(url, value_data)
@@ -1152,6 +1076,15 @@ class Window(QMainWindow):
             self.recv_thread.stop()
         if self.socket:
             self.socket.close()
+        if self.shm:
+            self.shm.close()
+            self.shm.unlink()
+        if self.shm2:
+            self.shm2.close()
+            self.shm2.unlink() 
+        if self.shm_db_path:
+            self.shm_db_path.close()
+            self.shm_db_path.unlink()
         event.accept()
 
     def restart_program(self):
@@ -1169,22 +1102,33 @@ def kill_process_on_port(port):
         """특정 포트를 사용 중인 프로세스를 찾아 종료"""
         for proc in psutil.process_iter(['pid', 'name']):
             try:
-                # 포트 연결 정보 확인
-                connections = proc.connections(kind='inet')
+                # 네트워크 연결 정보 확인
+                connections = proc.net_connections(kind='inet') 
                 for conn in connections:
                     if conn.laddr.port == port:
-                        print(f"포트 {port}를 사용 중인 프로세스 발견 (PID: {proc.info['pid']}, 이름: {proc.info['name']})")
+                        current_pid = proc.info['pid'] # 루프 안에서 안전하게 할당
+                        print(f"포트 {port}를 사용 중인 프로세스 발견 (PID: {current_pid}, 이름: {proc.info['name']})")
                         
-                        # 🌟 윈도우에서도 문제없는 강제 종료 방식
-                        proc.kill() 
+                        # 윈도우 트리 종료 적용
+                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(current_pid)], 
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         
-                        # 종료될 때까지 잠시 대기 (선택사항)
-                        proc.wait(timeout=3)
-                        print(f"PID {proc.info['pid']} 프로세스가 성공적으로 종료되었습니다.")
+                        print(f"PID {current_pid} 프로세스 트리가 성공적으로 종료되었습니다.")
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
             except Exception as e:
-                print(f"종료 시도 중 오류 발생: {e}")
+                # 🌟 pid 변수 대신 안전하게 수집된 proc.info['pid']를 사용하여 오류 방지
+                print(f"PID {proc.info['pid']} ({proc.info['name']}) 종료 시도 중 오류 발생: {e}")
+
+def kill_process_tree(process):
+    """부모 프로세스와 하위 자식 프로세스를 모두 강제 종료"""
+    if process and process.poll() is None: # 프로세스가 존재하고 실행 중인 경우
+        try:
+            # /F: 강제 종료, /T: 자식 프로세스까지 트리 종료
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(process.pid)], 
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as e:
+            print(f"프로세스 종료 중 오류 발생: {e}")
 
 def start_streamlit():
     kill_process_on_port(8501)
@@ -1197,11 +1141,14 @@ def start_streamlit():
     global geo_dashboard_streamlit_process
     global chainlit_process
 
+    # uv 실행 파일 경로를 안전하게 탐색
+    uv_bin = shutil.which("uv") or "uv"
+
     # Streamlit 앱 실행 명령어
-    cmd = ["streamlit", "run", "./simulation_map.py", "--server.port=8501"]
-    cmd2 = ["streamlit", "run", "./dashboard.py", "--server.headless=True", "--server.port=8502"]
-    cmd3 = ["streamlit", "run", "./geo_dashboard.py", "--server.headless=True", "--server.port=8503"]
-    cmd4 = [sys.executable, "-m", "chainlit", "run", "./app_v2.py", "-w", "-h", "--port", "8504"]
+    cmd = [uv_bin, "run", "streamlit", "run", "./src/my_battlefield_crew/map/simulation_map.py", "--server.port=8501"]
+    cmd2 = [uv_bin, "run", "streamlit", "run", "./src/my_battlefield_crew/dashboard/weather_board.py", "--server.headless=True", "--server.port=8502"]
+    cmd3 = [uv_bin, "run", "streamlit", "run", "./src/my_battlefield_crew/dashboard/geo_dashboard.py", "--server.headless=True", "--server.port=8503"]
+    cmd4 = [uv_bin, "run", "chainlit", "run", "./src/my_battlefield_crew/chainlit_app/chat_main.py", "-w", "-h", "--port", "8504"]
 
     sitmap_streamlit_process = subprocess.Popen(cmd)
     print("실시간 상황도 streamlit서버가 백그라운드에서 시작되었습니다.")
@@ -1220,21 +1167,26 @@ def stop_streamlit():
     global sitmap_streamlit_process
     global dashboard_streamlit_process
     global geo_dashboard_streamlit_process
+    global chainlit_process
 
     if sitmap_streamlit_process:
-        sitmap_streamlit_process.kill()
+        kill_process_tree(sitmap_streamlit_process)
+        sitmap_streamlit_process = None
         print("상황도 Streamlit 서버가 종료되었습니다.")
 
     if dashboard_streamlit_process:
-        dashboard_streamlit_process.kill()
+        kill_process_tree(dashboard_streamlit_process)
+        dashboard_streamlit_process = None
         print("Dashboard Streamlit 서버가 종료되었습니다.")
 
     if geo_dashboard_streamlit_process:
-        geo_dashboard_streamlit_process.kill()
+        kill_process_tree(geo_dashboard_streamlit_process)
+        geo_dashboard_streamlit_process = None
         print("Geo Dashboard Streamlit 서버가 종료되었습니다.")
 
     if chainlit_process:
-        chainlit_process.kill()
+        kill_process_tree(chainlit_process)
+        chainlit_process = None
         print("Chainlit 서버가 종료되었습니다.")
 
 if __name__ == "__main__":

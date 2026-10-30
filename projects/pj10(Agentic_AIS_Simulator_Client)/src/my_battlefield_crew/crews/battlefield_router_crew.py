@@ -4,14 +4,8 @@ from typing import List, Literal
 from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Process, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
-from setting.LLM_model_set import lms_llm
-
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-from chainlit_app.chainlit_handler import ChainlitCrewHandler
+from my_battlefield_crew.setting.LLM_model_set import lms_llm
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 
 ################### TESTING STARTS (Trying various open source LLM models which could be utilized in a local environment)
 import os
@@ -101,9 +95,9 @@ class RouterCrew():
     agents_config = 'config/battlefield_router_agents.yaml'
     tasks_config = 'config/battlefield_router_tasks.yaml'
 
-    def __init__(self, handler: ChainlitCrewHandler=None): #newly added 08/12/2026 for 병렬처리
-        self.step_callback = handler.agent_step_callback
-        self.task_callback = handler.task_callback
+    def __init__(self, context: SimulationContext):
+        self.step_callback = context.ui_handler.agent_step_callback
+        self.task_callback = context.ui_handler.task_callback
 
     @agent
     def tactical_operations_router(self) -> Agent:

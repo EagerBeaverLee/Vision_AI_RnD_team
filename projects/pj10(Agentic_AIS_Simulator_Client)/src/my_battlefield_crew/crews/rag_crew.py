@@ -1,14 +1,12 @@
 # import os
 from crewai import Agent, Task, Crew, Process
-from tools.doc_search_tool import search_document_tool
+from my_battlefield_crew.tools.doc_search_tool import search_document_tool
 from crewai.project import CrewBase, agent, task, crew
-import sys
-from pathlib import Path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-from chainlit_app.chainlit_handler import ChainlitCrewHandler
-from RAG.rag_config import RAGConfig
+from my_battlefield_crew.chainlit_app.chainlit_handler import ChainlitCrewHandler
+from my_battlefield_crew.setting.rag_config import RAGConfig
+from my_battlefield_crew.setting.llm_config import LLMConfig
+from langchain_community.vectorstores import FAISS
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 
 ################### TESTING STARTS (Trying various open source LLM models which could be utilized in a local environment)
 import os
@@ -16,7 +14,7 @@ from crewai import LLM
 from dotenv import load_dotenv
 
 import crewai.llms.cache as crewai_cache
-from setting.LLM_model_set import lms_llm
+from my_battlefield_crew.setting.LLM_model_set import lms_llm
 
 crewai_cache.mark_cache_breakpoint = lambda msg: msg
 
@@ -42,10 +40,9 @@ class RAGCrew:
     agents_config = 'config/rag_agents.yaml'
     tasks_config = 'config/rag_tasks.yaml'  
 
-    def __init__(self, handler: ChainlitCrewHandler=None, config: RAGConfig=None):
-        self.config = config
-        self.handler = handler
-        self.active_tool = [search_document_tool(ui_handler=self.handler, config=self.config)]
+    def __init__(self, context: SimulationContext):
+        self.context = context
+        self.active_tool = [search_document_tool(ui_handler=self.context.ui_handler, config=self.context.rag_config)]
         
 
     @agent
@@ -70,8 +67,8 @@ class RAGCrew:
             agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
-            step_callback=self.handler.agent_step_callback,
-            task_callback=self.handler.task_callback,
+            step_callback=self.context.ui_handler.agent_step_callback,
+            task_callback=self.context.ui_handler.task_callback,
             verbose=True
         )
 

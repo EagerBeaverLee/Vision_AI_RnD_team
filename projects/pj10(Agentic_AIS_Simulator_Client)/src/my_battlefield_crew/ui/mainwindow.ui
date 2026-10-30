@@ -95,6 +95,12 @@ QTabBar::tab:selected {
         </layout>
        </widget>
        <widget class="QWidget" name="dashboard">
+        <property name="minimumSize">
+         <size>
+          <width>700</width>
+          <height>0</height>
+         </size>
+        </property>
         <attribute name="title">
          <string>Dashboard</string>
         </attribute>
@@ -435,9 +441,9 @@ QTabBar::tab:selected {
         <attribute name="title">
          <string>setting</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_4">
+        <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,1,10,1,15">
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,1,1,8,1,1,10">
+          <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="1,4,4">
            <item>
             <widget class="QLabel" name="label_3">
              <property name="sizePolicy">
@@ -457,7 +463,20 @@ QTabBar::tab:selected {
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="api_key_txt">
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="edit_api_key">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
                <horstretch>0</horstretch>
@@ -490,39 +509,41 @@ QLineEdit:focus {
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QLabel" name="label_4">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QLabel {
+          </layout>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_4">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel {
     color: rgb(166, 217, 171);
 }</string>
-             </property>
-             <property name="text">
-              <string>Prompt</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QTextEdit" name="prompt_txt">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="font">
-              <font>
-               <bold>false</bold>
-              </font>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QTextEdit {
+           </property>
+           <property name="text">
+            <string>Prompt</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTextEdit" name="edit_prompt">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QTextEdit {
 	border-radius: 5px;
     background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
 	border: 2px solid white;
@@ -531,71 +552,92 @@ QLineEdit:focus {
 QTextEdit:focus {
     border: 2px solid rgb(184, 247, 185);
 }</string>
+           </property>
+           <property name="placeholderText">
+            <string>Enter your prompt...</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,5,1,3">
+           <item>
+            <widget class="QLabel" name="label_5">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
+    color: rgb(166, 217, 171);
+}</string>
              </property>
-             <property name="placeholderText">
-              <string>Enter your prompt...</string>
+             <property name="text">
+              <string>Temperature</string>
              </property>
             </widget>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,3,1">
-             <item>
-              <widget class="QLabel" name="label_5">
-               <property name="styleSheet">
-                <string notr="true">QLabel {
-    color: rgb(166, 217, 171);
-}</string>
-               </property>
-               <property name="text">
-                <string>Temperature</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_15">
-               <property name="orientation">
-                <enum>Qt::Orientation::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="temp_val">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLineEdit {
-	color: rgb(184, 247, 185);
-    background-color: rgb(40, 40, 40); /* 원하는 색상으로 변경 */
-	border: 1px solid rgb(255,255,255);
-	border-radius: 5px;      /* (선택 사항) 모서리를 둥글게 */
-}
-QLineEdit:focus {
-    border: 1px solid rgb(184, 247, 185);
-    outline: none;           /* 기본 포커스 아웃라인 제거 */
-}</string>
-               </property>
-               <property name="text">
-                <string>0.00</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-            </layout>
+            <spacer name="horizontalSpacer_15">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
            </item>
            <item>
-            <widget class="QSlider" name="temp_slider">
+            <widget class="QDoubleSpinBox" name="spin_temp">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QDoubleSpinBox {
+    color: rgb(184, 247, 185);
+    background-color: rgb(40, 40, 40);
+    border: 1px solid rgb(255, 255, 255);
+    border-radius: 5px;
+}
+
+/* 포커스 상태: 활성화 테두리 색상 변경 */
+QDoubleSpinBox:focus {
+    border: 1px solid rgb(184, 247, 185);
+}
+
+/* 화살표 버튼(서브 컨트롤) 제거: 너비/높이를 0으로 만들어 일반 텍스트 박스처럼 표현 */
+QDoubleSpinBox::up-button,
+QDoubleSpinBox::down-button {
+    width: 0px;
+    height: 0px;
+    border: none;
+    background: transparent;
+}
+
+/* (선택 사항) 체크박스 해제 등으로 비활성화되었을 때의 스타일 */
+QDoubleSpinBox:disabled {
+    color: rgb(100, 100, 100);
+    background-color: rgb(30, 30, 30);
+    border: 1px solid rgb(70, 70, 70);
+}</string>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+             </property>
+             <property name="maximum">
+              <double>1.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.010000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="slider_temp">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -639,23 +681,23 @@ QSlider::sub-page {
              </property>
             </widget>
            </item>
-           <item>
-            <spacer name="verticalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Orientation::Vertical</enum>
-             </property>
-             <property name="sizeType">
-              <enum>QSizePolicy::Policy::Minimum</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
           </layout>
+         </item>
+         <item>
+          <spacer name="verticalSpacer_3">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Policy::Minimum</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>373</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </widget>
@@ -669,7 +711,10 @@ QSlider::sub-page {
         <attribute name="title">
          <string>RAG</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_16" stretch="4,6,3,1,1,15">
+        <layout class="QVBoxLayout" name="verticalLayout_16" stretch="6,12,5,1,1">
+         <property name="sizeConstraint">
+          <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+         </property>
          <item>
           <widget class="QGroupBox" name="groupBox_6">
            <property name="sizePolicy">
@@ -690,6 +735,9 @@ QSlider::sub-page {
             <string>Question Transformations</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_6" stretch="1,1,1,1">
+            <property name="sizeConstraint">
+             <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+            </property>
             <property name="topMargin">
              <number>20</number>
             </property>
@@ -839,6 +887,9 @@ QRadioButton::indicator:unchecked {
             <string>Advanced Indexing</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_5">
+            <property name="sizeConstraint">
+             <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+            </property>
             <property name="topMargin">
              <number>20</number>
             </property>
@@ -875,6 +926,15 @@ QRadioButton::indicator:unchecked {
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,4,5">
+              <property name="sizeConstraint">
+               <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+              </property>
+              <property name="topMargin">
+               <number>10</number>
+              </property>
+              <property name="bottomMargin">
+               <number>10</number>
+              </property>
               <item>
                <widget class="QRadioButton" name="radio_idx_parent">
                 <property name="sizePolicy">
@@ -945,7 +1005,7 @@ QRadioButton::indicator:unchecked {
                 <property name="alignment">
                  <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
                 </property>
-                <layout class="QHBoxLayout" name="horizontalLayout_29" stretch="1,1">
+                <layout class="QHBoxLayout" name="horizontalLayout_29" stretch="1">
                  <property name="leftMargin">
                   <number>4</number>
                  </property>
@@ -959,72 +1019,7 @@ QRadioButton::indicator:unchecked {
                   <number>0</number>
                  </property>
                  <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_23">
-                   <property name="topMargin">
-                    <number>1</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>1</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="label_24">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">QLabel {
-    color: rgb(166, 217, 171);
-	background-color: rgb(40, 40, 40);
-}</string>
-                     </property>
-                     <property name="text">
-                      <string>child_chunk_size:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="spin_child_chunk_1">
-                     <property name="styleSheet">
-                      <string notr="true">QSpinBox {
-    color: rgb(184, 247, 185);
-    background-color: rgb(40, 40, 40);
-    border: 1px solid rgb(255, 255, 255);
-    border-radius: 5px;
-}
-
-/* 포커스 상태: 활성화 테두리 색상 변경 */
-QSpinBox:focus {
-    border: 1px solid rgb(184, 247, 185);
-}
-
-/* (선택 사항) 체크박스 해제 등으로 비활성화되었을 때의 스타일 */
-QSpinBox:disabled {
-    color: rgb(100, 100, 100);
-    background-color: rgb(30, 30, 30);
-    border: 1px solid rgb(70, 70, 70);
-}</string>
-                     </property>
-                     <property name="buttonSymbols">
-                      <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
-                     </property>
-                     <property name="maximum">
-                      <number>100000</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>10</number>
-                     </property>
-                     <property name="value">
-                      <number>0</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="1,1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="1,1,0">
                    <property name="topMargin">
                     <number>1</number>
                    </property>
@@ -1086,6 +1081,71 @@ QSpinBox:disabled {
                      </property>
                     </widget>
                    </item>
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_23">
+                     <property name="topMargin">
+                      <number>1</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>1</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_24">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="styleSheet">
+                        <string notr="true">QLabel {
+    color: rgb(166, 217, 171);
+	background-color: rgb(40, 40, 40);
+}</string>
+                       </property>
+                       <property name="text">
+                        <string>child_chunk_size:</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QSpinBox" name="spin_child_chunk_1">
+                       <property name="styleSheet">
+                        <string notr="true">QSpinBox {
+    color: rgb(184, 247, 185);
+    background-color: rgb(40, 40, 40);
+    border: 1px solid rgb(255, 255, 255);
+    border-radius: 5px;
+}
+
+/* 포커스 상태: 활성화 테두리 색상 변경 */
+QSpinBox:focus {
+    border: 1px solid rgb(184, 247, 185);
+}
+
+/* (선택 사항) 체크박스 해제 등으로 비활성화되었을 때의 스타일 */
+QSpinBox:disabled {
+    color: rgb(100, 100, 100);
+    background-color: rgb(30, 30, 30);
+    border: 1px solid rgb(70, 70, 70);
+}</string>
+                       </property>
+                       <property name="buttonSymbols">
+                        <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+                       </property>
+                       <property name="maximum">
+                        <number>100000</number>
+                       </property>
+                       <property name="singleStep">
+                        <number>10</number>
+                       </property>
+                       <property name="value">
+                        <number>0</number>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
                   </layout>
                  </item>
                 </layout>
@@ -1095,6 +1155,15 @@ QSpinBox:disabled {
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="1,5,1">
+              <property name="sizeConstraint">
+               <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+              </property>
+              <property name="topMargin">
+               <number>10</number>
+              </property>
+              <property name="bottomMargin">
+               <number>10</number>
+              </property>
               <item>
                <widget class="QRadioButton" name="radio_idx_summary">
                 <property name="sizePolicy">
@@ -1209,7 +1278,7 @@ QRadioButton::indicator:unchecked {
                     </widget>
                    </item>
                    <item>
-                    <widget class="QSpinBox" name="spin_parent_chunk_2">
+                    <widget class="QSpinBox" name="spin_summary_chunk_2">
                      <property name="styleSheet">
                       <string notr="true">QSpinBox {
     color: rgb(184, 247, 185);
@@ -1253,6 +1322,15 @@ QSpinBox:disabled {
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_26" stretch="1,5,1">
+              <property name="sizeConstraint">
+               <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+              </property>
+              <property name="topMargin">
+               <number>10</number>
+              </property>
+              <property name="bottomMargin">
+               <number>10</number>
+              </property>
               <item>
                <widget class="QRadioButton" name="radio_idx_hypo">
                 <property name="sizePolicy">
@@ -1364,7 +1442,7 @@ QRadioButton::indicator:unchecked {
                     </widget>
                    </item>
                    <item>
-                    <widget class="QSpinBox" name="spin_parent_chunk_3">
+                    <widget class="QSpinBox" name="spin_hypothetical_chunk_3">
                      <property name="styleSheet">
                       <string notr="true">QSpinBox {
     color: rgb(184, 247, 185);
@@ -1408,6 +1486,15 @@ QSpinBox:disabled {
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_27" stretch="1,5,1">
+              <property name="sizeConstraint">
+               <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+              </property>
+              <property name="topMargin">
+               <number>10</number>
+              </property>
+              <property name="bottomMargin">
+               <number>10</number>
+              </property>
               <item>
                <widget class="QRadioButton" name="radio_idx_granular">
                 <property name="sizePolicy">
@@ -1522,9 +1609,9 @@ QRadioButton::indicator:unchecked {
                     </widget>
                    </item>
                    <item>
-                    <widget class="QSpinBox" name="spin_chunk_4">
+                    <widget class="QSpinBox" name="spin_granular_chunk_4">
                      <property name="sizePolicy">
-                      <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                        <horstretch>0</horstretch>
                        <verstretch>0</verstretch>
                       </sizepolicy>
@@ -1572,6 +1659,15 @@ QSpinBox:disabled {
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_13" stretch="1,2,5">
+              <property name="sizeConstraint">
+               <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+              </property>
+              <property name="topMargin">
+               <number>10</number>
+              </property>
+              <property name="bottomMargin">
+               <number>10</number>
+              </property>
               <item>
                <widget class="QRadioButton" name="radio_idx_k_parent">
                 <property name="sizePolicy">
@@ -1667,12 +1763,12 @@ QGroupBox::disabled {
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_24" stretch="1,2,0,1">
                    <property name="spacing">
-                    <number>10</number>
+                    <number>5</number>
                    </property>
                    <item>
                     <layout class="QHBoxLayout" name="horizontalLayout_8" stretch="1,3">
                      <property name="spacing">
-                      <number>10</number>
+                      <number>3</number>
                      </property>
                      <property name="leftMargin">
                       <number>2</number>
@@ -1711,7 +1807,7 @@ QLabel::disabled {
                      <item>
                       <widget class="QSpinBox" name="spin_k_5">
                        <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                          <horstretch>0</horstretch>
                          <verstretch>0</verstretch>
                         </sizepolicy>
@@ -1754,6 +1850,9 @@ QSpinBox:disabled {
                    </item>
                    <item>
                     <layout class="QHBoxLayout" name="horizontalLayout_22" stretch="1,1">
+                     <property name="spacing">
+                      <number>3</number>
+                     </property>
                      <property name="leftMargin">
                       <number>2</number>
                      </property>
@@ -1791,7 +1890,7 @@ QLabel::disabled {
                      <item>
                       <widget class="QDoubleSpinBox" name="spin_key_weight_5">
                        <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                          <horstretch>0</horstretch>
                          <verstretch>0</verstretch>
                         </sizepolicy>
@@ -1890,6 +1989,9 @@ QSlider::handle:horizontal:disabled {
                    </item>
                    <item>
                     <layout class="QHBoxLayout" name="horizontalLayout_30" stretch="1,1">
+                     <property name="spacing">
+                      <number>3</number>
+                     </property>
                      <property name="leftMargin">
                       <number>2</number>
                      </property>
@@ -1927,7 +2029,7 @@ QLabel::disabled {
                      <item>
                       <widget class="QDoubleSpinBox" name="spin_similarity_weight_5">
                        <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                          <horstretch>0</horstretch>
                          <verstretch>0</verstretch>
                         </sizepolicy>
@@ -1999,11 +2101,17 @@ QDoubleSpinBox:disabled {
             <string>Retrieval Post-Processing</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_12" stretch="1,1,1">
+            <property name="sizeConstraint">
+             <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+            </property>
             <property name="topMargin">
              <number>20</number>
             </property>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_18" stretch="2,4,1,2">
+              <property name="sizeConstraint">
+               <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+              </property>
               <item>
                <widget class="QCheckBox" name="chk_similarity">
                 <property name="sizePolicy">
@@ -2060,7 +2168,7 @@ QCheckBox::disabled {
                  <bool>true</bool>
                 </property>
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
@@ -2155,6 +2263,9 @@ QSlider::handle:horizontal:disabled {
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_21" stretch="1,5,3">
+              <property name="sizeConstraint">
+               <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+              </property>
               <item>
                <widget class="QCheckBox" name="chk_keywords">
                 <property name="sizePolicy">
@@ -2208,7 +2319,7 @@ QCheckBox::disabled {
               <item>
                <widget class="QLineEdit" name="edit_keywords">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
@@ -2288,6 +2399,9 @@ QCheckBox::disabled {
            <property name="spacing">
             <number>4</number>
            </property>
+           <property name="sizeConstraint">
+            <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+           </property>
            <item>
             <widget class="QLabel" name="label_6">
              <property name="sizePolicy">
@@ -2327,7 +2441,7 @@ QCheckBox::disabled {
            <item>
             <widget class="QPushButton" name="Load_btn">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>1</horstretch>
                <verstretch>1</verstretch>
               </sizepolicy>
@@ -2365,6 +2479,9 @@ QPushButton:pressed {
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,4">
+           <property name="sizeConstraint">
+            <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+           </property>
            <item>
             <widget class="QLabel" name="label_7">
              <property name="sizePolicy">
@@ -2386,7 +2503,7 @@ QPushButton:pressed {
            <item>
             <widget class="QProgressBar" name="Loading_bar">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -2411,19 +2528,6 @@ QProgressBar::chunk {
            </item>
           </layout>
          </item>
-         <item>
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Orientation::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="LLM">
@@ -2443,8 +2547,17 @@ QProgressBar::chunk {
          <string>LLM참모</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_3">
+         <property name="sizeConstraint">
+          <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+         </property>
          <item>
           <widget class="QWebEngineView" name="experiment_txt">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="url">
             <url>
              <string>about:blank</string>

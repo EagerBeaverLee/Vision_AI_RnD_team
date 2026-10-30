@@ -75,20 +75,20 @@ async def update_api(request: Request):
     except:
         return {"status": "error"}
 
-# API 서버 실행
-if 'api_running' not in st.session_state:
-    threading.Thread(target=lambda: uvicorn.run(app, host="0.0.0.0", port=8600, log_level="error"), daemon=True).start()
-    st.session_state.api_running = True
+@st.cache_resource
+def start_fastapi_server():
+    t = threading.Thread(
+        target=lambda: uvicorn.run(app, host="0.0.0.0", port=8600, log_level="error"), 
+        daemon=True
+    )
+    t.start()
+    return True
+
+start_fastapi_server()
 # ======================================================================
 
 # --- 3. UI 레이아웃 ---
 st.set_page_config(layout="wide", page_title="실시간 해양 관측망")
-
-# 메인 타이틀은 프래그먼트 밖에 두어 고정
-# st.title("📡 실시간 해양 기상 관측 시스템")
-
-# --- 4. 통합 프래그먼트 (지도 + 대시보드) ---
-@st.fragment
 
 # --- 풍배도(Wind Rose) 렌더링 함수 ---
 def render_wind_chart(direction_val, speed_val, x, y):

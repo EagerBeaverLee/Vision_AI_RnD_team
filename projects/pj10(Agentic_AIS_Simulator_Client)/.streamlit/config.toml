@@ -1,0 +1,7 @@
+[theme]
+# 다크 모드에 적합한 색상 지정
+primaryColor="#F63366"      # 주요 요소 (버튼, 링크 등)
+backgroundColor="#0E1117"   # 배경색 (진한 회색/검은색)
+secondaryBackgroundColor="#262730" # 보조 배경색 (사이드바 등)
+textColor="#A6D9AB"         # 텍스트 색상 (ui메인색깔)
+font="sans serif"           # 글꼴

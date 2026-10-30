@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Union, Any
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 
 
 #------------------------------------------------------
@@ -75,8 +76,7 @@ class MaritimeSituationReport(BaseModel):
 
 
 # 전체상황 요약 템플릿   
-
-def format_maritime_report(report: MaritimeSituationReport) -> str:
+def format_maritime_report(report: MaritimeSituationReport, context: SimulationContext) -> str:
     """Pydantic 모델(report)에서 데이터를 꺼내 깨짐 없는 표준 Markdown 문자열로 변환합니다."""
     if not report:
         return "분석 결과 데이터가 존재하지 않습니다."
@@ -209,7 +209,9 @@ def format_maritime_report(report: MaritimeSituationReport) -> str:
 
     # 최종 템플릿 반환 (각 섹션 사이 빈 줄 확보)
     return f"""### 1. [분석 대상 시간]
-- 수집된 AIS 데이터 기반 집계 결과입니다.
+- 시작 시점: {context.start_time}
+- 종료 시점: {context.end_time}
+- (약 {context.time_diff} 동안의 데이터 집계 결과)
 
 ### 2. [구역별 밀집 현황]
 

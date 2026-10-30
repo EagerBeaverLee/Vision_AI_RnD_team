@@ -1,15 +1,12 @@
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
-from tools.sql_db_execution import execute_sql_query
-from crews.marine_weather_models import SQLResultSchema
-from setting.LLM_model_set import lms_llm
+from my_battlefield_crew.tools.sql_db_execution import execute_sql_query
+from my_battlefield_crew.crews.marine_weather_models import SQLResultSchema
+from my_battlefield_crew.setting.LLM_model_set import lms_llm
 
 import sys
 from pathlib import Path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-from chainlit_app.chainlit_handler import ChainlitCrewHandler
+from my_battlefield_crew.chainlit_app.chainlit_handler import ChainlitCrewHandler
 
 @CrewBase
 class MarineWeatherCrew:

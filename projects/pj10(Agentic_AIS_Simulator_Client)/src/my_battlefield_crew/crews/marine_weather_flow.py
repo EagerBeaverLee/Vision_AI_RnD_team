@@ -1,24 +1,17 @@
-import sys
-from pathlib import Path
 from crewai import Crew, Process
 from crewai.flow.flow import Flow, listen, router, start
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-from crews.marine_weather_models import SqlFlowState
-from crews.marine_weather_crew import MarineWeatherCrew
-from chainlit_app.chainlit_handler import ChainlitCrewHandler
+from my_battlefield_crew.crews.marine_weather_models import SqlFlowState
+from my_battlefield_crew.crews.marine_weather_crew import MarineWeatherCrew
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 
 class MarineWeatherFlow(Flow[SqlFlowState]):
     """해상 날씨 분석 오케스트레이션 Flow"""
 
-    def __init__(self, handler: ChainlitCrewHandler=None, message: str=None):
+    def __init__(self, context: SimulationContext):
         super().__init__()
-        self.handler = handler
+        self.handler = context.ui_handler
         self.weather_crew = MarineWeatherCrew()
-        self.state.user_query = message
+        self.state.user_query = context.user_question
 
     @start()
     def generate_sql(self):

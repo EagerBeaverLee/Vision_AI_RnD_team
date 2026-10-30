@@ -21,9 +21,10 @@ from langchain_core.documents import Document
 
 
 project_root = Path(__file__).resolve().parent.parent
+dif_root = Path(__file__).resolve().parent.parent.parent
 default_index_path = str(project_root / "data" / "doctrine_data" / "parent_faiss_index")
 default_docstore_path = str(project_root / "data" / "doctrine_data" / "parent_docstore")
-default_data_path = str(project_root / "data" / "doctrine_data" / "raw_documents")
+default_data_path = str(dif_root / "data" / "doctrine_data" / "raw_documents")
 
 
 kiwi = Kiwi()
