@@ -16,7 +16,7 @@ def _run_mean_speed_analysis(context: SimulationContext) -> str:
     con = duckdb.connect(database=':memory:')
     con.execute("INSTALL spatial; LOAD spatial;")
 
-    con.execute(f"ATTACH '{context.db_path}' AS sqlite_db (TYPE sqlite, READ_ONLY);")
+    con.execute(f"ATTACH '{context.realtime_db_path}' AS sqlite_db (TYPE sqlite, READ_ONLY);")
     con.execute("USE sqlite_db;")
     
 

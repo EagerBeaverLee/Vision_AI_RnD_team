@@ -12,6 +12,7 @@ class MarineWeatherFlow(Flow[SqlFlowState]):
         self.handler = context.ui_handler
         self.weather_crew = MarineWeatherCrew()
         self.state.user_query = context.user_question
+        self.state.current_time = context.curr_time
 
     @start()
     def generate_sql(self):

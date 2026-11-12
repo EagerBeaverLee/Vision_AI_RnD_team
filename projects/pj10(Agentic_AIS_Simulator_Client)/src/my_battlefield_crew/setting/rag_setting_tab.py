@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QButtonGroup
-from PyQt6.QtCore import QObject, QTimer, pyqtSignal
+from PyQt6.QtCore import QObject, QTimer, pyqtSignal, QThread, QMetaObject, Qt
 from my_battlefield_crew.setting.rag_config import (
     RAGConfig, IndexingConfig, PostProcessingConfig,
     QuestionTransformType, IndexingType
@@ -84,9 +84,9 @@ class RAGSettingManager(QObject):
         self.ui.spin_child_chunk_1.setValue(500)
         self.ui.spin_summary_chunk_2.setValue(3000)
         self.ui.spin_hypothetical_chunk_3.setValue(3000)
-        self.ui.spin_granular_chunk_4.setValue(3000)
+        self.ui.spin_granular_chunk_4.setValue(500)
         self.ui.spin_k_5.setValue(4)
-        self.ui.slider_weight.setValue(40)
+        self.ui.slider_weight.setValue(30)
 
     def _connect_change_events(self):
         """UI 값 변경 시 타이머를 트리거하여 시그널 발생 대기"""
@@ -104,6 +104,9 @@ class RAGSettingManager(QObject):
         self.ui.edit_keywords.textChanged.connect(self._notify_change)
         self.ui.spin_parent_chunk_1.valueChanged.connect(self._notify_change)
         self.ui.spin_child_chunk_1.valueChanged.connect(self._notify_change)
+        self.ui.spin_summary_chunk_2.valueChanged.connect(self._notify_change)
+        self.ui.spin_hypothetical_chunk_3.valueChanged.connect(self._notify_change)
+        self.ui.spin_granular_chunk_4.valueChanged.connect(self._notify_change)
         self.ui.spin_k_5.valueChanged.connect(self._notify_change)
         self.ui.spin_similarity_weight_5.valueChanged.connect(self._notify_change)
 
@@ -158,6 +161,18 @@ class RAGSettingManager(QObject):
         self._set_checkbox_state(self.ui.chk_rrf, can_use_rrf)
 
     def _notify_change(self, *args):
+        """백그라운드 스레드에서 호출되어도 메인 스레드로 안전하게 릴레이"""
+        # 현재 스레드가 메인 스레드가 아니라면 메인 스레드 큐로 실행 위임
+        if QThread.currentThread() != self.thread():
+            QMetaObject.invokeMethod(
+                self,
+                "_start_timer_slot",
+                Qt.ConnectionType.QueuedConnection,  # 스레드 안전한 큐 호출
+            )
+        else:
+            self._start_timer_slot()
+
+    def _start_timer_slot(self):
         """사용자가 입력을 멈춘 후 300ms 뒤에 한 번만 시그널 방출"""
         self._debounce_timer.start(300)
 
@@ -201,7 +216,7 @@ class RAGSettingManager(QObject):
             idx_config.chunk_size = self.ui.spin_granular_chunk_4.value()
         elif curr_idx == IndexingType.PARENT_KEYWORD:
             idx_config.k = self.ui.spin_k_5.value()
-            idx_config.weight = self.ui.spin_key_weight_5.value()
+            idx_config.weight = self.ui.slider_weight.value()
 
         # 2. Post Processing 수집 (💡 isEnabled() 검증을 추가하여 비활성화된 항목이 True로 수집되는 현상 차단)
         is_sim_active = self.ui.chk_similarity.isChecked() and self.ui.chk_similarity.isEnabled()
@@ -212,7 +227,7 @@ class RAGSettingManager(QObject):
             use_similarity=is_sim_active,
             similarity_threshold=self.ui.spin_similarity.value() if is_sim_active else 0.0,
             use_keywords=is_kw_active,
-            keywords=self.ui.edit_keywords.text().strip() if is_kw_active else "",
+            keywords={item.strip() for item in self.ui.edit_keywords.text().strip().split(',') if item.strip()}, # set[str]형태로 변경
             use_rrf=is_rrf_active,
         )
 
@@ -220,7 +235,7 @@ class RAGSettingManager(QObject):
             question_transform=qt_map.get(self.qt_group.checkedId(), QuestionTransformType.DEFAULT),
             indexing=idx_config,
             post_processing=post_config,
-            source_path=self.ui.edit_path.text().strip()
+            source_path=self.ui.edit_select_path.text().strip()
         )
 
     def set_config(self, config: RAGConfig):
@@ -271,4 +286,4 @@ class RAGSettingManager(QObject):
             self.ui.chk_rrf.setChecked(config.post_processing.use_rrf)
 
         # 6. Path 복원
-        self.ui.edit_path.setText(config.source_path)
+        self.ui.edit_select_path.setText(config.source_path)

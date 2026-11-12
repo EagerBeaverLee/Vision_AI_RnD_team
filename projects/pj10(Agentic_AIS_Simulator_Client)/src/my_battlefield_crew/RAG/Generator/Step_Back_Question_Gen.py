@@ -5,6 +5,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda
 from my_battlefield_crew.RAG.DocumentPostProcessor import DocumentPostProcessor
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 import os, re
 from dotenv import load_dotenv
 # from langchain_together.chat_models import ChatTogether
@@ -24,7 +25,6 @@ from dotenv import load_dotenv
 
 class StepBackQuestionGenerator:
     def __init__(self,llm):
-        
         self.llm = llm
         
         #Prompt Template 
@@ -55,42 +55,30 @@ class StepBackQuestionGenerator:
     def init_chains(self):
         self.stepback_chain = self.step_prompt | self.llm | StrOutputParser()
 
-    def build_rag_chain(self, prompt, retriever = None, score_threshold: float | None = None, required_keywords: set[str] | None = None, isRRF = False):
-        k=2
-        system_message_prompt = prompt.messages[0]
-        template_string = system_message_prompt.prompt.template
-        extracted_text = template_string.split('\n')[0].strip()
-
-        print(score_threshold)
-        print(required_keywords)
+    def search_docs(self,  context: SimulationContext):
+        print("Step_Back_Question_Generator")
+        k=4
+        question = context.user_question
+        retriever = context.rag_pipe.retriever
+        post_processor = context.rag_pipe.post_processor
 
         try:
             if not retriever:
                 raise ValueError("Retriever is required to build RAG chain.")
-            
-            postprocessing = DocumentPostProcessor(retriever)
 
-            print(score_threshold)
-            print(required_keywords)
+            rag_config = context.rag_pipe.rag_config
+            similarity_threshold = rag_config.post_processing.similarity_threshold
+            used_keywords = context.rag_pipe.rag_config.post_processing.use_keywords
 
-            step_back_question_rag_chain = (
-                RunnablePassthrough.assign(
-                    step_back_question = self.stepback_chain
-                )
-                |RunnableParallel(
-                    question = RunnableLambda(lambda x: x["question"]),
-                    # original_docs = RunnableLambda(lambda x: retriever.invoke(x["question"])[:k]),
-                    # step_back_docs = RunnableLambda(lambda x: retriever.invoke(x["step_back_question"])[:k]),
-                    original_docs = RunnableLambda(lambda x: postprocessing.post_processor(x["question"], score_threshold, required_keywords)[:k]),
-                    step_back_docs = RunnableLambda(lambda x: postprocessing.post_processor(x["step_back_question"], score_threshold, required_keywords)[:k]),
-                    user_prompt = RunnableLambda(lambda x: extracted_text)
-                )
-                | RunnableLambda(self.print_log)
-                | self.rag_prompt
-                | self.llm
-            )
-                
-            return step_back_question_rag_chain
+            step_back_question = self.stepback_chain.invoke({"question": question})
+
+
+            origin_docs = post_processor.post_processor(question, similarity_threshold, used_keywords)[:k]
+            step_back_docs = post_processor.post_processor(step_back_question, similarity_threshold, used_keywords)[:k]
+
+            all_docs = all_docs = {doc.page_content: doc for doc in (step_back_docs + origin_docs)}.values()
+
+            return all_docs
 
         except Exception as e:
             print(f"Error while building step_back_question RAG chain: {e}")

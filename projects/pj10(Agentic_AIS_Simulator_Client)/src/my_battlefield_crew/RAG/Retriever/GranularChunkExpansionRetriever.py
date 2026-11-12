@@ -1,4 +1,5 @@
 from PyQt6.QtCore import pyqtSignal, QObject
+import threading
 
 from langchain_core.stores import InMemoryByteStore
 from langchain_openai import OpenAIEmbeddings
@@ -11,18 +12,17 @@ from langchain_classic.retrievers.multi_vector import MultiVectorRetriever
 import uuid
 import os
 
-class GranularChunkExpansionRetriverPipeline(QObject):
-    finished = pyqtSignal()
-    progresses = pyqtSignal(int)
-    error = pyqtSignal(str)
-    changeUi = pyqtSignal()
+class GranularChunkExpansionRetriverPipeline:
+    def __init__(self, folder_path: str, openai_api_key: str, granular_chunk_size: int = 500):
 
-    def __init__(self,folder_path: str, openai_api_key: str, granular_chunk_size: int = 500, parent=None):
-        super().__init__(parent)
+        print(f"granular_chunk_size:{granular_chunk_size}\n")
         self.folder_path = folder_path
         #Defining Splitter
         self.granular_chunk_splitter = RecursiveCharacterTextSplitter(chunk_size=granular_chunk_size)
-        self.embedding_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
+        self.embedding_model = OpenAIEmbeddings(
+            openai_api_key=openai_api_key, 
+            model="text-embedding-3-small"
+        )
 
         self.dummy_doc = Document(page_content="dummy")
         self.dummy_doc_id = "DUMMY_DOC"  # 임의의 doc_id 지정
@@ -65,78 +65,117 @@ class GranularChunkExpansionRetriverPipeline(QObject):
             raise ValueError(f"No loader available for file extension '{file_extension}'")
         return loader_class(filename)
 
-    def run(self):
-        files = os.listdir(self.folder_path)
+    def check_file(self):
+        files = []
+        input_path = None
+
+        if isinstance(self.folder_path, list):
+            if len(self.folder_path) > 0:
+                input_path = self.folder_path[0]
+            else:
+                print("빈 리스트가 입력되었습니다.")
+                return
+            
+        if os.path.isfile(input_path):
+            # 단일 파일인 경우 리스트에 바로 추가
+            files.append(input_path)
+            
+        elif os.path.isdir(input_path):
+            # 폴더인 경우 내부의 모든 파일 경로를 리스트에 추가
+            for file_name in os.listdir(input_path):
+                file_path = os.path.join(input_path, file_name)
+                # 하위 폴더는 제외하고 '파일'만 담기 위해 조건 추가
+                if os.path.isfile(file_path):
+                    files.append(file_path)
+        else:
+            print(f"유효하지 않은 경로입니다: {input_path}")
+            return
+
+        return files, input_path
+
+    def run(self, cancel_flag: threading.Event):
+        files, input_path = self.check_file()
+
+        if not files or not input_path:
+            print("문서 로드에 실패했습니다")
+            return
+
+        # 확인용 출력 (["파일1", "파일2", ...] 형태로 출력됨)
+        print(f"처리할 파일 목록 (files): {files}")
         total_files = len(files)
 
+        if total_files == 0:
+            print("[default_retriever]선택한 폴더에 파일이 없습니다.")
+            yield "CANCELLED\n"
+
         progress_step = 100 / total_files
+        print(f"게이지 분할 값: {progress_step}")
 
         """Load all documents from a folder into the retriever pipeline"""
         for j, filename in enumerate(files):
-            file_path = os.path.join(self.folder_path, filename)
-            if os.path.isfile(file_path):
-                try:
-                    loader = self.get_loader(file_path)
-                    print(f"Loader for {filename}:{loader}")
-                    docs = loader.load() 
-                    granular_chunks = self.granular_chunk_splitter.split_documents(docs)
-            
-                    expanded_chunk_store_items = []
-                    for i, granular_chunk in enumerate(granular_chunks):
-                        try:
-                            this_chunk_num = i
-                            previous_chunk_num = i-1
-                            next_chunk_num = i+1
-                    
-                            if i==0:
-                                previous_chunk_num = None
-                            elif i==(len(granular_chunks)-1):
-                                next_chunk_num = None
-                    
-                            expanded_chunk_text = ""
-                            if previous_chunk_num:
-                                expanded_chunk_text += granular_chunks[previous_chunk_num].page_content
-                                expanded_chunk_text += "\n"
-                            
-                            expanded_chunk_text += granular_chunks[this_chunk_num].page_content #G
+            if cancel_flag.is_set():
+                print("[GranularChunkRetriever] 취소 신호 감지, 동기 루프 탈출")
+                return            
+            # file_path = os.path.join(self.folder_path, filename)
+            # if os.path.isfile(file_path):
+            try:
+                loader = self.get_loader(filename)
+                print(f"Loader for {filename}:{loader}")
+                docs = loader.load()
+                granular_chunks = self.granular_chunk_splitter.split_documents(docs)
+        
+                expanded_chunk_store_items = []
+                for i, granular_chunk in enumerate(granular_chunks):
+                    try:
+                        this_chunk_num = i
+                        previous_chunk_num = i-1
+                        next_chunk_num = i+1
+                
+                        if i==0:
+                            previous_chunk_num = None
+                        elif i==(len(granular_chunks)-1):
+                            next_chunk_num = None
+                
+                        expanded_chunk_text = ""
+                        if previous_chunk_num:
+                            expanded_chunk_text += granular_chunks[previous_chunk_num].page_content
                             expanded_chunk_text += "\n"
-                            if next_chunk_num: #G
-                                expanded_chunk_text += granular_chunks[next_chunk_num].page_content
-                                expanded_chunk_text += "\n"
-                            
-                            expanded_chunk_id = str(uuid.uuid4())
-                            
-                            expanded_chunk_doc = Document(
-                                id=expanded_chunk_id,
-                                page_content=expanded_chunk_text,
-                                metadata={}
-                            )
-                    
-                            # expanded_chunk_store_item = (expanded_chunk_id, expanded_chunk_doc)
-                            # expanded_chunk_store_items.append(expanded_chunk_store_item)
-                            
-                            expanded_chunk_store_items.append((expanded_chunk_id, expanded_chunk_doc)) #NEW 새로추가된 수정된 코드
-                    
-                            granular_chunk.metadata[self.doc_key] = expanded_chunk_id # link each granular chunk to its related expanded chunk 
-                        except Exception as e:
-                            self.error.emit(f"{granular_chunk} 청크 처리중 오류 발생: {e}")
-                            print(e)
-            
-                    print(f'Ingesting{filename}')
-                    curr_progress = (j + 1) * progress_step
-                    self.progresses.emit(int(curr_progress))
+                        
+                        expanded_chunk_text += granular_chunks[this_chunk_num].page_content #G
+                        expanded_chunk_text += "\n"
+                        if next_chunk_num: #G
+                            expanded_chunk_text += granular_chunks[next_chunk_num].page_content
+                            expanded_chunk_text += "\n"
+                        
+                        expanded_chunk_id = str(uuid.uuid4())
+                        
+                        expanded_chunk_doc = Document(
+                            id=expanded_chunk_id,
+                            page_content=expanded_chunk_text,
+                            metadata={}
+                        )
+                
+                        # expanded_chunk_store_item = (expanded_chunk_id, expanded_chunk_doc)
+                        # expanded_chunk_store_items.append(expanded_chunk_store_item)
+                        
+                        expanded_chunk_store_items.append((expanded_chunk_id, expanded_chunk_doc)) #NEW 새로추가된 수정된 코드
+                
+                        granular_chunk.metadata[self.doc_key] = expanded_chunk_id # link each granular chunk to its related expanded chunk 
+                    except Exception as e:
+                        print(f"[granular_chunk_retriever]: {granular_chunk} 청크 임베딩 중 오류 발생: {e}")
+        
+                print(f'Ingesting{filename}')
+                curr_progress = (j + 1) * progress_step
+                yield f"{curr_progress}\n"
 
-                    self.retriever.vectorstore.add_documents(granular_chunks)
-                    self.retriever.docstore.mset(expanded_chunk_store_items)
+                self.retriever.vectorstore.add_documents(granular_chunks)
+                self.retriever.docstore.mset(expanded_chunk_store_items)
 
-                except Exception as e:
-                    self.error.emit(f"{filename} 파일 임베딩 중 오류 발생: {e}")
-                    print(e)
+            except Exception as e:
+                print(f"[granular_chunk_retriever]: {filename} 파일 임베딩 중 오류 발생: {e}")
         print(f"ALL PROCESSING FOR GRANULAR CHUNK EXPANSION COMPLETED")
 
-        self.progresses.emit(100)
-        self.finished.emit()
-        self.changeUi.emit()
+        yield "COMPLETE\n"
     
     def format_docs(self, docs):
         """Format retrieved docs into a single string."""

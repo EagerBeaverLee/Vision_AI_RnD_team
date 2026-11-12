@@ -1,66 +1,94 @@
 import asyncio
 import chainlit as cl
-from pathlib import Path
 from my_battlefield_crew.chainlit_app.chainlit_handler import ChainlitCrewHandler
 from chainlit.server import app
 from fastapi import Response, status, Request, status, HTTPException
-from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
-from my_battlefield_crew.crews.main_system_flow import MainSystemFlow
+from fastapi.responses import JSONResponse, StreamingResponse
+from typing import Optional
 from my_battlefield_crew.setting.rag_config import RAGConfig
 from my_battlefield_crew.setting.llm_config import LLMConfig
-from my_battlefield_crew.chainlit_app.schemas import SimulationContext
+from my_battlefield_crew.engine.rag_pipeline import RAGPipeline
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext, SimTime
 from multiprocessing import shared_memory
-from my_battlefield_crew.engine.preprocessor import init_geo_processing
 
 CURRENT_LLM_CONFIG = LLMConfig()
 CURRENT_RAG_CONFIG = RAGConfig()
-CURRENT_VECTOR_STORE: FAISS = None
+CURRENT_RAG_PIPELINE = RAGPipeline(rag_config=CURRENT_RAG_CONFIG)
+
 SHM_NAME = "ais_sim_server_time"
 SHM_NAME_2 = "ais_start_server_time"
 SHM_DB_PATH_NAME = "db_path"
 
-@app.post("/api/rag/vectorstore", status_code=status.HTTP_200_OK)
-async def upload_vectorstore(request: Request):
-    """Qt 클라이언트로부터 직렬화된 FAISS 바이너리를 수신하여 메모리에 적재"""
-    global CURRENT_VECTOR_STORE
-    try:
-        # 1. HTTP Body에서 순수 바이너리 바이트 스트림 읽기
-        raw_bytes = await request.body()
-        if not raw_bytes:
-            raise HTTPException(status_code=400, detail="수신된 데이터가 비어 있습니다.")
+# 해시 기반 인메모리 캐시 딕셔너리 (combined_hash -> FAISS)
+# EMBED_CACHE: dict[str, FAISS] = {}
+# 비동기 취소 제어 이벤트
+EMBED_CANCEL_EVENT = asyncio.Event()
 
-        # 2. text-embedding-3-small 모델로 인메모리 역직렬화
-        embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-        CURRENT_VECTOR_STORE = FAISS.deserialize_from_bytes(
-            serialized=raw_bytes,
-            embeddings=embeddings,
-            allow_dangerous_deserialization=True  # pickle 역직렬화 허용
+
+@app.post("/api/rag/embed/cancel")
+async def cancel_rag_embed():
+    """진행 중인 임베딩 플래그 중단 설정"""
+    print("[chainlit서버] 취소 신호 수신")
+    EMBED_CANCEL_EVENT.set()
+    return {"status": "cancel_signal_set"}
+
+@app.post("/api/rag/embed")
+async def stream_rag_embed(request: Request):
+    """Qt 클라이언트로부터 절대 경로들을 받아 인메모리 임베딩 후 진행률 스트리밍"""
+    data = await request.json()
+    file_paths: list[str] = data.get("file_paths", [])
+
+    if not file_paths:
+        return JSONResponse(
+            status_code=400, content={"error": "파일 경로가 없습니다."}
         )
+    #취소 플래그 초기화
+    EMBED_CANCEL_EVENT.clear()
 
-        doc_count = len(CURRENT_VECTOR_STORE.docstore._dict)
-        print(f">>> [Chainlit API] FAISS DB 인메모리 로드 완료 (보유 문서 수: {doc_count})")
-        return {"status": "success", "message": f"{doc_count}개의 문서 인덱스가 메모리에 로드되었습니다."}
+    # 절대경로를 RAGConfig에 넣고 Pipeline의 config 업데이트
+    CURRENT_RAG_CONFIG.source_path = file_paths
 
-    except Exception as e:
-        print(f">>> [Chainlit API Error] 역직렬화 실패: {e}")
-        raise HTTPException(status_code=500, detail=f"역직렬화 실패: {str(e)}")
-    
+    print("#"*20 + "현재 ragconfig 설정" + "#"*20)
+    print(f"{CURRENT_RAG_CONFIG.question_transform}\n{CURRENT_RAG_CONFIG.post_processing}\n{CURRENT_RAG_CONFIG.indexing.strategy}\n{CURRENT_RAG_CONFIG.source_path}")
+
+    CURRENT_RAG_PIPELINE.update_config(CURRENT_RAG_CONFIG)
+
+    # 캐시 확인
+    # combined_hash = compute_combined_hash(file_paths)
+    # if combined_hash in EMBED_CACHE:
+    #     global CURRENT_RAG_PIPELINE
+    #     CURRENT_RAG_PIPELINE = EMBED_CACHE[combined_hash]
+    #     CURRENT_RAG_PIPELINE.update_config(CURRENT_RAG_CONFIG)
+    #     return StreamingResponse(iter(["CACHED\n"]), media_type="text/plain")
+
+    # EMBED_CANCEL_EVENT.clear()
+
+    async def sse_stream():
+        # 💡 RAGPipeline의 build_stream 제너레이터를 SSE로 직접 패스스루
+        async for progress_msg in CURRENT_RAG_PIPELINE.build_vectorstore(EMBED_CANCEL_EVENT):
+            yield progress_msg
+            if progress_msg == "COMPLETE\n":
+                print("chainlit_main에서 임베딩 성공적으로 완료")
+                # EMBED_CACHE[combined_hash] = CURRENT_RAG_PIPELINE
+
+    return StreamingResponse(sse_stream(), media_type="text/plain")
+        
 # 💡 2. Qt로부터 최신 설정을 수신받는 FastAPI 엔드포인트
 @app.post("/api/rag/config", status_code=status.HTTP_200_OK)
-async def update_rag_config(config: RAGConfig):
+async def update_rag_config(rag_config: RAGConfig):
     """Qt 클라이언트에서 설정 변경 시 호출하는 API"""
     global CURRENT_RAG_CONFIG
-    CURRENT_RAG_CONFIG = config
-    print(f">>> [Chainlit API] RAG 설정이 인메모리에 갱신되었습니다:\n {CURRENT_RAG_CONFIG.question_transform}\n{CURRENT_RAG_CONFIG.indexing.strategy}\n{CURRENT_RAG_CONFIG.post_processing}")
+    CURRENT_RAG_CONFIG = rag_config
+    CURRENT_RAG_PIPELINE.update_config(CURRENT_RAG_CONFIG)
+    print(f">>> [Chainlit API] RAG 설정이 인메모리에 갱신되었습니다:\n{CURRENT_RAG_CONFIG.question_transform}\n{CURRENT_RAG_CONFIG.indexing.strategy}\n{CURRENT_RAG_CONFIG.post_processing}")
     return {"status": "success", "message": "RAG 설정이 성공적으로 반영되었습니다."}
 
 @app.post("/api/llm/config", status_code=status.HTTP_200_OK)
-async def update_rag_config(config: LLMConfig):
+async def update_llm_config(llm_config: LLMConfig):
     """Qt 클라이언트에서 설정 변경 시 호출하는 API"""
     global CURRENT_LLM_CONFIG
-    CURRENT_LLM_CONFIG = config
-    print(f">>> [Chainlit API] LLM 설정이 인메모리에 갱신되었습니다: {config.system_prompt[:10]}")
+    CURRENT_LLM_CONFIG = llm_config
+    print(f">>> [Chainlit API] LLM 설정이 인메모리에 갱신되었습니다: {llm_config.system_prompt[:10]}")
     return {"status": "success", "message": "LLM 설정이 성공적으로 반영되었습니다."}
 
 
@@ -93,7 +121,7 @@ def get_start_simulation_time() -> str:
         return f"시간 확인 불가 ({e})"
 
 def get_db_path() -> str:
-    """공유 메모리에서 현재 시뮬레이션 서버 시간을 즉시 읽어오는 함수"""
+    """공유 메모리에서 db경로를 즉시 읽어오는 함수"""
     try:
         shm_db_path = shared_memory.SharedMemory(name=SHM_DB_PATH_NAME)
         # 널 바이트(\x00) 전까지만 잘라서 복원
@@ -107,7 +135,6 @@ def get_db_path() -> str:
     except Exception as e:
         return f"시간 확인 불가 ({e})"
 
-app.get("/api/rag/config", response_model=RAGConfig)
 
 @cl.on_chat_start
 async def start():
@@ -115,41 +142,43 @@ async def start():
 
 @cl.on_message
 async def main(message: cl.Message):
+    from my_battlefield_crew.crews.main_system_flow import MainSystemFlow
+    from my_battlefield_crew.engine.preprocessor import init_geo_processing
     # 💡 async with 컨텍스트로 cl.Step을 열어야 '사용 중' 활성 상태가 유지됩니다.
     async with cl.Step(name="🚀 질문 분석 및 에이전트 구동 중...", type="run", default_open=False, auto_collapse=True) as step:
         handler = ChainlitCrewHandler(step=step)
 
-        processing_list = None
-        db_path = get_db_path()
-        start_time = get_start_simulation_time()
-        curr_time = get_current_simulation_time()
-        print(f">>> [Chainlit] 리포트 db경로 출력: {db_path}")
-        print(f">>> [Chainlit] 리포트 시작 시각 캡처: {start_time}")
-        print(f">>> [Chainlit] 리포트 기준 시각 캡처: {curr_time}")
+        # processing_list = None
+        # db_path = get_db_path()
+        # start_time = get_start_simulation_time()
+        # curr_time = get_current_simulation_time()
+        # print(f">>> [Chainlit] 리포트 db경로 출력: {db_path}")
+        # print(f">>> [Chainlit] 리포트 시작 시각 캡처: {start_time}")
+        # print(f">>> [Chainlit] 리포트 기준 시각 캡처: {curr_time}")
 
-        async with cl.Step(name="🛰️ 전술 상황 사전 분석 및 데이터 전처리", type="tool") as prep_step:
-            prep_step.output = f"기준 시각 [{curr_time}] 기준 데이터셋 추출 중..."
+        # async with cl.Step(name="🛰️ 전술 상황 사전 분석 및 데이터 전처리", type="tool") as prep_step:
+        #     prep_step.output = f"기준 시각 [{curr_time}] 기준 데이터셋 추출 중..."
             
-            # 이벤트 루프 차단 없이 백그라운드 스레드에서 무거운 작업 처리
-            processing_list = await asyncio.to_thread(
-                init_geo_processing,
-                db_path=db_path,
-                start_time=start_time,
-                end_time=curr_time
-            )
+        #     # 이벤트 루프 차단 없이 백그라운드 스레드에서 무거운 작업 처리
+        #     processing_list = await asyncio.to_thread(
+        #         init_geo_processing,
+        #         db_path=db_path,
+        #         start_time=start_time,
+        #         end_time=curr_time
+        #     )
             
-            prep_step.output = f"전처리 완료: {processing_list})"
+        #     prep_step.output = f"전처리 완료: {processing_list})"
 
         context = SimulationContext(
             user_question=message.content,
-            processing_list=processing_list,
-            db_path=db_path,
-            start_time=start_time,
-            curr_time=curr_time,
+            # processing_list=processing_list,
+            # realtime_db_path=db_path,
+            # time = SimTime(
+            #     start_time=start_time,
+            #     curr_time=curr_time,
+            # ),
             ui_handler=handler,
-            rag_config=CURRENT_RAG_CONFIG,
-            llm_config=CURRENT_LLM_CONFIG,
-            vector_store=CURRENT_VECTOR_STORE,
+            rag_pipe = CURRENT_RAG_PIPELINE
         )
 
         context.report_time_adjustment()

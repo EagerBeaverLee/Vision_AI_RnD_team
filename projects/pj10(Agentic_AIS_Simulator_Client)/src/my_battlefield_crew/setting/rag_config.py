@@ -32,7 +32,7 @@ class PostProcessingConfig(BaseModel):
     use_similarity: bool = False
     similarity_threshold: float = 0.0
     use_keywords: bool = False
-    keywords: str = ""
+    keywords: set[str] = Field(default_factory=set)
     use_rrf: bool = False  # Reciprocal Rank Fusion
 
 
@@ -40,4 +40,4 @@ class RAGConfig(BaseModel):
     question_transform: QuestionTransformType = QuestionTransformType.DEFAULT
     indexing: IndexingConfig = Field(default_factory=IndexingConfig)
     post_processing: PostProcessingConfig = Field(default_factory=PostProcessingConfig)
-    source_path: str = ""
+    source_path: str = ""       # 임베딩할 문서가 담겨있는 경로

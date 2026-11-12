@@ -39,6 +39,7 @@ dependencies = [
     "pyqt6-webengine>=6.11.0",
     "python-dotenv>=1.2.3",
     "rank-bm25>=0.2.2",
+    "stonesoup>=1.9.1",
     "streamlit==1.52.1",
     "streamlit-autorefresh>=1.0.1",
     "streamlit-folium>=0.26.0,<0.28.0",

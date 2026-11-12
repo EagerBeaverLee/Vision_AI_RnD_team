@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
+from my_battlefield_crew.setting.LLM_model_set import lms_llm
 
 
 ################### TESTING STARTS (Trying various open source LLM models which could be utilized in a local environment)
@@ -70,7 +71,7 @@ class MasterRouterCrew:
     def master_operations_router(self) -> Agent:
         return Agent(
             config=self.agents_config['master_operations_router'],
-            # llm=tllm,
+            llm=lms_llm,
             verbose=True
         )
 

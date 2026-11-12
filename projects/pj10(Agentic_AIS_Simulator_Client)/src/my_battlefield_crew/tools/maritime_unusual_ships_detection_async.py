@@ -10,7 +10,7 @@ def _run_unusual_ships_detection(context: SimulationContext) -> str:
     if context.ui_handler:
         context.ui_handler.on_tool_progress("특이 기동 선박 현황", "특이/이상 기동 선박에 대한 정보를 반환합니다")
 
-    df = compress_ship_data_duckdb_further(db_path=context.db_path, table_name="ship_logs", min_time=context.start_time, max_time=context.end_time)
+    df = compress_ship_data_duckdb_further(db_path=context.realtime_db_path, table_name="ship_logs", min_time=context.start_time, max_time=context.end_time)
 
     # 1) 분석 키워드 정의
     turn_keywords = ['우선회', '좌선회']

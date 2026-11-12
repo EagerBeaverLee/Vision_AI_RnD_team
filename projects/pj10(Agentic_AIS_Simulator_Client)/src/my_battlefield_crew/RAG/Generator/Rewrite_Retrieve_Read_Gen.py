@@ -7,6 +7,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from my_battlefield_crew.RAG.DocumentPostProcessor import DocumentPostProcessor
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 # from langchain_together.chat_models import ChatTogether
 import os
 from dotenv import load_dotenv
@@ -28,8 +29,7 @@ from dotenv import load_dotenv
 #그리고 클래스 내 build_rewrite_rag_chain & generate_answer 사용하려면, retriever를 입력 인자로 추가해야 함
 
 class RewriteRetrieveReadQuestionGenerator:
-    def __init__(self, llm):
-        
+    def __init__(self, llm):        
         self.llm = llm
         
         #Prompt Template 
@@ -60,27 +60,25 @@ class RewriteRetrieveReadQuestionGenerator:
         res = self.rewriter_chain.invoke(question)
         return res
 
-    def build_rag_chain(self, prompt, retriever = None, score_threshold: float | None = None, required_keywords: set[str] | None = None, isRRF = False):
+    def search_docs(self, context: SimulationContext):
+        print("Rewrite_Generator")
+        retriever = context.rag_pipe.retriever
+        post_processor = context.rag_pipe.post_processor
+        # prompt, retriever = None, score_threshold: float | None = None, required_keywords: set[str] | None = None, isRRF = False
         try:
             if not retriever:
                 raise ValueError("Retriever is required to build RAG chain.")
-            postprocessing = DocumentPostProcessor(retriever)
+            
+            rag_config = context.rag_pipe.rag_config
 
-            print(score_threshold)
-            print(required_keywords)
+            question = context.user_question
+            similarity_threshold = rag_config.post_processing.similarity_threshold
+            used_keywords = rag_config.post_processing.use_keywords
+            rewriter_output = self.rewriter_chain.invoke({"question": question})
 
-            rewrite_retrieve_read_rag_chain = (
-                {
-                    # "context": {"question": RunnablePassthrough()} | self.rewriter_chain | retriever,
-                    "context": {"question": RunnablePassthrough()} | self.rewriter_chain | RunnableLambda(lambda x : postprocessing.post_processor(x, score_threshold, required_keywords)),
-                    "question": RunnablePassthrough(),
-                }
-                | RunnableLambda(self.print_log)
-                | prompt
-                # | self.rag_prompt
-                | self.llm
-                )
-            return rewrite_retrieve_read_rag_chain
+            result = post_processor.post_processor(rewriter_output, similarity_threshold, used_keywords)
+
+            return result
 
         except Exception as e:
             print(f"Error while building rewrite-retrieve-read RAG chain: {e}")

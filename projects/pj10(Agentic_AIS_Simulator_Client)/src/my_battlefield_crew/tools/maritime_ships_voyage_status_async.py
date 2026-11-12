@@ -17,7 +17,7 @@ def _run_ship_status_extraction(context: SimulationContext) -> str:
     shiptype_count_summary = ais_gdf.groupby('ShipType')['mmsi'].nunique().sort_values(ascending=False)
     data_dict_shiptype = shiptype_count_summary.to_dict()    
 
-    stop_temp_df = compress_ship_data_duckdb_further(db_path=context.db_path, table_name="ship_logs", min_time=context.start_time, max_time=context.end_time)
+    stop_temp_df = compress_ship_data_duckdb_further(db_path=context.realtime_db_path, table_name="ship_logs", min_time=context.start_time, max_time=context.end_time)
 
     # 1. DuckDB 연결 (메모리 모드) 및 공간 확장 로드
     con = duckdb.connect(database=':memory:')

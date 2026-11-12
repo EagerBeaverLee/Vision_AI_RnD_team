@@ -3,6 +3,7 @@
 ###################################################
 import os, time, concurrent.futures
 from PyQt6.QtCore import pyqtSignal, QObject
+import threading
 
 # from langchain.retrievers.multi_vector import MultiVectorRetriever
 from langchain_classic.retrievers.multi_vector import MultiVectorRetriever
@@ -28,19 +29,17 @@ class InMemoryByteStoreWithId(InMemoryByteStore):
             d.id = d.metadata.get("doc_id")
         return docs
 
-class HypotheticalQuestionRetrieverPipeline(QObject):
-    finished = pyqtSignal()
-    progresses = pyqtSignal(int)
-    error = pyqtSignal(str)
-    changeUi = pyqtSignal()
-    
+class HypotheticalQuestionRetrieverPipeline:    
     def __init__(self,folder_path: str, openai_api_key: str, llm_model, 
-                 parent_chunk_size: int = 3000, parent=None):
-        super().__init__(parent)
+                 parent_chunk_size: int = 3000):
+        print(f"hypo_chunk_size:{parent_chunk_size}\n")
         self.folder_path = folder_path
         #defining splitter
         self.parent_splitter = RecursiveCharacterTextSplitter(chunk_size=parent_chunk_size)
-        self.embedding_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
+        self.embedding_model = OpenAIEmbeddings(
+            openai_api_key=openai_api_key, 
+            model="text-embedding-3-small"
+        )
 
         # self.dummy_doc = Document(page_content="dummy")
         # self.dummy_doc_id = "DUMMY_DOC"  # 임의의 doc_id 지정
@@ -105,23 +104,44 @@ class HypotheticalQuestionRetrieverPipeline(QObject):
         return loader_class(filename)
 
     def data_loading_chunking(self):
-        for filename in os.listdir(self.folder_path):
-            file_path = os.path.join(self.folder_path, filename)
-            if os.path.isfile(file_path):
-                loader = self.get_loader(file_path)
-                print(f"Loader for {filename}: {loader}")
-                docs = loader.load()
-                chunks = self.parent_splitter.split_documents(docs)
-                chunks_ids = [str(uuid.uuid4()) for _ in chunks]
+        files = []
+        input_path = None
+        if isinstance(self.folder_path, list):
+            if len(self.folder_path) > 0:
+                input_path = self.folder_path[0]
+            else:
+                print("빈 리스트가 입력되었습니다.")
+                return
+            
+        if os.path.isfile(input_path):
+            # 단일 파일인 경우 리스트에 바로 추가
+            files.append(input_path)
 
-                self.coarse_chunks.extend(chunks)
-                self.coarse_chunks_ids.extend(chunks_ids)
-                print(f"Chunking and id_assignment for {filename} has been completed")
+        elif os.path.isdir(input_path):
+            # 폴더인 경우 내부의 모든 파일 경로를 리스트에 추가
+            for file_name in os.listdir(input_path):
+                file_path = os.path.join(input_path, file_name)
+                # 하위 폴더는 제외하고 '파일'만 담기 위해 조건 추가
+                if os.path.isfile(file_path):
+                    files.append(file_path)
+        else:
+            print(f"유효하지 않은 경로입니다: {input_path}")
+            return []
 
-        print(f"ALL PROCESS COMPLETED!!")
+        for filename in files:
+            loader = self.get_loader(filename)
+            print(f"Loader for {filename}: {loader}")
+            docs = loader.load()
+            chunks = self.parent_splitter.split_documents(docs)
+            chunks_ids = [str(uuid.uuid4()) for _ in chunks]
+
+            self.coarse_chunks.extend(chunks)
+            self.coarse_chunks_ids.extend(chunks_ids)
+            print(f"Chunking and id_assignment for {filename} has been completed")
 
     # Parallelization Function 
-    def run(self, max_workers=100):
+    def run(self, cancel_flag: threading.Event, max_workers=100):
+        print("hypothetical_retriever 시작")
         self.data_loading_chunking()
         """
         Generating hypothetical questions for a list of chunks in parallel.
@@ -137,6 +157,8 @@ class HypotheticalQuestionRetrieverPipeline(QObject):
             max_workers = self.max_workers
 
         def hypotheticalQs_chunk(coarse_chunk, coarse_chunk_id):
+            if cancel_flag.is_set():
+                return None
             hypothetical_questions = self.hypothetical_questions_chain.invoke(coarse_chunk)
             return [Document(
                 page_content = question,
@@ -145,13 +167,15 @@ class HypotheticalQuestionRetrieverPipeline(QObject):
                 )
                 for question in hypothetical_questions]
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            all_documents = []
+        max_workers=100
+        results = []
+        total_tasks = len(self.coarse_chunks)
+        completed_count = 0
+        
+        executor = ThreadPoolExecutor(max_workers=max_workers)
+        tasks = {}
 
-            # for docs in executor.map(hypotheticalQs_chunk, coarse_chunks, coarse_chunks_ids):
-            #     #docs는 list[Document], extend로 평탄화
-            #     all_documents.extend(docs)
-
+        try:
             tasks = {
                 executor.submit(hypotheticalQs_chunk, chunk, chunk_id): chunk_id
                 for chunk, chunk_id in zip(self.coarse_chunks, self.coarse_chunks_ids)
@@ -161,24 +185,42 @@ class HypotheticalQuestionRetrieverPipeline(QObject):
             total_tasks = len(self.coarse_chunks)
 
             for res in concurrent.futures.as_completed(tasks):
+                if cancel_flag.is_set():
+                    print("[HypotheticalRetriever] 취소 신호 감지: 대기 중인 퓨처 전체 취소")
+                    # 아직 스레드에 할당되지 않고 큐에 대기 중인 작업들 취소
+                    for t in tasks:
+                        t.cancel()
+                    break
+
                 query = tasks[res]
                 try:
                     result = res.result()
-                    all_documents.extend(result)
+                    # 💡 취소되었거나(None) 생성된 질문이 없는 빈 리스트([])인 경우 스킵
+                    if not result:
+                        continue
 
+                    results.extend(result)
                     completed_count += 1
                     percent = int((completed_count / total_tasks)*100)
-                    self.progresses.emit(percent)
-                    # print(f"[{completed_count}/{total_tasks}] 완료: {result[0].page_content[:100]}")
-                    print(f"[{completed_count}/{total_tasks}] 완료: {result[0].page_content[:100]}")
+
+                    yield f"{percent}\n"
+                    # 💡 result가 비어있지 않을 때만 안전하게 첫 번째 질문 출력
+                    first_q_preview = result[0].page_content[:60] if len(result) > 0 else ""
+                    print(f"[{completed_count}/{total_tasks}] 완료: {first_q_preview}")
                 except Exception as e:
-                    self.error.emit(f"쿼리{query} 실행 중 오류 발생: {e}")
                     print(f"쿼리 {query} 실행 중 오류 발생: {e}")
-                    self.finished.emit()
+
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
+
+        if cancel_flag.is_set():
+            print("[HypotheticalRetriever] 임베딩 작업 취소 완료")
+            yield "CANCELLED\n"
+            return
         
         #Adding summaries to vectorstore    
         # self.retriever.vectorstore.add_documents(i for i in all_documents)
-        self.retriever.vectorstore.add_documents(all_documents)
+        self.retriever.vectorstore.add_documents(results)
 
         for chunk, chunk_id in zip(self.coarse_chunks, self.coarse_chunks_ids):
             chunk.metadata[self.doc_key] = chunk_id
@@ -186,9 +228,8 @@ class HypotheticalQuestionRetrieverPipeline(QObject):
 
         #Adding coarse_chunks to docstore along with IDs
         self.retriever.docstore.mset(list(zip(self.coarse_chunks_ids, self.coarse_chunks)))
-        self.finished.emit()
-        self.changeUi.emit()
-        return all_documents
+        print("[HypotheticalRetriever] FAISS 및 Docstore 적재 완료")
+        yield "COMPLETE\n"
  
     def format_docs(self, docs):
         """Format retrieved docs into a single string."""

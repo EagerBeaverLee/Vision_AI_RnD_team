@@ -2,6 +2,7 @@
 ### ParentDocumentRetriever ###
 ###############################
 import os, uuid
+import threading
 from PyQt6.QtCore import pyqtSignal, QObject
 
 # from langchain.retrievers import ParentDocumentRetriever
@@ -16,25 +17,20 @@ from langchain_core.documents import Document
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader, CSVLoader, JSONLoader, DirectoryLoader
 # from langchain_teddynote.document_loaders import HWPLoader
 
-class ParentRetriverPipeline(QObject):
-    finished = pyqtSignal()
-    progresses = pyqtSignal(int)
-    error = pyqtSignal(str)
-    changeUi = pyqtSignal()
-
+class ParentRetriverPipeline:
     def __init__(self, folder_path: str, openai_api_key: str,
-                parent_chunk_size: int = 3000, child_chunk_size: int = 500, parent=None):
-        super().__init__(parent)
-
-        print("parentRetriever")
-        print(parent_chunk_size)
-        print(child_chunk_size)
-
+                parent_chunk_size: int = 3000, child_chunk_size: int = 500):
+        
+        print(f"parent_chunk_size:{parent_chunk_size}\n")
+        print(f"child_chunk_size:{child_chunk_size}\n")
         self.folder_path = folder_path
         #Defining Splitter
         self.parent_splitter = RecursiveCharacterTextSplitter(chunk_size = parent_chunk_size)
         self.child_splitter = RecursiveCharacterTextSplitter(chunk_size = child_chunk_size)
-        self.embedding_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
+        self.embedding_model = OpenAIEmbeddings(
+            openai_api_key=openai_api_key, 
+            model="text-embedding-3-small"
+        )
 
         self.dummy_doc = Document(page_content="dummy")
         self.dummy_doc_id = "DUMMY_DOC"  # 임의의 doc_id 지정
@@ -50,7 +46,7 @@ class ParentRetriverPipeline(QObject):
             vectorstore = self.child_chunks_collection,
             docstore = self.doc_store,
             child_splitter = self.child_splitter, 
-            parent_splitter = self.parent_splitter
+            parent_splitter = self.parent_splitter,
         )
 
         #supported loaders
@@ -115,39 +111,72 @@ class ParentRetriverPipeline(QObject):
         self.retriever.docstore.mset([(doc.metadata["doc_id"], doc) for doc in parent_docs])
 
 
-    def run(self):      # db_reset: bool = True):
+    def run(self, cancel_flag: threading.Event):      # db_reset: bool = True):
         """Load all documents from a folder into the retriever pipeline"""
-        # if db_reset:
-        #     self.reset()
-        files = os.listdir(self.folder_path)
-        total_files = len(files)
+        try:
+            files = []
+            input_path = None
 
-        progress_step = 100 / total_files
+            if isinstance(self.folder_path, list):
+                if len(self.folder_path) > 0:
+                    input_path = self.folder_path[0]
+                else:
+                    print("빈 리스트가 입력되었습니다.")
+                    return
 
-        for i, filename in enumerate(files):
-            file_path = os.path.join(self.folder_path, filename)
-            if os.path.isfile(file_path):
+            if os.path.isfile(input_path):
+                # 단일 파일인 경우 리스트에 바로 추가
+                files.append(input_path)
+                
+            elif os.path.isdir(input_path):
+                # 폴더인 경우 내부의 모든 파일 경로를 리스트에 추가
+                for file_name in os.listdir(input_path):
+                    file_path = os.path.join(input_path, file_name)
+                    # 하위 폴더는 제외하고 '파일'만 담기 위해 조건 추가
+                    if os.path.isfile(file_path):
+                        files.append(file_path)
+            else:
+                print(f"유효하지 않은 경로입니다: {input_path}")
+                return []
+
+            
+            print(f"처리할 파일 목록 (files): {files}")
+            total_files = len(files)
+            
+            if total_files == 0:
+                print("[default_retriever]선택한 폴더에 파일이 없습니다.")
+                yield "CANCELLED\n"
+
+            progress_step = 100 / total_files
+            print(f"게이지 분할 값: {progress_step}")
+
+            for i, filename in enumerate(files):
+                if cancel_flag.is_set():
+                    print("[ParentChildRetriever Worker Thread] 취소 신호 감지, 동기 루프 탈출")
+                    return
+                # file_path = os.path.join(self.folder_path, filename)
                 try:
-                    loader = self.get_loader(file_path)
+                    loader = self.get_loader(filename)
                     print(f"Loader for {filename}: {loader}")
                     self.add_document(loader)
 
                     curr_progress = (i + 1) * progress_step
-                    self.progresses.emit(int(curr_progress))
+                    yield f"{curr_progress}\n"
                 except ValueError as e:
-                    self.error.emit(f"{filename} 파일 임베딩 중 오류 발생: {e}")
-                    print(e)
+                    print(f"오류: {e}")
+                    yield "CANCELLED\n"
 
-        self.progresses.emit(100)
-        self.finished.emit()
-        self.changeUi.emit()
+            yield "COMPLETE\n"
+            print("Parent Child 벡터스토어 생성 및 로드 완료")
+        except Exception as e:
+            print(f"오류: {e}")
+            yield "CANCELLED\n"
     
     def format_docs(self, docs):
         """Format retrieved docs into a single string."""
         return "\n\n".join(doc.page_content for doc in docs)
     
     def copy_retriever(self):
-        self.retriever.get_relevant_documents
         return self.retriever
 
     def query(self, question: str) -> str:

@@ -57,32 +57,21 @@ class ReciprocalRankFusionClass:
             | retriever.map() 
             | self.reciprocal_rank_fusion
             | top_k_results
-        )
-        
+        )        
         return rag_fusion_retrieval_chain
-        
 
-    def build_RRF_rag_chain(self, retriever=None):
+    def rrf_docs(self, question, retriever=None):
         if not retriever:
             raise ValueError("Retriever is required to execute RRF rag chain")
 
-        rrf_rag_chain = (
-            {
-                "context": {"question": RunnablePassthrough()} | self.build_reciprocal_rank_fusion_retriever(retriever),
-                "question": RunnablePassthrough(),
-            }
-            | RunnableLambda(self.print)
-            | self.rag_prompt
-            | self.llm
-            # | StrOutputParser()
-        )
-        return rrf_rag_chain
+        docs = self.build_reciprocal_rank_fusion_retriever(retriever).invoke({"question": question})
+        return docs
 
     def generate_answer(self, user_question: str, retriever=None):
         if not retriever:
             raise ValueError("Retriever is required to execute RRF rag chain")
 
-        final_rag_chain = self.build_RRF_rag_chain(retriever)
+        final_rag_chain = self.rrf_docs(retriever)
         rrf_final_result = final_rag_chain.invoke({"question": user_question})
 
         return rrf_final_result

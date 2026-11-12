@@ -4,34 +4,21 @@
 
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from my_battlefield_crew.RAG.DocumentPostProcessor import DocumentPostProcessor
-# from langchain_together.chat_models import ChatTogether
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 
 
 class DefaultGenerator:
-    def __init__(self, llm):
-        
+    def __init__(self, llm):        
         self.llm = llm
 
-    def build_rag_chain(self, prompt, retriever = None, score_threshold: float | None = None, required_keywords: set[str] | None = None, isRRF = False):
+    def search_docs(self, context: SimulationContext):
         try:
-            if not retriever:
+            if context.rag_pipe.retriever is None:
                 raise ValueError("Retriever is required to build RAG chain.")
-            
-            postprocessing = DocumentPostProcessor(retriever)
-
-            print(score_threshold)
-            print(required_keywords)
-            
-            default_chain=(
-                # RunnablePassthrough.assign(context=lambda x: retriever.invoke(x["question"]))
-                RunnablePassthrough.assign(context=lambda x: postprocessing.post_processor(x["question"], score_threshold, required_keywords))
-                | RunnableLambda(self.print_retrieved_document)
-                | prompt
-                # | RunnableLambda(lambda x: (print(f"\n[Experiment]LLM에 전달된 총 토큰 수: {self.get_full_prompt_token_count(x)}/{self.MAX_TOKENS}"), x)[1])
-                | self.llm
-            )
-            return default_chain
-
+            print("문서 검색 시작"+ "#" * 20)
+            docs = context.rag_pipe.post_processor.post_processor(context.user_question, context.rag_pipe.rag_config.post_processing.similarity_threshold, context.rag_pipe.rag_config.post_processing.keywords)
+            return docs
+        
         except Exception as e:
             print(f"Error while building Default RAG chain: {e}")
             return None

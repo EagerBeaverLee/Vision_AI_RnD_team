@@ -12,48 +12,27 @@ import atexit
 import requests
 import shutil
 import threading
+from pathlib import Path
 from multiprocessing import shared_memory
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QMessageBox, QMessageBox, QTableWidgetItem, QMenu, QFileDialog, QProgressDialog
+    QApplication, QMainWindow, QMessageBox, QMessageBox, QFileDialog
 )
-from PyQt6.QtCore import Qt, QCoreApplication, QTimer, QObject, QPoint, pyqtSignal, QThread, QUrl
-from PyQt6.QtGui import QDoubleValidator, QAction, QTextCursor
+from PyQt6.QtCore import QTimer, pyqtSignal, QThread, QUrl, QLoggingCategory
+from PyQt6.QtGui import QTextCursor
+from PyQt6.QtWebEngineCore import QWebEngineSettings
 
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
 
 from langfuse import get_client
 from dotenv import load_dotenv
 
-#Query Routing
-from typing import Literal, Optional
-from pydantic import BaseModel, Field
-
-#tokenizer
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_community.chat_message_histories import ChatMessageHistory
-
-
 from my_battlefield_crew.ui.mainwindow import Ui_MainWindow
-from my_battlefield_crew.RAG.Generator.Default_Gen import DefaultGenerator
-from my_battlefield_crew.RAG.Generator.Rewrite_Retrieve_Read_Gen import RewriteRetrieveReadQuestionGenerator
-from my_battlefield_crew.RAG.Generator.Step_Back_Question_Gen import StepBackQuestionGenerator
-from my_battlefield_crew.RAG.Generator.Multiple_Questions_Gen import MultipleQuestionGenerator
-
-from my_battlefield_crew.RAG.Retriever.DefaultRetriever import DefaultRetriever
-from my_battlefield_crew.RAG.Retriever.ParentChildDocumentRetriever import ParentRetriverPipeline
-from my_battlefield_crew.RAG.Retriever.SummaryDocumentRetriever import SummaryDocumentRetrieverPipeline
-from my_battlefield_crew.RAG.Retriever.HypotheticalQuestionRetrieverPipeline import HypotheticalQuestionRetrieverPipeline
-from my_battlefield_crew.RAG.Retriever.GranularChunkExpansionRetriever import GranularChunkExpansionRetriverPipeline
 from my_battlefield_crew.setting.weather_data_sender import DataSenderThread
-
-# from LLMStreamThread import LLMStreamThread
-# from AIS_Trajectory_compression import GenerateAISReport
-
-from my_battlefield_crew.setting.rag_config import RAGConfig, IndexingConfig, PostProcessingConfig
+from my_battlefield_crew.setting.rag_config import RAGConfig
 from my_battlefield_crew.setting.llm_config import LLMConfig
 from my_battlefield_crew.setting.rag_setting_tab import RAGSettingManager
 from my_battlefield_crew.setting.setting_tab import SettingTabManager
+from my_battlefield_crew.RAG.embedding_worker import RemoteEmbeddingWorker
 
 sitmap_streamlit_process = None
 dashboard_streamlit_process = None
@@ -64,6 +43,7 @@ CHAINLIT_LLM_CONFIG_URL = "http://127.0.0.1:8504/api/llm/config"
 CHAINLIT_RAG_CONFIG_URL = "http://127.0.0.1:8504/api/rag/config"
 CHAINLIT_VECTORSTORE_URL = "http://127.0.0.1:8504/api/rag/vectorstore"
 
+# chainlit 서버에 보내기 위한 
 SHM_NAME = "ais_sim_server_time"
 SHM_SIZE = 32
 SHM_NAME_2 = "ais_start_server_time"
@@ -71,6 +51,7 @@ SHM_SIZE_2 = 32
 SHM_DB_PATH_NAME = "db_path"
 SHM_DB_PATH_LEN = 256
 
+# 패킷으로 전달되는 데이터가 저장되는 DB경로
 DB_PATH = "src/my_battlefield_crew/data/ships.db"
 
 # DB 핸들링 함수
@@ -219,6 +200,7 @@ class Window(QMainWindow):
         # 💡 MainWindow의 self.ui를 그대로 주입하여 RAG 전담 매니저 생성
         self.rag_manager = RAGSettingManager(self.ui, parent=self)
         self.setting_manager = SettingTabManager(self.ui, parent=self)
+        self.embed_worker = None
 
         # 💡 1. 프로세스 간 공유 메모리 블록 생성 (이전 프로세스 잔존물 안전 처리)
         try:
@@ -230,64 +212,12 @@ class Window(QMainWindow):
             self.shm2 = shared_memory.SharedMemory(name=SHM_NAME_2)
             self.shm_db_path = shared_memory.SharedMemory(name=SHM_DB_PATH_NAME)
 
-        #######################################  채팅방 변수  ##############################################
-        # self.name = name
-        self.m_api_key = None
-        self.m_temperature = "0.00"
-        self.m_prompt = ""
-
-        self.default_chat_list = ""
-        self.experiment_chat_list = ""
-        self.user_in_txt = ""
-
-        self.default_token = 0
-        self.experiment_token = 0
-
-        #Question Transformations
-        self.rag_transformation = "Default"
-
-        #Advanced Indexing
-        self.rag_indexing = "Default"
-        self.rag_apply_indexing = ""
-        self.parent_p_chunk_size = 0
-        self.parent_c_chunk_size = 0
-        self.summary_p_chunk_size = 0
-        self.hypo_p_chuck_size = 0
-        self.granular_chucnk_size = 0
-
-        #Retrieval Post-Processing
-        self.rag_post_processing = None
-        self.m_similarity = "0.00"
-        self.m_keyword = None
-        self.similarity_checked = False
-        self.keyword_checked = False
-        self.rrf_checked = False
-
-        self.m_loading_bar = 0
-        self.loaded_folder_path = ""
-
-        
-        self.chat_stored = {}
-        self.default_session_id = "default"
-        self.experiment_session_id = "experiment"
-        self.default_config = {"configurable": {"session_id": self.default_session_id}}
-        self.experiment_config = {"configurable": {"session_id": self.experiment_session_id}}
-        ####################################################################################
-
-        # validator = QDoubleValidator()
-        # validator.setRange(0.00, 1.00)
-        # validator.setDecimals(2)
-        # validator.setNotation(QDoubleValidator.StandardNotation)
-        # self.ui.temp_val.setValidator(validator)
-
         self.connectSignalsSlots()
         self.set_web_view()                   #스트림릿 내부에 연동
 
         # 오른쪽 클릭된 아이템을 저장할 멤버 변수
         self.clicked_item = None
 
-        self.threading = None
-        self.text_splitter = None
         self.worker = None
 
         self.MAX_TOKENS = 128000
@@ -336,6 +266,31 @@ class Window(QMainWindow):
 
         self.ship_count = {}
 
+        QLoggingCategory.setFilterRules("js=false")
+
+        # 1. 처음에는 접속 거부 에러 대신 로딩 안내 화면을 띄워둠
+        self.ui.experiment_txt.setHtml(
+            """
+            <html>
+                <body style="display:flex; justify-content:center; align-items:center; height:100vh; background:#1e1e1e; color:#ccc; font-family:sans-serif;">
+                    <div style="text-align:center;">
+                        <h2>Chainlit AI 엔진 구동 중...</h2>
+                        <p style="font-size:14px; color:#888;">서버 포트(8504) 바인딩을 대기하고 있습니다.</p>
+                    </div>
+                </body>
+            </html>
+            """
+        )
+
+        # 2. 서버 포트 감시 타이머 시작 (0.5초마다 체크)
+        self.retry_count = 0
+        self.max_retries = 30  # 최대 15초 대기 (0.5s * 30)
+
+        self.server_check_timer = QTimer(self)
+        self.server_check_timer.setInterval(500)
+        self.server_check_timer.timeout.connect(self._check_chainlit_ready)
+        self.server_check_timer.start()
+
         load_dotenv()
         self.langfuse = get_client()
         
@@ -352,9 +307,32 @@ class Window(QMainWindow):
 
     def init_openai_llm(self):
         self.openai_llm = ChatOpenAI(
-            # api_key=self.current_chat_room.m_api_key,
-            # temperature=self.current_chat_room.m_temperature,
+            api_key=os.getenv("OPENAI_API_KEY"),
+            temperature=0.1,
         )
+
+    def _check_chainlit_ready(self):
+        """8504 포트가 열렸는지 논블로킹 소켓으로 점검"""
+        self.retry_count += 1
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.1)
+            # connect_ex는 성공 시 0, 실패 시 에러 코드를 반환 (예외 미발생)
+            result = s.connect_ex(("127.0.0.1", 8504))
+
+            if result == 0:
+                # 💡 포트 연결 성공: 타이머 끄고 실제 URL 로드
+                self.server_check_timer.stop()
+                print(">>> [MainWindow] Chainlit 서버 포트 오픈 확인, 페이지 로드")
+                self.ui.experiment_txt.setUrl(QUrl("http://127.0.0.1:8504"))
+                return
+
+        # 타임아웃 초과 시 처리
+        if self.retry_count >= self.max_retries:
+            self.server_check_timer.stop()
+            self.ui.experiment_txt.setHtml(
+                "<h3 style='color:red; text-align:center;'>Chainlit 서버 응답 시간 초과</h3>"
+            )
 
     def on_rag_config_auto_sync(self, config: RAGConfig):
         """UI 설정 변경 시 백그라운드 스레드를 통해 Chainlit으로 자동 동기화"""
@@ -371,9 +349,9 @@ class Window(QMainWindow):
                     # 메인 윈도우 하단 상태바가 있다면 2초간 안내 메시지 출력
                     if hasattr(self, "statusBar") and self.statusBar():
                         self.statusBar().showMessage("RAG 설정이 백엔드에 동기화되었습니다.", 2000)
-                    print(f"[Auto Sync 성공] 전략: {config.indexing.strategy}")
+                    print(f"[RAG CONFIG] Auto Sync 성공: {config.indexing.strategy}")
                 else:
-                    print(f"[Auto Sync 서버 응답 오류] 상태코드: {resp.status_code}, 메시지: {resp.text}")
+                    print(f"[RAG CONFIG] Auto Sync 서버 응답 오류 상태코드: {resp.status_code}, 메시지: {resp.text}")
 
             except requests.exceptions.ConnectionError:
                 # Chainlit 서버가 아직 켜지지 않았을 때는 작업 흐름을 방해하지 않고 로그만 남김
@@ -399,9 +377,9 @@ class Window(QMainWindow):
                     # 메인 윈도우 하단 상태바가 있다면 2초간 안내 메시지 출력
                     if hasattr(self, "statusBar") and self.statusBar():
                         self.statusBar().showMessage("RAG 설정이 백엔드에 동기화되었습니다.", 2000)
-                    print(f"[Auto Sync 성공] 전략: {config.indexing.strategy}")
+                    print(f"[LLM CONFIG] Auto Sync 성공: {config.system_prompt[:10]}...")
                 else:
-                    print(f"[Auto Sync 서버 응답 오류] 상태코드: {resp.status_code}, 메시지: {resp.text}")
+                    print(f"[LLM CONFIG] Auto Sync 서버 응답 오류 상태코드: {resp.status_code}, 메시지: {resp.text}")
 
             except requests.exceptions.ConnectionError:
                 # Chainlit 서버가 아직 켜지지 않았을 때는 작업 흐름을 방해하지 않고 로그만 남김
@@ -412,92 +390,26 @@ class Window(QMainWindow):
         # UI 스레드가 블로킹되어 슬라이더가 멈칫하는 현상을 방지하기 위해 데몬 스레드로 즉시 실행
         threading.Thread(target=_send, daemon=True).start()
 
-    #Crewai, Chainlilt 통합 RAG 임베딩 함수
-    def on_embedding_finished(self):
-        """임베딩 워커 완료 시그널 수신 시 실행"""
-        try:
-            if not (hasattr(self.worker, "vector_store") and self.worker.vector_store):
-                QMessageBox.warning(self, "오류", "임베딩된 벡터스토어가 메모리에 존재하지 않습니다.")
-                return
-
-            # 1. 💡 메모리 상의 FAISS 전체(인덱스+문서)를 bytes 데이터로 변환 (디스크 쓰기 0)
-            faiss_bytes: bytes = self.worker.vector_store.serialize_to_bytes()
-
-            # 3. Chainlit 서버로 최신 RAG 파라미터 전송
-            resp = requests.post(
-                CHAINLIT_VECTORSTORE_URL,
-                data=faiss_bytes,
-                headers={"Content-Type":"application/octet-stream"},
-                timeout=30.0
-            )
-            if resp.status_code == 200:
-                print(f">>> [Qt -> Chainlit] FAISS 인메모리 DB 전송 완료 ({len(faiss_bytes) / 1024:.1f} KB)")
-            else:
-                QMessageBox.critical(self, "전송 실패", f"서버 응답 오류: {resp.text}")
-
-        except Exception as e:
-            QMessageBox.critical(self, "오류", f"FAISS 전송 중 예외 발생: {e}")
-
-    def create_default_generator(self):
-        return DefaultGenerator(
-            llm=self.local_llm
-        )
-    def create_rewrite_retrieve_read_generator(self):
-        return RewriteRetrieveReadQuestionGenerator(
-            llm=self.local_llm
-        )
-    def create_multiple_question_generator(self):
-        return  MultipleQuestionGenerator(
-            llm=self.local_llm
-        )
-    def create_step_back_question_generator(self):
-        return StepBackQuestionGenerator(
-            llm=self.local_llm
-            # llm=self.openai_llm
-        )
-
-    def create_default_retriever(self, path):
-        return DefaultRetriever(
-            folder_path=path,
-            api_key=self.current_chat_room.m_api_key
-        )
-    def create_parent_retriever(self, path):
-        return ParentRetriverPipeline(
-            folder_path=path,
-            openai_api_key=self.current_chat_room.m_api_key,
-            parent_chunk_size=self.current_chat_room.parent_p_chunk_size,
-            child_chunk_size=self.current_chat_room.parent_c_chunk_size
-        )
-    def create_summary_retriever(self, path):
-        return SummaryDocumentRetrieverPipeline(
-            folder_path=path,
-            openai_api_key=self.current_chat_room.m_api_key,
-            llm_model=self.local_llm
-        )
-    def create_hypothetical_retriever(self, path):
-        return HypotheticalQuestionRetrieverPipeline(
-            folder_path=path,
-            openai_api_key=self.current_chat_room.m_api_key,
-            llm_model=self.local_llm,
-        )
-    def create_granular_retriever(self, path):
-        return GranularChunkExpansionRetriverPipeline(
-            folder_path=path,
-            openai_api_key=self.current_chat_room.m_api_key,
-            granular_chunk_size=500,
-        )
-
-
-    def load_folder(self):
-        curr_config = self.setting_manager.get_config().model_dump
+    def on_select_documents(self):
+        curr_config = self.setting_manager.get_config().model_dump()
 
         if curr_config.get("api_key") is None:
             QMessageBox.critical(self, "오류", "api key를 입력해주세요")
             return
         
         self.init_openai_llm()
+
+        if self.openai_llm is None:
+            print("openai_llm 초기화 오류")
+            return
+        
         # path = QFileDialog.getExistingDirectory(self, "폴더 선택")
-        files, _ = QFileDialog.getOpenFileNames(self, "파일 선택")
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "RAG 사내 규정 문서 선택",
+            "",
+            "문서 파일 (*.pdf *.txt *.docx *.md);;All Files (*)",
+        )
 
         if files:
             folder_path = os.path.dirname(files[0])
@@ -507,50 +419,35 @@ class Window(QMainWindow):
             print("파일 선택이 취소되었습니다.")
             return
 
-        retriever_map = {
-            "Default": self.create_default_retriever,
-            "ParentRetriverPipeline": self.create_parent_retriever,
-            "Summary": self.create_summary_retriever,
-            "Hypothetical": self.create_hypothetical_retriever,
-            "Granular": self.create_granular_retriever,
-        }
+        # 💡 핵심: CWD 불일치 방지를 위해 무조건 완벽한 절대 경로로 정규화
+        absolute_paths = [str(Path(f).resolve()) for f in files]
 
-        self.ui.edit_path.setText(f"{folder_path}")
+        # UI 초기화 및 비활성화 처리
+        self.ui.progress_bar_doc.setValue(0)
+        self.ui.btn_select_doc.setEnabled(False)
+        if hasattr(self.ui, "btn_cancel_embed"):
+            self.ui.btn_cancel_embed.setEnabled(True)
 
-        self.ui.Loading_bar.setValue(0)
-        self.ui.Load_btn.setEnabled(False) #작업 중 버튼 비활성화
-
-        self.threading = QThread()
-
-        if self.rag_indexing in retriever_map:
-            self.worker = retriever_map[self.rag_indexing](folder_path)
-        else:
-            print(f"Error: retriever_map에 없는 키: {self.rag_indexing}")
-            return
-
-        #현재 채팅방에 인덱싱 기법 저장
-        self.current_chat_room.rag_apply_indexing = self.rag_indexing
-
-        self.worker.moveToThread(self.threading)
-
-        self.threading.started.connect(self.worker.run)
-        self.worker.progresses.connect(self.ui.Loading_bar.setValue)
-        self.worker.finished.connect(self.threading.quit)
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.worker.finished.connect(self.threading.deleteLater)
-
-        self.worker.finished.connect(lambda: self.ui.Load_btn.setEnabled(True))
-        self.worker.error.connect(lambda msg: QMessageBox.critical(self, "오류", msg))
-        self.worker.finished.connect(lambda: QMessageBox.information(self, "완료", "임베딩이 완료되었습니다"))
-        self.worker.changeUi.connect(self.check_applied_indexing)
-
-        self.threading.start()
+        self.ui.edit_select_path.setText(f"{folder_path}")
+        
+        # 백그라운드 워커 구동
+        self.embed_worker = RemoteEmbeddingWorker(absolute_paths, parent=self)
+        self.embed_worker.progress_changed.connect(self.ui.progress_bar_doc.setValue)
+        self.embed_worker.status_message.connect(
+            # lambda msg: self.statusBar().showMessage(msg, 3000)
+            lambda msg: print("qt에서 받은 상태 메세지:" + msg)
+        )
+        self.embed_worker.finished.connect(self._on_embed_finished)        
+        self.embed_worker.cancelled.connect(self._on_embed_finished)
+        self.embed_worker.failed.connect(self._on_embed_failed)
+        self.embed_worker.start()
 
     def connectSignalsSlots(self):
         # self.ui.send_btn.clicked.connect(self.load_message)
-        self.ui.Load_btn.clicked.connect(self.load_folder)
+        self.ui.btn_select_doc.clicked.connect(self.on_select_documents)
         self.rag_manager.config_changed.connect(self.on_rag_config_auto_sync)
         self.setting_manager.config_changed.connect(self.on_llm_config_auto_sync)
+        self.ui.btn_cancel_embed.clicked.connect(self.on_cancel_embedding)
         
         #Client_func
         self.ui.btn_server_connect.clicked.connect(self.connect_server)
@@ -558,8 +455,26 @@ class Window(QMainWindow):
         #program restart
         # self.ui.reset_program.clicked.connect(self.restart_program)
 
-    def debug_ais_llm_query(self):
-        self.start_ais_llm_query("현재 상황에 대해 묘사해줘")
+    def on_cancel_embedding(self):
+        """임베딩 취소 버튼 클릭 시"""
+        self.ui.btn_select_doc.setEnabled(True)
+        self.ui.btn_cancel_embed.setEnabled(False)
+        if self.embed_worker and self.embed_worker.isRunning():
+            self.embed_worker.request_cancel()
+
+    def _on_embed_finished(self):
+        self.ui.btn_select_doc.setEnabled(True)
+        if hasattr(self.ui, "btn_cancel_embed"):
+            self.ui.btn_cancel_embed.setEnabled(False)
+
+        # 💡 안전한 메모리 해제 및 참조 초기화
+        if self.embed_worker is not None:
+            self.embed_worker.deleteLater()  # Qt 이벤트 루프에서 안전하게 C++ 객체 삭제
+            self.embed_worker = None  # 파이썬 레벨 참조 제거
+
+    def _on_embed_failed(self, error_msg: str):
+        self._on_embed_finished()
+        QMessageBox.critical(self, "임베딩 오류", error_msg)
 
     def show_status_messages(self, message, is_error=False):
         if is_error:
@@ -568,319 +483,18 @@ class Window(QMainWindow):
             self.ui.statusbar.setStyleSheet("QStatusBar {background-color: #ccffcc; color: green;}")
         self.ui.statusbar.showMessage(message, 3000) # Show for 3 seconds
         
-    def load_message(self):
-        message = self.ui.input_text.toPlainText()
-
-        if message.strip():
-            self.ui.input_text.clear()
-            self.query_routing_report(message)
-
-        else:
-            QMessageBox.about(
-                self,
-                "Error",
-                "<p>Please enter any message</p>",
-            )
-
-    def init_query_routing(self):
-        # 파일 열기 (r: 읽기 모드)
-        with open('./data/ship_list.json', 'r', encoding='utf-8') as f:
-            ship_list_json = json.load(f)
-
-        structured_llm_router = self.local_llm.with_structured_output(RouteQuery)
-
-        system = """당신은 사용자 질문을 '선박 리포트(ship_report)' '선박 정보(ship_info)' 또는 '벡터스토어(vector_store)'로 분류하는 전문 라우터입니다.
-        1. ship_report 선택 기준:.
-        - 질문에 특정 선박 이름이나 MMSI 번호가 없는 경우.
-        - 선박의 현재 위치, 상태, 항적 등 현재 상황에 대해 묻고 있지만, '어떤 선박'인지 식별할 수 있는 정보(이름/MMSI)가 전혀 없는 경우.
-        - 현재 상황이나 상태 또는 지금까지의 상황에 대해 물어보는 경우.
-        - 주요 쟁점 상황이나 종합적인 판단, 검토를 요청하는 경우.
-
-        2. ship_info 선택 기준:
-        - [선박리스트]에 존재하는 mmsi 번호 또는 선박이름(ShipName)이 포함되어 있는 경우.
-        - 선박의 현재 위치, 상태, 항적, 이동패턴, 이동경로 등을 묻는 경우.
-
-        3. vector_store 선택 기준:
-        - 선박과 관련된 구체적인 행동과 그 이유에 대해 물어보는 경우
-        - 특정 [기후상황리스트]에서 기준을 제시하며 행동 지침에 대해 물어본 경우.
-        - 선박이 행동하기 위한 자세한 [기후상황리스트]의 기준에 대해 물어보는 경우.
-        - 특정 [기후상황리스트]가 선박에 미칠 수 있는 영향에 대해 물어보는 경우.
-
-        [선박리스트]
-        {ship_list_json}
-
-        [기후상황리스트]
-        풍속(m/s), 풍향(deg), GUST풍속(m/s), 현지기압(hPa), 습도(%), 기온(°C), 수온(°C), 최대파고(m), 유의파고(m), 평균파고(m), 파주기(sec), 파향(deg)
-
-        출력 규칙:
-        - datasource가 'ship_info'인 경우, 제공된 선박 리스트에서 매칭된 {{ship_name: str, mmsi: int}} 객체의 리스트를 반환하십시오.
-        - datasource가 'vector_store'인 경우, target_ships 필드는 비워두십시오."""
-
-        route_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system),
-                ("human","{question}"),
-            ]
-        ).partial(ship_list_json=ship_list_json)
-
-        return route_prompt | structured_llm_router
-
-    def query_routing_report(self, question):
-        trace_id = self.langfuse.create_trace_id()
-
-        with self.langfuse.start_as_current_observation(
-            as_type="span",
-            name="vector_store_result",
-            input={"question": question},
-            trace_context={"trace_id": trace_id}
-        )as final_span:
-            question_router = self.init_query_routing()
-
-            retriever_route = {
-                'ship_report': lambda a1, a2: self.start_ais_llm_query(True, a1, a2),
-                'ship_info': lambda a1, a2: self.start_ais_llm_query(False, a1, a2),
-                'vector_store': lambda a1, a2: self.rag_btn_llm(a1)
-            }
-
-            selected_data_source = question_router.invoke({"question": question})        
-
-            print("쿼리라우팅 디버깅" + "*" * 35)
-            print(selected_data_source.datasource)
-            print("*" * 55)
-
-            mmsi_list = [
-                i['mmsi']
-                for i in selected_data_source.target_ships
-            ]
-
-            retriever_route[selected_data_source.datasource](question, mmsi_list)
-            final_span.update(output={"status": "finished"})
-    
-    
-    def rag_btn_llm(self, question):
-        if self.rag_indexing != self.current_chat_room.rag_apply_indexing:
-            QMessageBox.critical(self, "오류", "load 버튼으로 임베딩을 진행해주세요")
-            return
-
-        if not self.current_chat_room.m_api_key:
-            QMessageBox.critical(self, "오류", "api key를 입력해주세요")
-            return
-        
-        if not self.worker:
-            QMessageBox.critical(self, "오류", "벡터스토어가 없습니다")
-            return
-        
-        if self.stream_worker is not None:
-            QMessageBox.critical(self, "오류", "이전작업이 아직 실행중입니다.")
-            return
-
-        generator_map = {
-            "Default": self.create_default_generator,
-            "Rewrite-Retrieve-Read Generator": self.create_rewrite_retrieve_read_generator,
-            "Multiple Questions Generator": self.create_multiple_question_generator,
-            "Step-Back Question Generator": self.create_step_back_question_generator,
-        }
-        print(self.rag_transformation)
-        generator = generator_map[self.rag_transformation]()
-
-        # prompt = ChatPromptTemplate.from_messages(
-        #     [
-        #         ("system", f"{self.current_chat_room.m_prompt}\n"
-        #         "당신은 제공된 문서를 기반으로 사용자의 질문에 답변하는 유능한 조수입니다."
-        #         "문서 내용에 기반하여 대한 답변을 제공하세요."
-        #         # "만약 문서에 질문에 대한 정보가 없다면, '제공된 문서에는 이 질문에 대한 정보가 없습니다.'라고 답변하세요."
-        #         "최대한 문서에 있는 내용을 사용하여 답변을 구성하고, 사실을 기반으로 명확하고 간결하게 응답해야 합니다."
-        #         "답변은 영어로 표현된 원래 의미가 최대한 바뀌지 않도록 모두 한글로 번역해서 응답하세요"
-        #         "기존의 답변의 markdown 형식도 그대로 유지하면서 번역해주세요"
-        #         "문서 내용: {context}"),
-        #         ("placeholder", "{history}"),
-        #         ("human", "질문: {question}"),
-        #     ]
-        # )
-        
-        #langfuse 프롬프트 통합
-        langfuse_prompt = self.langfuse.get_prompt("RAG_answer_prompt", label="latest")
-        prompt = ChatPromptTemplate(
-            langfuse_prompt.get_langchain_prompt(),
-            metadata={"langfuse_prompt": langfuse_prompt}
-        )
-        final_prompt = prompt.partial(user_prompt=self.current_chat_room.m_prompt)
-        
-
-        print("*" * 20 + "langfuse 프롬프트 가져오기" + "*" * 20)
-        print(langfuse_prompt.prompt[0]['content'])
-
-        similary = None
-        keywords = None
-
-        if self.ui.similarity_post_processor.isChecked() and self.ui.similarity_post_processor.isEnabled():
-            similary = float(self.current_chat_room.m_similarity)
-        if self.ui.keywords.isChecked() and self.ui.keywords.isEnabled():
-            keyword = self.current_chat_room.m_keyword
-            split_list = keyword.split(',')
-            keywords = [item.strip() for item in split_list]
-
-        rag_chain = generator.build_rag_chain(final_prompt, self.worker.copy_retriever(), similary, keywords, self.ui.reciprocal_rank_fusion.isChecked())
-
-        rag_history_chain = RunnableWithMessageHistory(
-            rag_chain,
-            self.get_session_history,
-            input_messages_key="question",
-            history_messages_key="history",
-        )
-
-        trace_id = self.langfuse.get_current_trace_id()
-        parent_span_id = self.langfuse.get_current_observation_id()
-
-        self.stream_worker = LLMStreamThread(question, self.local_llm, rag_history_chain, trace_id, parent_span_id)
-        self.stream_worker.text_chunk_received.connect(self.handle_rag_response)
-        self.stream_worker.stream_finished.connect(self.handle_rag_response_finished)
-        self.stream_worker.finished.connect(self.stream_worker.deleteLater)
-
-        report_msg = ""
-        report_msg += "Sended Message: " + question + "\n\n"
-        report_msg += "Ai Messages: \n"
-        self.js_streaming_header(report_msg)
-        
-        if self.stream_worker and self.stream_worker.isRunning():
-            print("아직 작업 중입니다.")
-        else:
-            # 새로 생성하거나 기존 게 끝난 걸 확인 후 실행
-            self.stream_worker.start()
-
-    def handle_rag_response(self, chunk):
-        try:
-            if self.isEnabled() == False:
-                self.setEnabled(True)
-
-            self.js_streaming_chunk(chunk)
-        except Exception as e:
-            print(f"{e}")
-
-
-    def handle_rag_response_finished(self):
-        if self.stream_worker:
-            self.stream_worker.deleteLater()
-            self.stream_worker = None
+    def on_embedding_success(self):
+        self.ui.progress_bar_doc.setValue(100)
+        print("서버 인메모리 임베딩 적재 완료")
 
     def set_web_view(self):
         self.ui.weather_board.setUrl(QUrl("http://localhost:8502"))
         self.ui.geospatial_board.setUrl(QUrl("http://localhost:8503"))
-        self.ui.experiment_txt.setUrl(QUrl("http://localhost:8504"))
-        
+        # chainlit결과 클립보드 복사 가능 설정
+        self.ui.experiment_txt.settings().setAttribute(
+            QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True
+        )
 
-    def GetStyleSheetTemplate(self):
-        return """
-        /* 1. QProgressDialog (다이얼로그 창 배경) */
-        QProgressDialog {
-            background-color: #000000; /* 검정 배경 */
-            border: 2px solid rgb(184, 247, 185); /* 얇은 테두리 */
-        }
-
-        /* 2. 내부 QLabel (메시지 텍스트) */
-        QProgressDialog QLabel {
-            color: rgb(184, 247, 185);
-            font-size: 11pt;
-            font-weight: bold;
-            padding: 5px;
-        }
-
-        /* 3. 내부 QProgressBar (전체 배경 및 테두리) */
-        QProgressDialog QProgressBar {
-            border: 1px solid rgb(184, 247, 185);
-            border-radius: 5px;
-            background-color: rgb(40, 40, 40);
-            text-align: center;
-            color: white;
-        }
-
-        /* 4. QProgressBar::chunk (채워지는 막대) */
-        QProgressDialog QProgressBar::chunk {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(50, 120, 50), stop:1 rgb(100,180,100));
-            border-radius: 2px;
-        }
-        """
-
-    def start_ais_llm_query(self, flag: bool, question, mmsi_list):
-        if self.llm_worker is not None: 
-            print("이전작업이 아직 실행중입니다.")
-            return
-                
-        trace_id = self.langfuse.get_current_trace_id()
-        parent_span_id = self.langfuse.get_current_observation_id()
-
-        self.llm_worker = GenerateAISReport(flag, self.local_llm, question, self.weather_data, mmsi_list, self.start_server_time, self.curr_server_time, trace_id, parent_span_id)
-
-        self.llm_worker.report_chunk_fin.connect(self.handle_ais_response)
-        self.llm_worker.report_finished.connect(self.handle_ais_finished)
-        self.llm_worker.report_error.connect(self.handle_ais_error)
-        self.llm_worker.finished.connect(self.llm_worker.deleteLater)
-
-        report_msg = ""
-        report_msg += "Sended Message: " + question + "\n\n"
-        report_msg += "Ai Messages: \n"
-        self.js_streaming_header(report_msg)
-
-        if self.llm_worker and self.llm_worker.isRunning():
-            print("아직 작업 중입니다.")
-        else:
-            # 새로 생성하거나 기존 게 끝난 걸 확인 후 실행
-            self.llm_worker.start()
-
-    def handle_ais_response(self, chunk):
-        if self.isEnabled() == False:
-            self.setEnabled(True)
-        self.js_streaming_chunk(chunk)
-
-    def handle_ais_finished(self):
-        if self.llm_worker:
-            self.llm_worker.deleteLater()
-            self.llm_worker = None
-
-    def handle_ais_error(self, msg):
-        if self.isEnabled() == False:
-            self.setEnabled(True)
-        QMessageBox.critical(self, "오류", f"{msg}")
-            
-    def handle_error(self, msg):
-        if self.isEnabled() == False:
-            self.setEnabled(True)
-
-        QMessageBox.critical(self, "오류", f"{msg}")
-
-    def js_streaming(self, response):
-        words = response.split(' ')
-        word_buffer = []
-
-        for i, word in enumerate(words):
-            word_buffer.append(word + " ")
-            if len(word_buffer) >= 10 or i == len(words) - 1:
-                combined_chunk = "".join(word_buffer)
-                
-                # JS에 전달 (이제 단어 하나가 아니라 10단어 뭉치 전달)
-                safe_chunk = combined_chunk.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
-                print(safe_chunk)
-                self.ui.experiment_txt.page().runJavaScript(f"appendText(`{safe_chunk}`)")
-                
-                word_buffer = [] # 버퍼 비우기
-
-            time.sleep(0.01)
-            QCoreApplication.processEvents()
-
-    def js_streaming_header(self, header):
-        safe_chunk = json.dumps(header)
-        self.ui.experiment_txt.page().runJavaScript(f"appendText({safe_chunk})")
-
-    def js_streaming_chunk(self, chunk):
-        if self.isEnabled() == False:
-            self.setEnabled(True)
-
-        try:
-            safe_chunk = json.dumps(chunk)
-            self.ui.experiment_txt.page().runJavaScript(f"appendText({safe_chunk})")
-        except Exception as e:
-            print(f"{e}")
-        
     def connect_server(self):
         ip = self.ui.ip_input.text()
         try:
@@ -1148,7 +762,7 @@ def start_streamlit():
     cmd = [uv_bin, "run", "streamlit", "run", "./src/my_battlefield_crew/map/simulation_map.py", "--server.port=8501"]
     cmd2 = [uv_bin, "run", "streamlit", "run", "./src/my_battlefield_crew/dashboard/weather_board.py", "--server.headless=True", "--server.port=8502"]
     cmd3 = [uv_bin, "run", "streamlit", "run", "./src/my_battlefield_crew/dashboard/geo_dashboard.py", "--server.headless=True", "--server.port=8503"]
-    cmd4 = [uv_bin, "run", "chainlit", "run", "./src/my_battlefield_crew/chainlit_app/chat_main.py", "-w", "-h", "--port", "8504"]
+    cmd4 = [uv_bin, "run", "chainlit", "run", "./src/my_battlefield_crew/chainlit_app/chat_main.py", "-h", "--port", "8504"]
 
     sitmap_streamlit_process = subprocess.Popen(cmd)
     print("실시간 상황도 streamlit서버가 백그라운드에서 시작되었습니다.")

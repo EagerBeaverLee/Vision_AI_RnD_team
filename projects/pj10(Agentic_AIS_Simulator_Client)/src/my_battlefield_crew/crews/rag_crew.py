@@ -42,7 +42,7 @@ class RAGCrew:
 
     def __init__(self, context: SimulationContext):
         self.context = context
-        self.active_tool = [search_document_tool(ui_handler=self.context.ui_handler, config=self.context.rag_config)]
+        self.active_tool = [search_document_tool(context=context)]
         
 
     @agent

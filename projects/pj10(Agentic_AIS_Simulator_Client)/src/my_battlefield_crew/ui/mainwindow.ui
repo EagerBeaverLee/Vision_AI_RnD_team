@@ -711,10 +711,7 @@ QSlider::sub-page {
         <attribute name="title">
          <string>RAG</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_16" stretch="6,12,5,1,1">
-         <property name="sizeConstraint">
-          <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
-         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_4" stretch="7,16,5,1,1">
          <item>
           <widget class="QGroupBox" name="groupBox_6">
            <property name="sizePolicy">
@@ -2395,7 +2392,7 @@ QCheckBox::disabled {
           </widget>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,6,1">
+          <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,6,1,0">
            <property name="spacing">
             <number>4</number>
            </property>
@@ -2421,7 +2418,7 @@ QCheckBox::disabled {
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="edit_path">
+            <widget class="QLabel" name="edit_select_path">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -2439,7 +2436,7 @@ QCheckBox::disabled {
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="Load_btn">
+            <widget class="QPushButton" name="btn_select_doc">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>1</horstretch>
@@ -2475,6 +2472,43 @@ QPushButton:pressed {
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QPushButton" name="btn_cancel_embed">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>1</horstretch>
+               <verstretch>1</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton {
+	color: rgb(184, 247, 185);
+    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */
+    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */
+}
+QPushButton:hover {
+	color: rgb(184, 247, 185);
+    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}
+
+QPushButton:pressed {
+	color: rgb(184, 247, 185);
+    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */
+    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */
+}</string>
+             </property>
+             <property name="text">
+              <string>cancel</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+             <property name="flat">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>
@@ -2501,7 +2535,7 @@ QPushButton:pressed {
             </widget>
            </item>
            <item>
-            <widget class="QProgressBar" name="Loading_bar">
+            <widget class="QProgressBar" name="progress_bar_doc">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>

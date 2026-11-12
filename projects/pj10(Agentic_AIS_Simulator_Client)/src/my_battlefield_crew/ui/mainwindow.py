@@ -466,9 +466,8 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.RAG.sizePolicy().hasHeightForWidth())
         self.RAG.setSizePolicy(sizePolicy)
         self.RAG.setObjectName("RAG")
-        self.verticalLayout_16 = QtWidgets.QVBoxLayout(self.RAG)
-        self.verticalLayout_16.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
-        self.verticalLayout_16.setObjectName("verticalLayout_16")
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.RAG)
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.groupBox_6 = QtWidgets.QGroupBox(parent=self.RAG)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -585,7 +584,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_6.setStretch(1, 1)
         self.verticalLayout_6.setStretch(2, 1)
         self.verticalLayout_6.setStretch(3, 1)
-        self.verticalLayout_16.addWidget(self.groupBox_6)
+        self.verticalLayout_4.addWidget(self.groupBox_6)
         self.groupBox_5 = QtWidgets.QGroupBox(parent=self.RAG)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -1344,7 +1343,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_13.setStretch(1, 2)
         self.horizontalLayout_13.setStretch(2, 5)
         self.verticalLayout_5.addLayout(self.horizontalLayout_13)
-        self.verticalLayout_16.addWidget(self.groupBox_5)
+        self.verticalLayout_4.addWidget(self.groupBox_5)
         self.groupBox_7 = QtWidgets.QGroupBox(parent=self.RAG)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -1568,7 +1567,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_12.setStretch(0, 1)
         self.verticalLayout_12.setStretch(1, 1)
         self.verticalLayout_12.setStretch(2, 1)
-        self.verticalLayout_16.addWidget(self.groupBox_7)
+        self.verticalLayout_4.addWidget(self.groupBox_7)
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.horizontalLayout_5.setSpacing(4)
@@ -1584,25 +1583,25 @@ class Ui_MainWindow(object):
 "}")
         self.label_6.setObjectName("label_6")
         self.horizontalLayout_5.addWidget(self.label_6)
-        self.edit_path = QtWidgets.QLabel(parent=self.RAG)
+        self.edit_select_path = QtWidgets.QLabel(parent=self.RAG)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.edit_path.sizePolicy().hasHeightForWidth())
-        self.edit_path.setSizePolicy(sizePolicy)
-        self.edit_path.setStyleSheet("QLabel {\n"
+        sizePolicy.setHeightForWidth(self.edit_select_path.sizePolicy().hasHeightForWidth())
+        self.edit_select_path.setSizePolicy(sizePolicy)
+        self.edit_select_path.setStyleSheet("QLabel {\n"
 "    color: rgb(166, 217, 171);\n"
 "}")
-        self.edit_path.setText("")
-        self.edit_path.setObjectName("edit_path")
-        self.horizontalLayout_5.addWidget(self.edit_path)
-        self.Load_btn = QtWidgets.QPushButton(parent=self.RAG)
+        self.edit_select_path.setText("")
+        self.edit_select_path.setObjectName("edit_select_path")
+        self.horizontalLayout_5.addWidget(self.edit_select_path)
+        self.btn_select_doc = QtWidgets.QPushButton(parent=self.RAG)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(1)
-        sizePolicy.setHeightForWidth(self.Load_btn.sizePolicy().hasHeightForWidth())
-        self.Load_btn.setSizePolicy(sizePolicy)
-        self.Load_btn.setStyleSheet("QPushButton {\n"
+        sizePolicy.setHeightForWidth(self.btn_select_doc.sizePolicy().hasHeightForWidth())
+        self.btn_select_doc.setSizePolicy(sizePolicy)
+        self.btn_select_doc.setStyleSheet("QPushButton {\n"
 "    color: rgb(184, 247, 185);\n"
 "    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
 "    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
@@ -1618,14 +1617,40 @@ class Ui_MainWindow(object):
 "    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
 "    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
 "}")
-        self.Load_btn.setAutoDefault(False)
-        self.Load_btn.setFlat(False)
-        self.Load_btn.setObjectName("Load_btn")
-        self.horizontalLayout_5.addWidget(self.Load_btn)
+        self.btn_select_doc.setAutoDefault(False)
+        self.btn_select_doc.setFlat(False)
+        self.btn_select_doc.setObjectName("btn_select_doc")
+        self.horizontalLayout_5.addWidget(self.btn_select_doc)
+        self.btn_cancel_embed = QtWidgets.QPushButton(parent=self.RAG)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(1)
+        sizePolicy.setVerticalStretch(1)
+        sizePolicy.setHeightForWidth(self.btn_cancel_embed.sizePolicy().hasHeightForWidth())
+        self.btn_cancel_embed.setSizePolicy(sizePolicy)
+        self.btn_cancel_embed.setStyleSheet("QPushButton {\n"
+"    color: rgb(184, 247, 185);\n"
+"    border: 1px solid rgb(184, 247, 185); /* 원하는 RGB 색상으로 변경 */\n"
+"    border-radius: 5px;                  /* 모서리를 둥글게 (선택 사항) */\n"
+"}\n"
+"QPushButton:hover {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(50, 120, 50); /* 마우스 올렸을 때 더 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    color: rgb(184, 247, 185);\n"
+"    background-color: rgb(100, 180, 100); /* 버튼 눌렀을 때 가장 진한 색 */\n"
+"    border: 1px solid rgb(184, 247, 185); /* 테두리도 함께 진하게 (선택 사항) */\n"
+"}")
+        self.btn_cancel_embed.setAutoDefault(False)
+        self.btn_cancel_embed.setFlat(False)
+        self.btn_cancel_embed.setObjectName("btn_cancel_embed")
+        self.horizontalLayout_5.addWidget(self.btn_cancel_embed)
         self.horizontalLayout_5.setStretch(0, 1)
         self.horizontalLayout_5.setStretch(1, 6)
         self.horizontalLayout_5.setStretch(2, 1)
-        self.verticalLayout_16.addLayout(self.horizontalLayout_5)
+        self.verticalLayout_4.addLayout(self.horizontalLayout_5)
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_6.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
@@ -1640,13 +1665,13 @@ class Ui_MainWindow(object):
 "}")
         self.label_7.setObjectName("label_7")
         self.horizontalLayout_6.addWidget(self.label_7)
-        self.Loading_bar = QtWidgets.QProgressBar(parent=self.RAG)
+        self.progress_bar_doc = QtWidgets.QProgressBar(parent=self.RAG)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.Loading_bar.sizePolicy().hasHeightForWidth())
-        self.Loading_bar.setSizePolicy(sizePolicy)
-        self.Loading_bar.setStyleSheet("QProgressBar {\n"
+        sizePolicy.setHeightForWidth(self.progress_bar_doc.sizePolicy().hasHeightForWidth())
+        self.progress_bar_doc.setSizePolicy(sizePolicy)
+        self.progress_bar_doc.setStyleSheet("QProgressBar {\n"
 "    border: 1px solid rgb(184, 247, 185);\n"
 "    border-radius: 5px;\n"
 "    background-color: rgb(40, 40, 40);\n"
@@ -1657,17 +1682,17 @@ class Ui_MainWindow(object):
 "    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(50, 120, 50), stop:1 rgb(100,180,100));\n"
 "    border-radius: 2px;\n"
 "}")
-        self.Loading_bar.setProperty("value", 0)
-        self.Loading_bar.setObjectName("Loading_bar")
-        self.horizontalLayout_6.addWidget(self.Loading_bar)
+        self.progress_bar_doc.setProperty("value", 0)
+        self.progress_bar_doc.setObjectName("progress_bar_doc")
+        self.horizontalLayout_6.addWidget(self.progress_bar_doc)
         self.horizontalLayout_6.setStretch(0, 1)
         self.horizontalLayout_6.setStretch(1, 4)
-        self.verticalLayout_16.addLayout(self.horizontalLayout_6)
-        self.verticalLayout_16.setStretch(0, 6)
-        self.verticalLayout_16.setStretch(1, 12)
-        self.verticalLayout_16.setStretch(2, 5)
-        self.verticalLayout_16.setStretch(3, 1)
-        self.verticalLayout_16.setStretch(4, 1)
+        self.verticalLayout_4.addLayout(self.horizontalLayout_6)
+        self.verticalLayout_4.setStretch(0, 7)
+        self.verticalLayout_4.setStretch(1, 16)
+        self.verticalLayout_4.setStretch(2, 5)
+        self.verticalLayout_4.setStretch(3, 1)
+        self.verticalLayout_4.setStretch(4, 1)
         self.tabWidget1.addTab(self.RAG, "")
         self.LLM = QtWidgets.QWidget()
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Preferred)
@@ -1758,7 +1783,8 @@ class Ui_MainWindow(object):
         self.chk_rrf.setToolTip(_translate("MainWindow", "only Multiple Questions Generator can use this function"))
         self.chk_rrf.setText(_translate("MainWindow", "Reciprocal Rank Fusion"))
         self.label_6.setText(_translate("MainWindow", "Path: "))
-        self.Load_btn.setText(_translate("MainWindow", "Load"))
+        self.btn_select_doc.setText(_translate("MainWindow", "Load"))
+        self.btn_cancel_embed.setText(_translate("MainWindow", "cancel"))
         self.label_7.setText(_translate("MainWindow", "Loading"))
         self.tabWidget1.setTabText(self.tabWidget1.indexOf(self.RAG), _translate("MainWindow", "RAG"))
         self.tabWidget1.setTabText(self.tabWidget1.indexOf(self.LLM), _translate("MainWindow", "LLM참모"))

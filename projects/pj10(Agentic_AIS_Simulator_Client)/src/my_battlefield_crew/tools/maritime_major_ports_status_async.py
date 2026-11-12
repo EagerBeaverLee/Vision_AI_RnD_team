@@ -17,7 +17,7 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
         context.ui_handler.on_tool_progress("주요 항만별 입출항", "기동 중인 선박들의 주요 항구별 입출항(출발/도착) 및 정박 현황 정보를 반환합니다")
     
     stop_temp_df = compress_ship_data_duckdb_further(
-        db_path=context.db_path,
+        db_path=context.realtime_db_path,
         table_name="ship_logs",
         min_time=context.start_time,
         max_time=context.end_time
