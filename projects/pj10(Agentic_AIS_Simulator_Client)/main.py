@@ -284,7 +284,7 @@ class Window(QMainWindow):
 
         # 2. 서버 포트 감시 타이머 시작 (0.5초마다 체크)
         self.retry_count = 0
-        self.max_retries = 30  # 최대 15초 대기 (0.5s * 30)
+        self.max_retries = 50  # 최대 15초 대기 (0.5s * 30)
 
         self.server_check_timer = QTimer(self)
         self.server_check_timer.setInterval(500)

@@ -8,6 +8,123 @@ from shapely.geometry import Point
 from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 from my_battlefield_crew.engine.preprocessor import compress_ship_data_duckdb_further
 
+def generate_ship_table_widget(ship_data_dict: dict[str, pd.DataFrame]) -> str:
+    """ship_data_dict를 받아 순수 HTML/JS로 동작하는 반응형 테이블 위젯을 생성하고
+
+    메모리 라우트 URL을 반환합니다.
+    """
+    # 1. 각 상태별 데이터프레임을 JSON 직렬화가 가능한 dict 형태로 변환
+    # serialized_data = {}
+    # for status, df in ship_data_dict.items():
+    #     # 필요한 주요 컬럼만 추출 (예: ShipName, mmsi, speed, type 등)
+    #     cols = [c for c in ["ShipName", "mmsi", "speed", "type"] if c in df.columns]
+    #     target_df = df[cols] if cols else df
+    #     serialized_data[status] = target_df.to_dict(orient="records")
+
+    json_payload = json.dumps(ship_data_dict, ensure_ascii=False)
+
+    # 2. 외부 라이브러리(CDN) 전혀 없는 100% 오프라인 다크테마 HTML/JS 조립
+    html_content = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+    body {{
+        margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: #0E1117; color: #E2E8F0; font-size: 13px;
+    }}
+    .header {{ font-weight: bold; font-size: 14px; margin-bottom: 10px; color: #38BDF8; }}
+    .controls {{ display: flex; gap: 12px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }}
+    .radio-group {{ display: flex; gap: 10px; background: #1E293B; padding: 4px 8px; border-radius: 6px; }}
+    .radio-label {{ cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 12px; }}
+    .search-input {{
+        flex: 1; min-width: 160px; background: #1E293B; border: 1px solid #334155;
+        color: #fff; padding: 5px 8px; border-radius: 6px; font-size: 12px; outline: none;
+    }}
+    .search-input:focus {{ border-color: #38BDF8; }}
+    .table-container {{
+        max-height: 180px; overflow-y: auto; border: 1px solid #334155; border-radius: 6px;
+    }}
+    table {{ width: 100%; border-collapse: collapse; text-align: left; }}
+    th {{ background: #1E293B; padding: 8px; position: sticky; top: 0; font-weight: 600; color: #94A3B8; font-size: 12px; }}
+    td {{ padding: 6px 8px; border-bottom: 1px solid #1E293B; font-size: 12px; }}
+    tr:hover {{ background-color: #1E293B; }}
+    /* 스크롤바 디자인 */
+    ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
+    ::-webkit-scrollbar-thumb {{ background: #475569; border-radius: 3px; }}
+</style>
+</head>
+<body>
+    <div class="header">📋 함정 상세 목록</div>
+    <div class="controls">
+        <div class="radio-group">
+            <label class="radio-label"><input type="radio" name="status" value="순항" checked onchange="updateTable()"> 순항</label>
+            <label class="radio-label"><input type="radio" name="status" value="정박" onchange="updateTable()"> 정박</label>
+            <label class="radio-label"><input type="radio" name="status" value="저속운항" onchange="updateTable()"> 저속운항</label>
+        </div>
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 함정명 또는 MMSI 검색" oninput="updateTable()">
+    </div>
+    <div class="table-container">
+        <table id="shipTable">
+            <thead>
+                <tr id="tableHeader"></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+<script>
+    const rawData = {json_payload};
+
+    function updateTable() {{
+        const status = document.querySelector('input[name="status"]:checked').value;
+        const query = document.getElementById('searchInput').value.trim().toLowerCase();
+        const records = rawData[status] || [];
+
+        // 1. 검색어 필터링 (ShipName or MMSI)
+        const filtered = records.filter(row => {{
+            const name = String(row.ShipName || '').toLowerCase();
+            const mmsi = String(row.mmsi || '').toLowerCase();
+            return name.includes(query) || mmsi.includes(query);
+        }});
+
+        // 2. 헤더 구성
+        const headerTr = document.getElementById('tableHeader');
+        headerTr.innerHTML = '';
+        if (records.length > 0) {{
+            Object.keys(records[0]).forEach(key => {{
+                const th = document.createElement('th');
+                th.textContent = key;
+                headerTr.appendChild(th);
+            }});
+        }}
+
+        // 3. 본문 렌더링
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        if (filtered.length === 0) {{
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#64748B; padding:16px;">조회된 데이터가 없습니다.</td></tr>';
+            return;
+        }}
+
+        filtered.forEach(row => {{
+            const tr = document.createElement('tr');
+            Object.values(row).forEach(val => {{
+                const td = document.createElement('td');
+                td.textContent = (val !== null && val !== undefined) ? val : '-';
+                tr.appendChild(td);
+            }});
+            tbody.appendChild(tr);
+        }});
+    }}
+
+    // 초기 실행
+    updateTable();
+</script>
+</body>
+</html>"""
+    
+    return html_content
 
 def _run_ship_status_extraction(context: SimulationContext) -> str:
     if context.ui_handler:
@@ -17,7 +134,7 @@ def _run_ship_status_extraction(context: SimulationContext) -> str:
     shiptype_count_summary = ais_gdf.groupby('ShipType')['mmsi'].nunique().sort_values(ascending=False)
     data_dict_shiptype = shiptype_count_summary.to_dict()    
 
-    stop_temp_df = compress_ship_data_duckdb_further(db_path=context.realtime_db_path, table_name="ship_logs", min_time=context.start_time, max_time=context.end_time)
+    stop_temp_df = compress_ship_data_duckdb_further(db_path=context.realtime_db_path, table_name="ship_logs", min_time=context.time.start_time, max_time=context.time.end_time)
 
     # 1. DuckDB 연결 (메모리 모드) 및 공간 확장 로드
     con = duckdb.connect(database=':memory:')
@@ -40,8 +157,8 @@ def _run_ship_status_extraction(context: SimulationContext) -> str:
             SELECT ShipName, mmsi, status
             FROM latest_ships
             WHERE rn = 1
-            AND CAST(end_time AS TIMESTAMP) <= CAST('{context.end_time}' AS TIMESTAMP)
-            AND CAST(end_time AS TIMESTAMP) >= CAST('{context.end_time}' AS TIMESTAMP) - INTERVAL 1 HOUR
+            AND CAST(end_time AS TIMESTAMP) <= CAST('{context.time.end_time}' AS TIMESTAMP)
+            AND CAST(end_time AS TIMESTAMP) >= CAST('{context.time.end_time}' AS TIMESTAMP) - INTERVAL 1 HOUR
         )
         SELECT 
             ShipName, mmsi, status,
@@ -67,6 +184,17 @@ def _run_ship_status_extraction(context: SimulationContext) -> str:
     moving_ships = to_json_custom(result_df, 'moving')
     stop_ships = to_json_custom(result_df, 'stop')
     slow_ships = to_json_custom(result_df, 'slow')
+
+    render_map_dict = {
+        "순항": moving_ships,
+        "정박": stop_ships,
+        "저속운항": slow_ships,
+    }
+
+    html_content = generate_ship_table_widget(render_map_dict)
+
+    # 내부적으로 map_store 저장 + iframe 블록 조립 완료
+    context.attach_table_block(key="ship_voyage_status", html_content=html_content)
 
     final_report = {
         "ship_types": data_dict_shiptype,
@@ -94,90 +222,3 @@ def ship_status_extraction(context: SimulationContext):
         output_json = await asyncio.to_thread(_run_ship_status_extraction, context=context)
         return output_json
     return _ship_status_extraction
-
-
-#####################
-## Original_backup ##
-#####################
-
-# @tool('Maritime Ships Voyage Status Analyzer')
-# def ship_status_extraction() -> str:
-#     """
-#     현재 시점 기준 선박들의 상태를 추출 하여 이동/통과, 저속 운항, 정박/대기 카테고리로 분류하여 분석합니다.
-#     선박들의 현재 상태를 묻는 질문이나 선반 유형별 통계 관련 질문이 들어올 때 이 도구를 사용하세요.
-#     """
-#     current_dir = os.path.dirname(os.path.abspath(__file__))
-#     parent_root = os.path.dirname(current_dir)
-
-#     ais_path = os.path.join(parent_root, "cache","filtered_ais.parquet")
-#     preprocessed_path = os.path.join(parent_root, "cache", "ais_compressed_step2.parquet")
-
-#     if not os.path.exists(ais_path) or not os.path.exists(preprocessed_path):
-#         return json.dumps({"error": "선행 분석 데이터가 없습니다. 파이프라인을 돌려주세요"})
-
-#     ais = gpd.read_parquet(ais_path)
-#     df = pd.read_parquet(preprocessed_path)
-
-#     # if not isinstance(df, gpd.GeoDataFrame):
-#     #     geometry = [Point(xy) for xy in zip(df['lon'], df['lat'])]
-#     #     df = gpd.GeoDataFrame(df, geometry=geometry, crs="EPSG:4326")
-    
-#     #선박 유형별 통계 데이터 추출
-#     shiptype_count_summary = ais.groupby('ShipType')['mmsi'].nunique().sort_values(ascending=False)
-#     data_dict_shiptype = shiptype_count_summary.to_dict()
-    
-#     # 선박 이동 상태별 요약을 위한 전처리
-#     df['end_time'] = pd.to_datetime(df['end_time'], utc=True)
-#     end_time = df['end_time'].max()
-#     end_time = pd.to_datetime(end_time, utc=True) 
-#     df = df.sort_values(['ShipName','mmsi'])
-#     df = df.groupby('ShipName').tail(1)
-
-#     #이동 통과 filtering
-#     moving_condition = (
-#         ((end_time - df['end_time']) <= pd.Timedelta(hours=1)) &
-#         (df['status'].str.contains("이동/통과"))
-#     )
-
-#     #정박/대기  filtering
-#     stop_condition = (
-#         ((end_time - df['end_time']) <= pd.Timedelta(hours=1)) &
-#         (df['status'].str.contains("정박/대기"))
-#     )
-
-#     #저속운항 filtering 
-#     slow_moving_condition = (
-#         ((end_time - df['end_time']) <= pd.Timedelta(hours=1)) &
-#         (df['status'].str.contains("저속 운항"))
-#     )
-#     #선박 유형별 통계 데이터 json 변환 
-#     # shiptype_json = json.dumps(data_dict_shiptype, ensure_ascii=False, indent=4)
-    
-#     #이동/통과 중인 선박 리스트 추출 및 json변환
-#     moving_df = df[moving_condition]
-#     moving_ships = moving_df[['ShipName','mmsi','status']].drop_duplicates().to_dict(orient='records')
-#     # moving_ships_json = json.dumps(moving_ships, ensure_ascii=False, indent=4)
-
-#     #정박/대기 중인 선박 리스트 추출 및 json변환
-#     stop_df = df[stop_condition]
-#     stop_ships = stop_df[['ShipName','mmsi','status']].drop_duplicates().to_dict(orient='records')
-#     # stop_ships_json = json.dumps(stop_ships, ensure_ascii=False, indent=4)
-
-#     #정박/대기 중인 선박 리스트 추출 및 json변환
-#     slow_df = df[slow_moving_condition]
-#     slow_ships = slow_df[['ShipName','mmsi','status']].drop_duplicates().to_dict(orient='records')
-#     # slow_ships_json = json.dumps(slow_ships, ensure_ascii=False, indent=4)
-    
-#     final_report = {
-#         "ship_types": data_dict_shiptype,
-#         "moving_ships": moving_ships,
-#         "stop_ships": stop_ships, 
-#         "slow_ships": slow_ships
-#     }
-#     # print(json.dumps(final_report, ensure_ascii=False, indent=4) ) #temp
-
-#     return json.dumps(final_report, ensure_ascii=False, indent=4)
-
-# if __name__ == "__main__":
-    # 테스트를 위해 원본 파일 경로와 파라미터를 수동으로 지정하여 실행
-    # ship_status_extraction()

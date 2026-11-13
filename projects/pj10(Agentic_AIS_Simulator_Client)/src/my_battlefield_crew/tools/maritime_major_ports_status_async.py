@@ -10,7 +10,94 @@ from datetime import timedelta, datetime
 from crewai.tools import tool
 from my_battlefield_crew.engine.preprocessor import compress_ship_data_duckdb_further
 from my_battlefield_crew.chainlit_app.schemas import SimulationContext
+import holoviews as hv
+import hvplot.pandas
+from bokeh.resources import INLINE
+from bokeh.embed import file_html
 
+def render_major_ports_map(i, single_port_gdf, p_anchored, p_departures, p_arrivals, context: SimulationContext, port_html_list):
+    # 해당 항구 범위 계산 (줌인용) ---
+    bounds = single_port_gdf.geometry.total_bounds
+    margin = 0.05  # 개별 항구 줌인이므로 마진을 작게 설정
+    p_xlim = (bounds[0] - margin, bounds[2] + margin)
+    p_ylim = (bounds[1] - margin, bounds[3] + margin)
+
+    # --- 개별 항구 레이어 생성 ---
+    layers = []
+    renderer = hv.renderer('bokeh')
+
+    try:
+        # 배경 지도 및 항구 폴리곤 (가장 아래)
+        layers.append(single_port_gdf.hvplot(
+            # title=f"{port_name} 현황",
+            color='red',
+            alpha=0.2,
+            geo=True,
+            tiles='EsriImagery',
+            xlim=p_xlim,
+            ylim=p_ylim, 
+            frame_width=300,
+            frame_height=300
+        ))
+    except Exception as e:
+        import traceback
+        print(f"[Port {i}] single_port_gdf 렌더링 오류:")
+        traceback.print_exc()
+    
+    # 출발 항적
+    if p_departures:
+        try:
+            layers.append(mpd.TrajectoryCollection(p_departures).hvplot(
+                color="blue", label="출발", line_width=2, tiles='EsriImagery'
+            ))
+        except Exception as e:
+            print(f"[Port {i}] p_departures 오류: {e}")
+    
+    # 도착 항적 (tiles 제거, geo=True 명시)
+    if p_arrivals:
+        try:
+            layers.append(mpd.TrajectoryCollection(p_arrivals).hvplot(
+                color="orange", label="도착", line_width=2, tiles='EsriImagery'
+            ))
+        except Exception as e:
+            print(f"[Port {i}] p_arrivals 오류: {e}")
+    
+    # 정박 포인트
+    if not p_anchored.empty:
+        try:
+            layers.append(p_anchored.hvplot.points(
+                color='red', label="정박/대기", geo=True, size=5
+            ))
+        except Exception as e:
+            print(f"[Port {i}] p_anchored 오류: {e}")
+
+    if not layers:
+        print(f"[Port {i}] 렌더링 가능한 레이어가 없어 지도를 건너뜁니다.")
+        return
+
+    res_plot = hv.Overlay(layers).opts(
+        xaxis=None, 
+        yaxis=None, 
+        show_legend=False,
+        bgcolor='#0E1117',
+        # 에러가 났던 border_fill_color 대신 hooks를 사용하여 Bokeh 모델을 직접 수정
+        hooks=[lambda plot, element: (
+            setattr(plot.state, 'border_fill_color', '#0E1117'),
+            setattr(plot.state.title, 'text_color', 'white')
+        )]
+    )
+
+    plot_state = renderer.get_plot(res_plot).state
+
+    # 레이아웃 최적화
+    plot_state.sizing_mode = 'stretch_both'
+
+    # Bokeh의 file_html을 사용하여 HTML 문자열 생성
+    html_content = file_html(plot_state, INLINE, f"Port {i}")
+
+    # --- 항구별 오버레이 합체 후 리스트에 저장 ---
+    port_html_list.append(html_content)
+    
 
 def _run_major_ports_status_analysis(context: SimulationContext) -> str:
     if context.ui_handler:
@@ -19,8 +106,8 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
     stop_temp_df = compress_ship_data_duckdb_further(
         db_path=context.realtime_db_path,
         table_name="ship_logs",
-        min_time=context.start_time,
-        max_time=context.end_time
+        min_time=context.time.start_time,
+        max_time=context.time.end_time
     )
     # 1. DuckDB 연결 (메모리 모드) 및 공간 확장 로드
     con = duckdb.connect(database=':memory:')
@@ -42,8 +129,8 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
         FROM latest_status
         WHERE rn = 1  -- 각 mmsi별 가장 최신 행만 선택
         AND status LIKE '%정박/대기%'
-        AND CAST(end_time AS TIMESTAMP) <= CAST('{context.curr_time}' AS TIMESTAMP)
-        AND CAST(end_time AS TIMESTAMP) >= CAST('{context.curr_time}' AS TIMESTAMP) - INTERVAL 1 HOUR
+        AND CAST(end_time AS TIMESTAMP) <= CAST('{context.time.curr_time}' AS TIMESTAMP)
+        AND CAST(end_time AS TIMESTAMP) >= CAST('{context.time.curr_time}' AS TIMESTAMP) - INTERVAL 1 HOUR
     """
 
     # 4. 결과 실행 (Pandas DataFrame으로 반환)
@@ -63,8 +150,8 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
     report_data = {
         "report_info": {
             "analysis_period": {
-                "start": str(context.start_time),
-                "end": str(context.end_time)
+                "start": str(context.time.start_time),
+                "end": str(context.time.end_time)
             },
             "generated_at": datetime.now().isoformat(),
             "target_ports": target_ports
@@ -78,9 +165,10 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
     def is_entering(traj, poly):
         return not traj.get_start_location().intersects(poly) and  traj.get_end_location().intersects(poly)
 
+    port_html_list = []
 
-    for port_name in target_ports:
-        # 1. 데이터 필터링 (기존 로직 동일)
+    for i, port_name in enumerate(target_ports):
+        # 데이터 필터링 (기존 로직 동일)
         single_port_gdf = context.processing_list['port_gdf'][context.processing_list['port_gdf']['objnam'] == port_name]
         if single_port_gdf.empty: continue
         
@@ -97,7 +185,7 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
         else:
             p_anchored = anchored_ships_gdf
 
-        # 2. 항구별 JSON 구조 생성
+        # 항구별 JSON 구조 생성
         port_entry = {
             "port_name": port_name,
             "summary": {
@@ -133,6 +221,11 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
             }
         }
         report_data["ports_analysis"].append(port_entry)
+
+        render_major_ports_map(i, single_port_gdf, p_anchored, p_departures, p_arrivals, context, port_html_list)
+
+    # 내부적으로 map_store 저장 + iframe 블록 조립 완료
+    context.attach_bokeh_map_grid(key="port_activities", html_contents=port_html_list)
 
     if context.ui_handler:
         context.ui_handler.on_tool_complete("주요 항만별 입출항")

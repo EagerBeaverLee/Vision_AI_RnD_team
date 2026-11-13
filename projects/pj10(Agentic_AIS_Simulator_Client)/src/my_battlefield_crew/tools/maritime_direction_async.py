@@ -13,7 +13,7 @@ def _run_direction_analysis(context: SimulationContext) -> str:
     if context.ui_handler:
         context.ui_handler.on_tool_progress("주요 방향 분석", "관심 해역에서 선박들의 주요 이동향 정보를 반환합니다")
     
-    comp_ship_data = compress_ship_data_duckdb_further(db_path=context.realtime_db_path, table_name="ship_logs", min_time=context.start_time, max_time=context.end_time)
+    comp_ship_data = compress_ship_data_duckdb_further(db_path=context.realtime_db_path, table_name="ship_logs", min_time=context.time.start_time, max_time=context.time.end_time)
     
         # 1. DuckDB 연결 (메모리 모드) 및 공간 확장 로드
     con = duckdb.connect(database=':memory:')

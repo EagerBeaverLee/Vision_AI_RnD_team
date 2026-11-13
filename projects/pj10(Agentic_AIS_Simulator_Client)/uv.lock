@@ -1523,19 +1523,56 @@ wheels = [
 
 [[package]]
 name = "geoviews"
-version = "1.8.1"
+version = "1.15.1"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version == '3.11.*' and sys_platform == 'win32'",
+    "python_full_version == '3.11.*' and sys_platform == 'emscripten'",
+    "python_full_version == '3.11.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.11'",
+]
 dependencies = [
     { name = "bokeh", version = "3.9.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "bokeh", version = "3.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "cartopy" },
-    { name = "holoviews" },
-    { name = "numpy" },
-    { name = "param" },
+    { name = "cartopy", marker = "python_full_version < '3.12'" },
+    { name = "holoviews", marker = "python_full_version < '3.12'" },
+    { name = "numpy", marker = "python_full_version < '3.12'" },
+    { name = "packaging", marker = "python_full_version < '3.12'" },
+    { name = "panel", version = "1.9.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "param", marker = "python_full_version < '3.12'" },
+    { name = "pyproj", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pyproj", version = "3.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
+    { name = "shapely", marker = "python_full_version < '3.12'" },
+    { name = "xyzservices", marker = "python_full_version < '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c1/e0/9443fc5564ba0bba03608340ff193160b5625efc087b64cbe52197d21b51/geoviews-1.8.1.tar.gz", hash = "sha256:7cf0c43b01b4aa623520a233d5f82e58b69febd58e22af328128f699f1c745fe", size = 782359, upload-time = "2020-03-30T19:17:22.839Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/dc/e74f5997e41933aa30aea5786c407a10e1cf169bfdceeb4173111c02d5de/geoviews-1.15.1.tar.gz", hash = "sha256:c72097ef4f24895c46f95834e5c19ac185ea1c34fd610f0f956421ba515d4aad", size = 507037, upload-time = "2026-01-13T17:34:38.197Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fe/75/e12fe3397a22bdbb7bdbc5a1ad2571677653fb34b06948b05835627b690d/geoviews-1.8.1-py2.py3-none-any.whl", hash = "sha256:bc944fde2c8ce8442d3a1c6a57c8f3958cdf5cdc1fbf12547a3a5fa86b079439", size = 500522, upload-time = "2020-03-30T19:17:21.279Z" },
+    { url = "https://files.pythonhosted.org/packages/63/90/d0323acc02966204035bb5bcaf7385d5a1f2b5359410eb6a09f2ce380f94/geoviews-1.15.1-py3-none-any.whl", hash = "sha256:f369eb94907476e9233abe77bdd6b92340872a20845df7da0341f9a4a13309c8", size = 574718, upload-time = "2026-01-13T17:34:36.562Z" },
+]
+
+[[package]]
+name = "geoviews"
+version = "1.16.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.12' and sys_platform == 'win32'",
+    "python_full_version >= '3.12' and sys_platform == 'emscripten'",
+    "python_full_version >= '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
+dependencies = [
+    { name = "bokeh", version = "3.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "cartopy", marker = "python_full_version >= '3.12'" },
+    { name = "holoviews", marker = "python_full_version >= '3.12'" },
+    { name = "numpy", marker = "python_full_version >= '3.12'" },
+    { name = "packaging", marker = "python_full_version >= '3.12'" },
+    { name = "panel", version = "1.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "param", marker = "python_full_version >= '3.12'" },
+    { name = "pyproj", version = "3.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "shapely", marker = "python_full_version >= '3.12'" },
+    { name = "xyzservices", marker = "python_full_version >= '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/28/a6/c97dd03cd951096d275d819f2912f48e1b1f831829134d5b85c891cdaa3e/geoviews-1.16.0.tar.gz", hash = "sha256:7ce377c3a7aedc1aaf1a97f412be514d9bc426acfbe671d703b369a2b99a1784", size = 503950, upload-time = "2026-10-23T16:48:50.5Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/94/5a4e8456bbeb768a02839318da9472bc95b616ca0d5146e865271bd09199/geoviews-1.16.0-py3-none-any.whl", hash = "sha256:dd38760b3d5428acabd19df9afc72c063f9f86fc697818e2d420499c60c4b149", size = 570664, upload-time = "2026-10-23T16:48:48.958Z" },
 ]
 
 [[package]]
@@ -1861,20 +1898,53 @@ wheels = [
 
 [[package]]
 name = "hvplot"
-version = "0.8.1"
+version = "0.12.2"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "bokeh", version = "3.9.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "bokeh", version = "3.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "colorcet" },
-    { name = "holoviews" },
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "pandas" },
+resolution-markers = [
+    "python_full_version < '3.11'",
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4a/bd/093b378178c4defb2488e027d206811a2826f0cc5582ef91b9cee1600687/hvplot-0.8.1.tar.gz", hash = "sha256:53ddfe06743c4d5924fb1e597655bfa14e80feaf57a438bfd28442d36ac7c2b6", size = 6157599, upload-time = "2022-08-26T12:37:12.865Z" }
+dependencies = [
+    { name = "bokeh", version = "3.9.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "colorcet", marker = "python_full_version < '3.11'" },
+    { name = "holoviews", marker = "python_full_version < '3.11'" },
+    { name = "numpy", marker = "python_full_version < '3.11'" },
+    { name = "packaging", marker = "python_full_version < '3.11'" },
+    { name = "pandas", marker = "python_full_version < '3.11'" },
+    { name = "panel", version = "1.9.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "param", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f5/b4/ce73a568fc263efe84cab8de04673949c8f6596f6aeb1531ca2b75b80903/hvplot-0.12.2.tar.gz", hash = "sha256:9e29bbe65f94937d4eeaeccf33566540df936c8f9aeadfa12ea9f306d5237938", size = 7084556, upload-time = "2025-12-18T11:15:37.736Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/8b/d161afd3ecfaf66955fc1e27b7f5329180bd8a9f91c6e247245d488df728/hvplot-0.8.1-py2.py3-none-any.whl", hash = "sha256:222ce49b3be49741fb23a8c7077720ee2f8f15ea321fce0956bee091aea38bf8", size = 3175540, upload-time = "2022-08-26T12:37:10.442Z" },
+    { url = "https://files.pythonhosted.org/packages/11/cd/ec193e471780dfad60e44ded5526c123695c1354910edd537d7aa1d22094/hvplot-0.12.2-py3-none-any.whl", hash = "sha256:0687e2e4d2eeb035c437af0011922abff856054299c121914d903a02b1bb1b22", size = 180626, upload-time = "2025-12-18T11:15:35.091Z" },
+]
+
+[[package]]
+name = "hvplot"
+version = "0.13.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.12' and sys_platform == 'win32'",
+    "python_full_version >= '3.12' and sys_platform == 'emscripten'",
+    "python_full_version >= '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.11.*' and sys_platform == 'win32'",
+    "python_full_version == '3.11.*' and sys_platform == 'emscripten'",
+    "python_full_version == '3.11.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
+dependencies = [
+    { name = "bokeh", version = "3.9.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
+    { name = "bokeh", version = "3.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "colorcet", marker = "python_full_version >= '3.11'" },
+    { name = "holoviews", marker = "python_full_version >= '3.11'" },
+    { name = "numpy", marker = "python_full_version >= '3.11'" },
+    { name = "packaging", marker = "python_full_version >= '3.11'" },
+    { name = "pandas", marker = "python_full_version >= '3.11'" },
+    { name = "panel", version = "1.9.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
+    { name = "panel", version = "1.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "param", marker = "python_full_version >= '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/96/a6/e5a16e04776edfc7561990a5bc99d7e571590a123474588b7d266f7fc9c4/hvplot-0.13.0.tar.gz", hash = "sha256:e10457d215da484283e5cbf92b0d4655fde4efb04700785984de593f7e679885", size = 8048417, upload-time = "2026-11-10T10:14:35.002Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/aa/e0/a9208a596e2ddd1a9d97d0e120fba69144cbf006509732f5f18f58563cff/hvplot-0.13.0-py3-none-any.whl", hash = "sha256:32f08b55ee57459a8acdbfaab3604be8fdc4ddbf8ae88401a2d0e8316e862835", size = 251727, upload-time = "2026-11-10T10:14:32.751Z" },
 ]
 
 [[package]]
@@ -2999,9 +3069,11 @@ dependencies = [
     { name = "fastapi" },
     { name = "folium" },
     { name = "geopandas" },
-    { name = "geoviews" },
+    { name = "geoviews", version = "1.15.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "geoviews", version = "1.16.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "holoviews" },
-    { name = "hvplot" },
+    { name = "hvplot", version = "0.12.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "hvplot", version = "0.13.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "kiwipiepy" },
     { name = "langchain" },
     { name = "langchain-chroma" },
@@ -3046,9 +3118,9 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.142.4" },
     { name = "folium", specifier = ">=0.20.0,<1.0.0" },
     { name = "geopandas", specifier = ">=1.1.4" },
-    { name = "geoviews", specifier = ">=1.8.1" },
+    { name = "geoviews", specifier = ">=1.15.1" },
     { name = "holoviews", specifier = ">=1.23.2" },
-    { name = "hvplot", specifier = ">=0.8.1" },
+    { name = "hvplot", specifier = ">=0.12.2" },
     { name = "kiwipiepy", specifier = ">=0.23.2" },
     { name = "langchain", specifier = ">=1.4.2" },
     { name = "langchain-chroma", specifier = ">=1.0.0" },

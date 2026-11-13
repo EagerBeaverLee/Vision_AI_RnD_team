@@ -1,8 +1,11 @@
 import asyncio
 import json
 import time
+import re
 from typing import Any, List
 import chainlit as cl
+from my_battlefield_crew.chainlit_app.schemas import SimulationContext
+from my_battlefield_crew.crews.battlefield_models import MaritimeSituationReport
 
 try:
     from langchain_core.agents import AgentAction, AgentFinish
@@ -373,13 +376,47 @@ class ChainlitCrewHandler:
         )
 
     @staticmethod
-    async def stream_final_response(final_text: str):
+    async def stream_final_response(full_markdown: str, context: SimulationContext):
         """메인 대화창에는 오직 깔끔한 최종 결과만 타이핑 스트리밍 연출로 출력"""
-        msg = cl.Message(content="")
-        await msg.send()
+        # msg = cl.Message(content="")
+        # await msg.send()
 
-        words = str(final_text).split(" ")
-        for word in words:
-            await msg.stream_token(word + " ")
-            await asyncio.sleep(0.015)
-        await msg.update()
+        # words = str(final_text).split(" ")
+        # for word in words:
+        #     await msg.stream_token(word + " ")
+        #     await asyncio.sleep(0.015)
+        # await msg.update()
+        final_msg = cl.Message(content="")
+        await final_msg.send()
+
+        # 2. 작성하신 정규식 패턴 그대로 적용
+        pattern = (
+            r"(<!--\s*[A-Z_]+_START\s*-->.*?<!--\s*[A-Z_]+_END\s*-->|"
+            r"<iframe[\s\S]*?</iframe>)"
+        )
+
+        tokens = re.split(pattern, full_markdown, flags=re.DOTALL | re.IGNORECASE)
+
+        for token in tokens:
+            if not token:
+                continue
+
+            token_stripped = token.strip()
+            # 미디어 블록(iframe 또는 주석으로 감싼 이미지/지도) 판별
+            is_media_block = (
+                token_stripped.startswith("<!--") and "_START" in token_stripped
+            ) or token_stripped.lower().startswith("<iframe")
+
+            if is_media_block:
+                # HTML 코드는 띄어쓰기로 쪼개지 않고 통째로 출력 (앞뒤 빈 줄로 마크다운 충돌 방지)
+                await final_msg.stream_token("\n\n" + token + "\n\n")
+                await asyncio.sleep(0.05)  # 브라우저 DOM 렌더링 안정화를 위한 짧은 대기
+            else:
+                # 일반 마크다운 텍스트는 기존처럼 단어 단위 타이핑 효과
+                words = token.split(" ")
+                for word in words:
+                    if word:
+                        await final_msg.stream_token(word + " ")
+                        await asyncio.sleep(0.005)
+
+        await final_msg.update()

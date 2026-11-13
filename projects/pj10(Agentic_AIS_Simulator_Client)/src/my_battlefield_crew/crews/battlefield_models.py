@@ -65,12 +65,19 @@ class UnusualShipsStatusInfo(BaseModel):
 class MaritimeSituationReport(BaseModel):
     final_answer: str = Field(description="사용자가 던진 구체적인 질문에 대해, 위 정량 데이터를 바탕으로 도출한 최종 답변 및 정밀 종합 의견")
     top_dense_zones: Optional[List[DenseZoneInfo]] = Field(default=None, description="체류 지수(total_stay_index) 기준 가장 밀집된 상위 해역 목록 및 분석")
+    top_dense_zones_analysis: Optional[str] = Field(default=None, description="top_dense_zones 도구가 실행된 경우, 해당 정량 데이터를 표와 불릿으로 정리한 상세 분석")
     main_routes: Optional[List[RouteFlowInfo]] = Field(default=None, description="현재 이동량이 집중되고 있는 주요 항로 흐름 목록")
+    main_routes_analysis: Optional[str] = Field(default=None, description="main_routes 도구가 실행된 경우, 주요 항로 흐름에 대한 상세 분석")
     main_directions: Optional[List[TrafficDirectionInfo]] = Field(default=None, description="현재 이동중인 선박들의 주요 이동 방향 목록")
+    main_directions_analysis: Optional[str] = Field(default=None, description="main_directions 도구가 실행된 경우, 선박 이동 방향에 대한 상세 분석")
     zone_speeds: Optional[List[ZoneSpeedInfo]] = Field(default=None, description="속도 분석 도구 결과 데이터 목록")
+    zone_speeds_analysis: Optional[str] = Field(default=None, description="zone_speeds 도구가 실행된 경우, 속도 분석에 대한 상세 해설")
     port_activities: Optional[List[PortActivityInfo]] = Field(default=None, description="주요 항만별 선박 입출항 및 정박 상세 분석 데이터 목록")
+    port_activities_analysis: Optional[str] = Field(default=None, description="port_activities 도구가 실행된 경우, 항만 입출항 및 정박 상세 분석")
     ship_voyage_status: Optional[Union[ShipVoyageStatusInfo,List[ShipVoyageStatusInfo]]] = Field(default=None, description="현재 분석에 포함된 선박들의 선박 유형별 요약 및 기동 상태별 데이터 목록")
+    ship_voyage_status_analysis: Optional[str] = Field(default=None, description="ship_voyage_status 도구가 실행된 경우, 선박 유형 및 기동 상태 상세 분석")
     unusual_ships: Optional[List[UnusualShipsStatusInfo]] = Field(default=None, description="현재 식별된 특이 기동 선박 데이터 목록")
+    unusual_ships_analysis: Optional[str] = Field(default=None, description="unusual_ships 도구가 실행된 경우, 식별된 특이 기동 선박 상세 분석")
     # commander_recommendations: List[str] = Field(#default= [],
     #                                              description="밀집 급증이나 특이 동선 구역에 대한 작전 지휘관 권고사항 및 정찰 제언 목록")
 
@@ -209,9 +216,9 @@ def format_maritime_report(report: MaritimeSituationReport, context: SimulationC
 
     # 최종 템플릿 반환 (각 섹션 사이 빈 줄 확보)
     return f"""### 1. [분석 대상 시간]
-- 시작 시점: {context.start_time}
-- 종료 시점: {context.end_time}
-- (약 {context.time_diff} 동안의 데이터 집계 결과)
+- 시작 시점: {context.time.start_time}
+- 종료 시점: {context.time.end_time}
+- (약 {context.time.time_diff} 동안의 데이터 집계 결과)
 
 ### 2. [구역별 밀집 현황]
 

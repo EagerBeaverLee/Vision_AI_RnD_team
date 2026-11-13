@@ -10,9 +10,7 @@ from my_battlefield_crew.crews.battlefield_crew import BattlefieldCrew
 from my_battlefield_crew.crews.battlefield_router_crew import RouterCrew
 from my_battlefield_crew.crews.rag_crew import RAGCrew
 from my_battlefield_crew.crews.battlefield_models import format_maritime_report
-from my_battlefield_crew.setting.rag_config import RAGConfig
-from my_battlefield_crew.setting.llm_config import LLMConfig
-from my_battlefield_crew.chainlit_app.chainlit_handler import ChainlitCrewHandler
+from my_battlefield_crew.engine.image_build_processor import build_final_markdown
 from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 
 ######### LANGFUSE #############
@@ -87,6 +85,7 @@ class MainSystemFlow(Flow[MainSystemState]):
 
     @listen("battlefield_path")
     async def run_battlefield(self):
+        response = None
         print("Battlefield Path 실행 시작")
         self.context.ui_handler.on_agent_start(agent_name="전술 라우터 에이전트", agent_role="전장 질문 카테고리 분류")
         self.context.ui_handler.on_agent_progress(agent_name="전술 라우터 에이전트", status_desc="전장 질문 카테고리 분류")
@@ -116,14 +115,19 @@ class MainSystemFlow(Flow[MainSystemState]):
         )
         result = await bf_crew.crew().kickoff_async(inputs={"user_question": self.state.user_query})
 
+        response = build_final_markdown(result.pydantic, self.context)
+
+        print(repr(response))
+        
         #전체상황 요약 요청시 사용할 템플릿(format_maritimr_report) 적용된 결과 출력
         if '전체상황 요약' in actual_categories and result:
             result.pydantic.final_answer = format_maritime_report(report=result.pydantic, context=self.context)
+            response = result.pydantic.final_answer
 
         self.context.ui_handler.on_task_complete("analyze_maritime_situation_task")
         self.context.ui_handler.on_task_result("analyze_maritime_situation_task", result.pydantic)
         self.context.ui_handler.on_agent_complete("전술 분석 에이전트", agent_role="전장상황 질문에 대한 분석 결과 출력")
-        return result.pydantic.final_answer
+        return response
 
     @listen("rag_path")
     async def run_rag(self):

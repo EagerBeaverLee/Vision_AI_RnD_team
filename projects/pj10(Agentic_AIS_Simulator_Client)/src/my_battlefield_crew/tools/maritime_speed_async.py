@@ -38,8 +38,8 @@ def _run_mean_speed_analysis(context: SimulationContext) -> str:
             FROM ship_logs
             WHERE longitude BETWEEN {min_lon} AND {max_lon}
             AND latitude <= {max_lat}
-            AND timestamp >= '{context.start_time}' 
-            AND timestamp <= '{context.end_time}'
+            AND timestamp >= '{context.time.start_time}' 
+            AND timestamp <= '{context.time.end_time}'
             AND speed > 0
         ),
         joined_data AS (
