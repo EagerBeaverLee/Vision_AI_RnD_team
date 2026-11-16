@@ -11,14 +11,16 @@ from crewai.tools import tool
 from my_battlefield_crew.engine.preprocessor import compress_ship_data_duckdb_further
 from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 import holoviews as hv
+from pyproj import Transformer
 import hvplot.pandas
 from bokeh.resources import INLINE
 from bokeh.embed import file_html
 
-def render_major_ports_map(i, single_port_gdf, p_anchored, p_departures, p_arrivals, context: SimulationContext, port_html_list):
+def render_major_ports_map(i, plot_port_gdf, p_anchored, p_departures, p_arrivals, context: SimulationContext, port_html_list):
     # 해당 항구 범위 계산 (줌인용) ---
-    bounds = single_port_gdf.geometry.total_bounds
-    margin = 0.05  # 개별 항구 줌인이므로 마진을 작게 설정
+    bounds = plot_port_gdf.geometry.total_bounds
+    margin = 5000  # 개별 항구 줌인이므로 마진을 작게 설정
+
     p_xlim = (bounds[0] - margin, bounds[2] + margin)
     p_ylim = (bounds[1] - margin, bounds[3] + margin)
 
@@ -28,11 +30,11 @@ def render_major_ports_map(i, single_port_gdf, p_anchored, p_departures, p_arriv
 
     try:
         # 배경 지도 및 항구 폴리곤 (가장 아래)
-        layers.append(single_port_gdf.hvplot(
+        layers.append(plot_port_gdf.hvplot(
             # title=f"{port_name} 현황",
             color='red',
             alpha=0.2,
-            geo=True,
+            geo=False,
             tiles='EsriImagery',
             xlim=p_xlim,
             ylim=p_ylim, 
@@ -47,8 +49,9 @@ def render_major_ports_map(i, single_port_gdf, p_anchored, p_departures, p_arriv
     # 출발 항적
     if p_departures:
         try:
-            layers.append(mpd.TrajectoryCollection(p_departures).hvplot(
-                color="blue", label="출발", line_width=2, tiles='EsriImagery'
+            dep_tc = mpd.TrajectoryCollection(p_departures).to_line_gdf().to_crs(epsg=3857).set_crs(None, allow_override=True)
+            layers.append(dep_tc.hvplot(
+                color="blue", label="출발", line_width=2, tiles=False, geo=False
             ))
         except Exception as e:
             print(f"[Port {i}] p_departures 오류: {e}")
@@ -56,8 +59,9 @@ def render_major_ports_map(i, single_port_gdf, p_anchored, p_departures, p_arriv
     # 도착 항적 (tiles 제거, geo=True 명시)
     if p_arrivals:
         try:
-            layers.append(mpd.TrajectoryCollection(p_arrivals).hvplot(
-                color="orange", label="도착", line_width=2, tiles='EsriImagery'
+            arr_tc = mpd.TrajectoryCollection(p_arrivals).to_line_gdf().to_crs(epsg=3857).set_crs(None, allow_override=True)
+            layers.append(arr_tc.hvplot(
+                color="orange", label="도착", line_width=2, tiles=False, geo=False
             ))
         except Exception as e:
             print(f"[Port {i}] p_arrivals 오류: {e}")
@@ -65,8 +69,9 @@ def render_major_ports_map(i, single_port_gdf, p_anchored, p_departures, p_arriv
     # 정박 포인트
     if not p_anchored.empty:
         try:
-            layers.append(p_anchored.hvplot.points(
-                color='red', label="정박/대기", geo=True, size=5
+            plot_anchored = p_anchored.to_crs(epsg=3857).set_crs(None, allow_override=True)
+            layers.append(plot_anchored.hvplot.points(
+                color='red', label="정박/대기", geo=False, size=5
             ))
         except Exception as e:
             print(f"[Port {i}] p_anchored 오류: {e}")
@@ -185,6 +190,9 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
         else:
             p_anchored = anchored_ships_gdf
 
+        # 2. [핵심 해결책] 시각화용 데이터만 타일 좌표계(EPSG:3857)로 변환
+        plot_port_gdf = single_port_gdf.to_crs(epsg=3857)
+
         # 항구별 JSON 구조 생성
         port_entry = {
             "port_name": port_name,
@@ -222,7 +230,7 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
         }
         report_data["ports_analysis"].append(port_entry)
 
-        render_major_ports_map(i, single_port_gdf, p_anchored, p_departures, p_arrivals, context, port_html_list)
+        render_major_ports_map(i, plot_port_gdf, p_anchored, p_departures, p_arrivals, context, port_html_list)
 
     # 내부적으로 map_store 저장 + iframe 블록 조립 완료
     context.attach_bokeh_map_grid(key="port_activities", html_contents=port_html_list)

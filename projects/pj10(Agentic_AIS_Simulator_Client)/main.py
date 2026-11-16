@@ -244,7 +244,7 @@ class Window(QMainWindow):
         #전체화면 실행
         self.showMaximized()
 
-        self.ui.splitter.setSizes([1204, 693])      #초기 프로그램 크기 조정
+        self.ui.splitter.setSizes([1067, 830])      #초기 프로그램 크기 조정
 
         #DB초기설정
         init_db()
@@ -454,6 +454,9 @@ class Window(QMainWindow):
 
         #program restart
         # self.ui.reset_program.clicked.connect(self.restart_program)
+
+        # splitter 초기값 설정을 위한 디버깅 사이즈 print
+        # self.ui.splitter.splitterMoved.connect(self.splitter_logging)
 
     def on_cancel_embedding(self):
         """임베딩 취소 버튼 클릭 시"""
@@ -711,6 +714,10 @@ class Window(QMainWindow):
         # 2. 실행 중인 스크립트 파일과 인자값 유지
         # os.execv는 현재 프로세스를 새로 시작하는 프로세스로 완전히 대체합니다.
         os.execv(python, [python] + sys.argv)
+
+    def splitter_logging(self):
+        curr_size = self.ui.splitter.sizes()
+        print(f"현재 사이즈: {curr_size}")
 
 def kill_process_on_port(port):
         """특정 포트를 사용 중인 프로세스를 찾아 종료"""

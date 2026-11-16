@@ -465,7 +465,7 @@ def render_folium_map():
 
                     # 3. [신규] 습도 대시보드 (Gauge Chart)
                     hum_val = float(station.get('습도(%)', 0))
-                    fig_hum = render_humidity_gauge(hum_val, 158)
+                    fig_hum = render_humidity_gauge(hum_val, 133)
                     st.plotly_chart(fig_hum, height='stretch', width='stretch')
                     # st.pyplot(fig_hum, width='stretch')
 
