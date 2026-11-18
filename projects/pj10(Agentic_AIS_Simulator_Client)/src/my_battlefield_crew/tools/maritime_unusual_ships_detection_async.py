@@ -5,6 +5,14 @@ import pandas as pd
 from crewai.tools import tool
 from my_battlefield_crew.engine.preprocessor import compress_ship_data_duckdb_further
 from my_battlefield_crew.chainlit_app.schemas import SimulationContext
+from my_battlefield_crew.map.visualizer import generate_unusual_ships_widget_two
+
+import json
+from typing import List, Dict, Any
+
+import json
+from typing import List, Dict, Any
+
 
 def _run_unusual_ships_detection(context: SimulationContext) -> str:
     if context.ui_handler:
@@ -34,6 +42,12 @@ def _run_unusual_ships_detection(context: SimulationContext) -> str:
         ].sort_values(by='turn_count', ascending=False)
 
     unusual_ships_json = unusual_ships_df[['ShipName','turn_count','speed_change_count', 'status_list']].to_dict(orient='records')
+
+    html_content = generate_unusual_ships_widget_two(unusual_ships_json)
+    
+    # 내부적으로 map_store 저장 + iframe 블록 조립 완료
+    context.attach_table_block(key="unusual_ships", html_content=html_content)
+
     if context.ui_handler:
         context.ui_handler.on_tool_complete("특이 기동 선박 현황")
         context.ui_handler.on_tool_result("특이 기동 선박 현황")

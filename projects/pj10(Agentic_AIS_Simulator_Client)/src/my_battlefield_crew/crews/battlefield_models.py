@@ -98,6 +98,9 @@ def format_maritime_report(report: MaritimeSituationReport, context: SimulationC
             "| 해역명 | 총 정박 지수 | 비고 |\n|---|---|---|\n"
             + "\n".join(clusters_rows)
         )
+        media_html = context.artifacts.get("top_dense_zones")
+        if media_html:
+            clusters_table += media_html + "\n"
     else:
         clusters_table = "집계된 밀집 구역 데이터 없음"
 
@@ -109,6 +112,9 @@ def format_maritime_report(report: MaritimeSituationReport, context: SimulationC
                 for s in report.zone_speeds
             ]
         )
+        media_html = context.artifacts.get("zone_speeds")
+        if media_html:
+            speed_text += media_html + "\n"
     else:
         speed_text = "- 속도 분석 데이터 없음"
 
@@ -120,6 +126,9 @@ def format_maritime_report(report: MaritimeSituationReport, context: SimulationC
                 for d in report.main_directions
             ]
         )
+        media_html = context.artifacts.get("main_directions")
+        if media_html:
+            direction_text += media_html + "\n"
     else:
         direction_text = "- 교통 흐름 데이터 없음"
 
@@ -131,6 +140,9 @@ def format_maritime_report(report: MaritimeSituationReport, context: SimulationC
                 for r in report.main_routes[:5]
             ]
         )
+        media_html = context.artifacts.get("main_routes")
+        if media_html:
+            routes_text += media_html + "\n"
     else:
         routes_text = "- 주요 항로 데이터 없음"
 
@@ -171,6 +183,10 @@ def format_maritime_report(report: MaritimeSituationReport, context: SimulationC
                 lines.extend([f"    - {s}" for s in p.arrivals_detail])
             port_blocks.append("\n".join(lines))
         ports_text = "\n\n".join(port_blocks)
+
+        media_html = context.artifacts.get("port_activities")
+        if media_html:
+            ports_text += media_html + "\n"
     else:
         ports_text = "- 항만 활동 데이터 없음"
 
@@ -200,6 +216,10 @@ def format_maritime_report(report: MaritimeSituationReport, context: SimulationC
             )
         )
         status_text = "\n\n".join(status_blocks)
+
+        media_html = context.artifacts.get("ship_voyage_status")
+        if media_html:
+            status_text += media_html + "\n"
     else:
         status_text = "- 선박 상태 데이터 없음"
 
@@ -211,6 +231,9 @@ def format_maritime_report(report: MaritimeSituationReport, context: SimulationC
                 for u in report.unusual_ships
             ]
         )
+        media_html = context.artifacts.get("unusual_ships")
+        if media_html:
+            unusual_text += media_html + "\n"
     else:
         unusual_text = "- 식별된 특이 기동 선박 없음"
 

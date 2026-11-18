@@ -5,6 +5,7 @@ import asyncio
 # from shapely.geometry import box
 from crewai.tools import tool
 from my_battlefield_crew.chainlit_app.schemas import SimulationContext
+from my_battlefield_crew.map.visualizer import render_od_flow_map
 
 
 def _run_traffic_flow_analysis(context: SimulationContext) -> str:
@@ -69,6 +70,11 @@ def _run_traffic_flow_analysis(context: SimulationContext) -> str:
 
     # 4. 실행 및 결과 변환
     flow_summary_df = con.execute(query).df()
+
+    html_content = render_od_flow_map(context)
+        
+    # 내부적으로 map_store 저장 + iframe 블록 조립 완료
+    context.attach_bokeh_map(key="main_routes", html_content=html_content)
 
     result = {
         "main_routes": flow_summary_df.to_dict(orient="records")

@@ -52,8 +52,8 @@ class SimulationContext:
         map_url = save_map_html(html_content)
         self.artifacts[key] = textwrap.dedent(f"""\
 <!-- BOKEH_MAP_START -->
-<div style="margin: 16px 0;">
-<iframe src="{map_url}" width="100%" height="{height}" style="border: 1px solid #334155; border-radius: 8px;"></iframe>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin: 16px 0;">
+<iframe src="{map_url}" width="49%" height="{height}" style="border: 1px solid #334155; border-radius: 8px;"></iframe>
 </div>
 <!-- BOKEH_MAP_END -->""")
 

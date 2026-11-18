@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QTimer, pyqtSignal, QThread, QUrl, QLoggingCategory
 from PyQt6.QtGui import QTextCursor
-from PyQt6.QtWebEngineCore import QWebEngineSettings
+from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile
 
 from langchain_openai import ChatOpenAI
 
@@ -116,77 +116,93 @@ class ReceiveThread(QThread):
 
     def run(self):
         # 스레드 내에서 DB 연결 (SQLite는 스레드 간 연결 공유 불가 원칙)
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=10.0)
         cursor = conn.cursor()
 
-        while self.running:
-            try:
-                # 1. 헤더(4바이트) 읽기
-                header = self.recv_all(24)
-                if not header:
+        # 고속 저장 및 동시 읽기를 위한 필수 PRAGMA 설정
+        cursor.execute("PRAGMA journal_mode=WAL;")       # 쓰기 중에도 DuckDB 읽기 허용
+        cursor.execute("PRAGMA synchronous=NORMAL;")    # 디스크 동기화 부하 최소화 (속도 대폭 향상)
+        cursor.execute("PRAGMA cache_size=-64000;")     # 메모리 캐시 64MB 할당
+
+        try:
+            while self.running:
+                try:
+                    # 헤더(4바이트) 읽기
+                    header = self.recv_all(24)
+                    if not header:
+                        self.disconnect_signal.emit()
+                        break
+                    
+                    # 데이터 길이 파악
+                    data_type, time_bytes, data_len = struct.unpack('>B19sI', header)
+
+                    curr_server_time = time_bytes.decode('utf-8')
+
+                    self.server_time_sig.emit(curr_server_time)
+                    
+                    if data_type == 0:
+                        # 본문 읽기
+                        body_bytes = self.recv_all(data_len)
+                        if not body_bytes:
+                            break
+
+                        msg = body_bytes.decode('utf-8')
+
+                        self.msg_received.emit(msg)
+
+                    else:
+                        body_bytes = self.recv_all(data_len)
+                        if not body_bytes:
+                            break
+                        # JSON 파싱
+                        json_str = body_bytes.decode('utf-8')
+                        data_list = json.loads(json_str) # List of Dictionaries
+
+                        if not data_list:
+                            continue
+
+                        # DB Insert (Bulk)
+                        # 딕셔너리 리스트를 튜플 리스트로 변환 (SQL 파라미터용)
+                        db_tuples = []
+                        for item in data_list:
+                            # print(item)
+                            res = (
+                                item.get("ShipType"), item.get("ShipName"), item.get("mmsi"),
+                                item.get("timestamp"), item.get("course"), item.get("speed"),
+                                item.get("longitude"), item.get("latitude"), 
+                                item.get("higher_types"), item.get("radius")
+                            )
+                            db_tuples.append(res)
+                            self.packet_cnt += 1
+                            self.log_packet.emit(self.packet_cnt, res)
+
+                        # print(db_tuples)
+                        
+                        # 고속 저장
+                        query = """
+                            INSERT INTO ship_logs 
+                            (ShipType, ShipName, mmsi, timestamp, course, speed, longitude, latitude, higher_types, radius)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """
+                        cursor.executemany(query, db_tuples)
+                        conn.commit() # 트랜잭션 확정
+
+                        # self.log_signal.emit(f"DB 저장 완료: {len(data_list)} 행")
+                        # print(f"DB 저장 완료: {len(data_list)} 행")
+                except Exception as e:
+                    self.log_signal.emit(f"에러 발생: {e}")
                     self.disconnect_signal.emit()
                     break
-                
-                # 2. 데이터 길이 파악
-                data_type, time_bytes, data_len = struct.unpack('>B19sI', header)
 
-                curr_server_time = time_bytes.decode('utf-8')
+        except Exception as e:
+            print(f"DB 적재 중 오류 발생: {e}")
+            conn.rollback()
 
-                self.server_time_sig.emit(curr_server_time)
-                
-                if data_type == 0:
-                    # 3. 본문 읽기
-                    body_bytes = self.recv_all(data_len)
-                    if not body_bytes:
-                        break
-
-                    msg = body_bytes.decode('utf-8')
-
-                    self.msg_received.emit(msg)
-
-                else:
-                    body_bytes = self.recv_all(data_len)
-                    if not body_bytes:
-                        break
-                    # 4. JSON 파싱
-                    json_str = body_bytes.decode('utf-8')
-                    data_list = json.loads(json_str) # List of Dictionaries
-
-                    if not data_list:
-                        continue
-
-                    # 5. DB Insert (Bulk)
-                    # 딕셔너리 리스트를 튜플 리스트로 변환 (SQL 파라미터용)
-                    db_tuples = []
-                    for item in data_list:
-                        # print(item)
-                        res = (
-                            item.get("ShipType"), item.get("ShipName"), item.get("mmsi"),
-                            item.get("timestamp"), item.get("course"), item.get("speed"),
-                            item.get("longitude"), item.get("latitude"), 
-                            item.get("higher_types"), item.get("radius")
-                        )
-                        db_tuples.append(res)
-                        self.packet_cnt += 1
-                        self.log_packet.emit(self.packet_cnt, res)
-
-                    # print(db_tuples)
-                    
-                    # 고속 저장
-                    query = """
-                        INSERT INTO ship_logs 
-                        (ShipType, ShipName, mmsi, timestamp, course, speed, longitude, latitude, higher_types, radius)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """
-                    cursor.executemany(query, db_tuples)
-                    conn.commit() # 트랜잭션 확정
-
-                    # self.log_signal.emit(f"DB 저장 완료: {len(data_list)} 행")
-                    # print(f"DB 저장 완료: {len(data_list)} 행")
-            except Exception as e:
-                self.log_signal.emit(f"에러 발생: {e}")
-                self.disconnect_signal.emit()
-                break
+        finally:
+            # 4. 앱 종료 또는 스레드 정지 시에만 커넥션을 안전하게 닫음
+            cursor.close()
+            conn.close()
+            print("패킷 수신 스레드 DB 커넥션 정상 종료")
 
     def stop(self):
         self.running = False
@@ -493,9 +509,27 @@ class Window(QMainWindow):
     def set_web_view(self):
         self.ui.weather_board.setUrl(QUrl("http://localhost:8502"))
         self.ui.geospatial_board.setUrl(QUrl("http://localhost:8503"))
+
         # chainlit결과 클립보드 복사 가능 설정
         self.ui.experiment_txt.settings().setAttribute(
             QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True
+        )
+
+        # Canvas / WebGL 가속 및 로컬-원격 리소스 허용 - chainlit 출력 오류 방지
+        profile = QWebEngineProfile.defaultProfile()
+        profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
+        
+        self.ui.experiment_txt.settings().setAttribute(
+            QWebEngineSettings.WebAttribute.JavascriptEnabled, True
+        )
+        self.ui.experiment_txt.settings().setAttribute(
+            QWebEngineSettings.WebAttribute.Accelerated2dCanvasEnabled, True
+        )
+        self.ui.experiment_txt.settings().setAttribute(
+            QWebEngineSettings.WebAttribute.WebGLEnabled, True
+        )
+        self.ui.experiment_txt.settings().setAttribute(
+            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
         )
 
     def connect_server(self):
@@ -780,7 +814,10 @@ def start_streamlit():
     geo_dashboard_streamlit_process = subprocess.Popen(cmd3)
     print("Geo Dashboard streamlit서버가 백그라운드에서 시작되었습니다.")
 
-    chainlit_process = subprocess.Popen(cmd4)
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    chainlit_process = subprocess.Popen(cmd4, env=env)
     print("Chainlit 서버가 백그라운드에서 시작되었습니다.")
 
 def stop_streamlit():

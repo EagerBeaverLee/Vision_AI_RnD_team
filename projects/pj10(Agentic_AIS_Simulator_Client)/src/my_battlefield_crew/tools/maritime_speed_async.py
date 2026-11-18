@@ -6,13 +6,13 @@ import geopandas as gpd
 import duckdb
 from crewai.tools import tool
 from my_battlefield_crew.chainlit_app.schemas import SimulationContext
+from my_battlefield_crew.map.visualizer import render_od_flow_map
 
 
 def _run_mean_speed_analysis(context: SimulationContext) -> str:
     if context.ui_handler:
         context.ui_handler.on_tool_progress("구역별 속도", "해상 작전 통제 구역(Zone)별 선박들의 평균 속도, 최고 속도 및 트래픽 수에 대한 정보를 반환합니다")
     
-    # con = duckdb.connect(database=context.db_path)
     con = duckdb.connect(database=':memory:')
     con.execute("INSTALL spatial; LOAD spatial;")
 
@@ -65,6 +65,15 @@ def _run_mean_speed_analysis(context: SimulationContext) -> str:
     # 4. 결과 실행 및 JSON 변환
     # 데이터 요약본만 파이썬으로 넘어오므로 매우 가볍습니다.
     speed_stats_df = con.execute(integrated_query).df()
+
+    # 지도 생성 최적화를 위해 processling_list에 결과 df값 저장
+    context.processing_list['speed_df'] = speed_stats_df
+
+    html_content = render_od_flow_map(context)
+    
+    # 내부적으로 map_store 저장 + iframe 블록 조립 완료
+    context.attach_bokeh_map(key="zone_speeds", html_content=html_content)
+
     data_dict_speed = speed_stats_df.to_dict(orient="records")
 
     if context.ui_handler:

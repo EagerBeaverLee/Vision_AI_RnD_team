@@ -378,14 +378,6 @@ class ChainlitCrewHandler:
     @staticmethod
     async def stream_final_response(full_markdown: str, context: SimulationContext):
         """메인 대화창에는 오직 깔끔한 최종 결과만 타이핑 스트리밍 연출로 출력"""
-        # msg = cl.Message(content="")
-        # await msg.send()
-
-        # words = str(final_text).split(" ")
-        # for word in words:
-        #     await msg.stream_token(word + " ")
-        #     await asyncio.sleep(0.015)
-        # await msg.update()
         final_msg = cl.Message(content="")
         await final_msg.send()
 
