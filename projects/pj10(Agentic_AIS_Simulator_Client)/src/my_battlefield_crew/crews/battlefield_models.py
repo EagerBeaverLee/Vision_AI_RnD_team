@@ -92,7 +92,7 @@ def format_maritime_report(report: MaritimeSituationReport, context: SimulationC
     if report.top_dense_zones:
         clusters_rows = [
             f"| {z.name} | {z.total_stay_index} | {getattr(z, 'military_implication', '주요 해역')} |"
-            for z in report.top_dense_zones[:3]
+            for z in report.top_dense_zones[:5]
         ]
         clusters_table = (
             "| 해역명 | 총 정박 지수 | 비고 |\n|---|---|---|\n"
@@ -165,23 +165,28 @@ def format_maritime_report(report: MaritimeSituationReport, context: SimulationC
     if report.port_activities:
         port_blocks = []
         for p in report.port_activities:
+            count = 0
             lines = [f"* **{p.port_name}**"]
             if getattr(p, "anchored_ships_detail", None):
                 lines.append(
                     f"  * **정박/대기 중인 선박 (총 {p.anchored_count}척)**"
                 )
                 lines.extend([f"    - {s}" for s in p.anchored_ships_detail])
+                count += 1
             if getattr(p, "departures_detail", None):
                 lines.append(
                     f"  * **출발/기동 선박 (총 {p.departure_count}척)**"
                 )
                 lines.extend([f"    - {s}" for s in p.departures_detail])
+                count += 1
             if getattr(p, "arrivals_detail", None):
                 lines.append(
                     f"  * **도착/진입 선박 (총 {p.arrival_count}척)**"
                 )
                 lines.extend([f"    - {s}" for s in p.arrivals_detail])
-            port_blocks.append("\n".join(lines))
+                count += 1
+            if(count != 0):
+                port_blocks.append("\n".join(lines))
         ports_text = "\n\n".join(port_blocks)
 
         media_html = context.artifacts.get("port_activities")

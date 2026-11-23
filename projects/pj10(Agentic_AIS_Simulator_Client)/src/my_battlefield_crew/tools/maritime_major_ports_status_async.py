@@ -59,19 +59,7 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
 
     # 분석할 항구 리스트 (시각화와 동일하게 설정)
     target_ports = ['BUSAN HANG', 'ULSAN HANG', 'GWANGYANG HANG, HADONG HANG', 'MOKPO HANG']
-
-    # 결과를 담을 메인 딕셔너리
-    report_data = {
-        "report_info": {
-            "analysis_period": {
-                "start": str(context.time.start_time),
-                "end": str(context.time.end_time)
-            },
-            "generated_at": datetime.now().isoformat(),
-            "target_ports": target_ports
-        },
-        "ports_analysis": []
-    }
+    port_summary_list = []
 
     def is_leaving(traj, poly):
         return traj.get_start_location().intersects(poly) and not traj.get_end_location().intersects(poly)
@@ -102,53 +90,45 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
         # 2. [핵심 해결책] 시각화용 데이터만 타일 좌표계(EPSG:3857)로 변환
         plot_port_gdf = single_port_gdf.to_crs(epsg=3857)
 
-        # 항구별 JSON 구조 생성
+        anchored_details = []
+        for _, row in p_anchored.iterrows():
+            anchored_time_str = row['start_time'] if isinstance(row['start_time'], str) else row['start_time'].strftime('%Y-%m-%d %H:%M:%S')
+            anchored_details.append(f"{row['higher_types']} '{row['ShipName']}({row['mmsi']})': {anchored_time_str}부터 정박 중")
+
+        departure_details = []
+        for t in p_departures:
+            parsed_mmsi = int(str(t.id).split('_')[0]) if '_' in str(t.id) else int(t.id)
+            ship_type = t.df['higher_types'].iloc[0] if 'higher_types' in t.df.columns else t.df['ShipType'].iloc[0]
+            departure_details.append(f"{ship_type} '{t.df['ShipName'].iloc[0]}({parsed_mmsi})': {t.get_start_time()} 에 출발")
+
+        arrival_details = []
+        for t in p_arrivals:
+            parsed_mmsi = int(str(t.id).split('_')[0]) if '_' in str(t.id) else int(t.id)
+            ship_type = t.df['higher_types'].iloc[0] if 'higher_types' in t.df.columns else t.df['ShipType'].iloc[0]
+            arrival_details.append(f"{ship_type} '{t.df['ShipName'].iloc[0]}({parsed_mmsi})': {t.get_end_time()} 에 도착")
+        
         port_entry = {
             "port_name": port_name,
-            "summary": {
-                "anchored_count": len(p_anchored),
-                "departure_count": len(p_departures),
-                "arrival_count": len(p_arrivals)
-            },
-            "details": {
-                "anchored_ships": [
-                    {
-                        "name": str(row.get('ShipName', 'Unknown')),
-                        "mmsi": int(row['mmsi']),
-                        # 💡 문자열/Timestamp 타입에 상관없이 안전하게 일시 포맷팅
-                        "anchored_since": str(pd.to_datetime(row['start_time']).strftime('%Y-%m-%d %H:%M:%S'))
-                    } for _, row in p_anchored.iterrows()
-                ],
-                "departures": [
-                    {
-                        "name": str(t.df['ShipName'].iloc[0]) if 'ShipName' in t.df.columns else "Unknown",
-                        "type": str(t.df['ShipType'].iloc[0]) if 'ShipType' in t.df.columns else "Unknown",
-                        "mmsi": int(str(t.id).split('_')[0]),
-                        "event_time": str(t.get_start_time())
-                    } for t in p_departures
-                ],
-                "arrivals": [
-                    {
-                        "name": str(t.df['ShipName'].iloc[0]) if 'ShipName' in t.df.columns else "Unknown",
-                        "type": str(t.df['ShipType'].iloc[0]) if 'ShipType' in t.df.columns else "Unknown",
-                        "mmsi": int(str(t.id).split('_')[0]),
-                        "event_time": str(t.get_end_time())
-                    } for t in p_arrivals
-                ]
-            }
+            "anchored_count": len(p_anchored),
+            "departure_count": len(p_departures),
+            "arrival_count": len(p_arrivals),
+            "anchored_ships_detail": anchored_details,
+            "departures_detail": departure_details,
+            "arrivals_detail": arrival_details
         }
-        report_data["ports_analysis"].append(port_entry)
+        
+        port_summary_list.append(port_entry)
 
-        render_major_ports_map(i, plot_port_gdf, p_anchored, p_departures, p_arrivals, port_html_list)
+        render_major_ports_map(i, port_name, plot_port_gdf, p_anchored, p_departures, p_arrivals, port_html_list)
 
     # 내부적으로 map_store 저장 + iframe 블록 조립 완료
-    context.attach_bokeh_map_grid(key="port_activities", html_contents=port_html_list)
+    context.attach_bokeh_major_port_map_grid(key="port_activities", html_contents=port_html_list, height=350)
 
     if context.ui_handler:
         context.ui_handler.on_tool_complete("주요 항만별 입출항")
         context.ui_handler.on_tool_result("주요 항만별 입출항")
 
-    return json.dumps(report_data, ensure_ascii=False, indent=4)
+    return json.dumps(port_summary_list, ensure_ascii=False, indent=4)
 
 
 def get_major_ports_status(context: SimulationContext):

@@ -42,7 +42,7 @@ def _run_maritime_density_analysis(context: SimulationContext) -> str:
     html_content = render_od_flow_map(context)
             
     # 내부적으로 map_store 저장 + iframe 블록 조립 완료
-    context.attach_bokeh_map(key="top_dense_zones", html_content=html_content)
+    context.attach_bokeh_odflow_map(key="top_dense_zones", html_content=html_content)
 
     result = {
         "cluster_density": cluster_summary.to_dict(orient="records")

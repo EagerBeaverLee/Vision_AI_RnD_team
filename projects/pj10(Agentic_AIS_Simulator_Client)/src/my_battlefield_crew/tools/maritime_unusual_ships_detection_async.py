@@ -43,10 +43,24 @@ def _run_unusual_ships_detection(context: SimulationContext) -> str:
 
     unusual_ships_json = unusual_ships_df[['ShipName','turn_count','speed_change_count', 'status_list']].to_dict(orient='records')
 
+    # 2. C-level 고속 문자열 매칭
+    # df['turn_count'] = df['status'].str.contains('우선회|좌선회', regex=True, na=False).astype(int)
+    # df['speed_change_count'] = df['status'].str.contains('가속|감속', regex=True, na=False).astype(int)
+
+    # # 3. C-level 수치 고속 집계
+    # summary = df.groupby('ShipName', as_index=False)[['turn_count', 'speed_change_count']].sum()
+
+    # # 4. 필터링 (선회 또는 변속 20회 이상)
+    # unusual_ships_df = summary[
+    #     (summary['turn_count'] >= 4) | (summary['speed_change_count'] >= 4)
+    # ].sort_values(by='turn_count', ascending=False)
+
+    # unusual_ships_json = unusual_ships_df.to_dict(orient='records')
+
     html_content = generate_unusual_ships_widget_two(unusual_ships_json)
     
     # 내부적으로 map_store 저장 + iframe 블록 조립 완료
-    context.attach_table_block(key="unusual_ships", html_content=html_content)
+    context.attach_table_block(key="unusual_ships", html_content=html_content, height=500)
 
     if context.ui_handler:
         context.ui_handler.on_tool_complete("특이 기동 선박 현황")

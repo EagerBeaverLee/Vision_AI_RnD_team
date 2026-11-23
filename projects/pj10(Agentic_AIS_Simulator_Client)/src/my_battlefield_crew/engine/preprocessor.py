@@ -110,6 +110,9 @@ def common_preprocessing(db_path, start_time, end_time):
     return ais_gdf, trips, aggregator
 
 def init_geo_processing(db_path, start_time, end_time):
+    if not start_time.strip("\x00") or not end_time.strip("\x00"):
+        print("오류: 서버로부터 받아온 패킷이 없습니다")
+        return
     port_gdf = init_ports_gdf()
     zone_gdf = init_zone_gdf()
     ais_gdf, trips, aggregator = common_preprocessing(db_path, start_time, end_time)

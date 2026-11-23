@@ -72,7 +72,7 @@ def _run_mean_speed_analysis(context: SimulationContext) -> str:
     html_content = render_od_flow_map(context)
     
     # 내부적으로 map_store 저장 + iframe 블록 조립 완료
-    context.attach_bokeh_map(key="zone_speeds", html_content=html_content)
+    context.attach_bokeh_odflow_map(key="zone_speeds", html_content=html_content)
 
     data_dict_speed = speed_stats_df.to_dict(orient="records")
 

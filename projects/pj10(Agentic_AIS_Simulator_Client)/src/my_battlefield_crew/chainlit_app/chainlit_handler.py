@@ -375,13 +375,50 @@ class ChainlitCrewHandler:
             output = "\n\n".join(self.logs_history) if self.logs_history else "상세 실행 로그가 존재하지 않습니다."
         )
 
+    # @staticmethod
+    # async def stream_final_response(full_markdown: str, context: SimulationContext):
+    #     """메인 대화창에는 오직 깔끔한 최종 결과만 타이핑 스트리밍 연출로 출력"""
+    #     final_msg = cl.Message(content="")
+    #     await final_msg.send()
+
+    #     # 2. 작성하신 정규식 패턴 그대로 적용
+    #     pattern = (
+    #         r"(<!--\s*[A-Z_]+_START\s*-->.*?<!--\s*[A-Z_]+_END\s*-->|"
+    #         r"<iframe[\s\S]*?</iframe>)"
+    #     )
+
+    #     tokens = re.split(pattern, full_markdown, flags=re.DOTALL | re.IGNORECASE)
+
+    #     for token in tokens:
+    #         if not token:
+    #             continue
+
+    #         token_stripped = token.strip()
+    #         # 미디어 블록(iframe 또는 주석으로 감싼 이미지/지도) 판별
+    #         is_media_block = (
+    #             token_stripped.startswith("<!--") and "_START" in token_stripped
+    #         ) or token_stripped.lower().startswith("<iframe")
+
+    #         if is_media_block:
+    #             # HTML 코드는 띄어쓰기로 쪼개지 않고 통째로 출력 (앞뒤 빈 줄로 마크다운 충돌 방지)
+    #             await final_msg.stream_token("\n\n" + token + "\n\n")
+    #             await asyncio.sleep(0.05)  # 브라우저 DOM 렌더링 안정화를 위한 짧은 대기
+    #         else:
+    #             # 일반 마크다운 텍스트는 기존처럼 단어 단위 타이핑 효과
+    #             words = token.split(" ")
+    #             for word in words:
+    #                 if word:
+    #                     await final_msg.stream_token(word + " ")
+    #                     await asyncio.sleep(0.005)
+
+    #     await final_msg.update()
+
     @staticmethod
     async def stream_final_response(full_markdown: str, context: SimulationContext):
-        """메인 대화창에는 오직 깔끔한 최종 결과만 타이핑 스트리밍 연출로 출력"""
+        """QWebEngineView 환경에서도 글자 누락 없이 타이핑 스트리밍 + 인라인 미디어 렌더링"""
         final_msg = cl.Message(content="")
         await final_msg.send()
 
-        # 2. 작성하신 정규식 패턴 그대로 적용
         pattern = (
             r"(<!--\s*[A-Z_]+_START\s*-->.*?<!--\s*[A-Z_]+_END\s*-->|"
             r"<iframe[\s\S]*?</iframe>)"
@@ -394,21 +431,31 @@ class ChainlitCrewHandler:
                 continue
 
             token_stripped = token.strip()
-            # 미디어 블록(iframe 또는 주석으로 감싼 이미지/지도) 판별
             is_media_block = (
                 token_stripped.startswith("<!--") and "_START" in token_stripped
             ) or token_stripped.lower().startswith("<iframe")
 
             if is_media_block:
-                # HTML 코드는 띄어쓰기로 쪼개지 않고 통째로 출력 (앞뒤 빈 줄로 마크다운 충돌 방지)
-                await final_msg.stream_token("\n\n" + token + "\n\n")
-                await asyncio.sleep(0.05)  # 브라우저 DOM 렌더링 안정화를 위한 짧은 대기
-            else:
-                # 일반 마크다운 텍스트는 기존처럼 단어 단위 타이핑 효과
-                words = token.split(" ")
-                for word in words:
-                    if word:
-                        await final_msg.stream_token(word + " ")
-                        await asyncio.sleep(0.005)
+                # 1. 직전 텍스트의 마지막 프레임이 QWebEngineView 화면에 완전히 그려질 시간 확보
+                await asyncio.sleep(0.15)
 
+                clean_html = "\n".join(line.lstrip() for line in token_stripped.splitlines())
+                await final_msg.stream_token("\n\n" + clean_html + "\n\n")
+
+                # 2. iframe 로드 및 Bokeh JS 초기화 동안 다음 텍스트 패킷 유실 방지
+                await asyncio.sleep(0.25)
+            else:
+                # 3. 1단어(5ms) 대신 3단어 묶음(25ms)으로 전송 -> WebSocket 패킷량 70% 감소, 체감 속도 동일
+                word_chunks = re.findall(r"(?:\s*\S+){1,3}", token)
+                for chunk in word_chunks:
+                    await final_msg.stream_token(chunk)
+                    await asyncio.sleep(0.025)
+
+                trailing_ws = token[len("".join(word_chunks)):]
+                if trailing_ws:
+                    await final_msg.stream_token(trailing_ws)
+
+        # 4. 마지막 토큰 처리가 완료된 후 최종 전체 본문 확정 동기화
+        await asyncio.sleep(0.15)
+        final_msg.content = full_markdown
         await final_msg.update()

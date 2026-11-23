@@ -31,7 +31,10 @@ async def serve_inmemory_map(map_id: str):
     """브라우저가 iframe을 통해 요청 시 메모리(RAM)에서 HTML을 직접 반환"""
     html_content = get_map_html(map_id)
     if html_content:
-        return HTMLResponse(content=html_content)
+        return HTMLResponse(
+            content=html_content,
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
     return HTMLResponse(
         "<h3>지도를 불러올 수 없습니다 (만료됨).</h3>", status_code=404
     )
@@ -179,8 +182,18 @@ async def main(message: cl.Message):
                 start_time=start_time,
                 end_time=curr_time
             )
-            
-            prep_step.output = f"전처리 완료: {processing_list})"
+            if processing_list:
+                prep_step.output = f"전처리 완료: {processing_list})"
+            else:
+                prep_step.output = "오류로 인해 전처리가 정상적으로 완료되지 않았습니다."
+                return
+
+        if not processing_list:
+            handler.update_step_status(
+                name = "❌​ 전처리가 이루어지지 않아 답변을 생성할 수 없습니다",
+                output = "상세 실행 로그가 존재하지 않습니다."
+            )
+            return
 
         context = SimulationContext(
             user_question=message.content,
