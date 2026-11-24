@@ -117,12 +117,11 @@ class MainSystemFlow(Flow[MainSystemState]):
 
         response = build_final_markdown(result.pydantic, self.context)
 
-        print(repr(response))
+        # print(repr(response))
         
         #전체상황 요약 요청시 사용할 템플릿(format_maritimr_report) 적용된 결과 출력
         if '전체상황 요약' in actual_categories and result:
-            result.pydantic.final_answer = format_maritime_report(report=result.pydantic, context=self.context)
-            response = result.pydantic.final_answer
+            response = format_maritime_report(report=result.pydantic, context=self.context)
 
         self.context.ui_handler.on_task_complete("analyze_maritime_situation_task")
         self.context.ui_handler.on_task_result("analyze_maritime_situation_task", result.pydantic)

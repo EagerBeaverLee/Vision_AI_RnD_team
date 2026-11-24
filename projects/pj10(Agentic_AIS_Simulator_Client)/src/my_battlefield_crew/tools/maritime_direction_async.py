@@ -7,6 +7,8 @@ import pandas as pd
 import geopandas as gpd
 from my_battlefield_crew.chainlit_app.schemas import SimulationContext
 from my_battlefield_crew.engine.preprocessor import compress_ship_data_duckdb_further
+from my_battlefield_crew.map.visualizer import generate_direction_hist_widget
+from my_battlefield_crew.map.visualizer import generate_direction_map_widget
 
 
 def _run_direction_analysis(context: SimulationContext) -> str:
@@ -79,6 +81,12 @@ def _run_direction_analysis(context: SimulationContext) -> str:
     
     # 4. 결과 실행 및 JSON 변환
     result_df = con.execute(query).df().to_dict(orient="records")
+
+    hist_html = generate_direction_hist_widget(context=context)
+
+    map_html = generate_direction_map_widget(context=context)
+
+    context.attach_bokeh_direction_map(key="main_directions", html_content_hist=hist_html, html_content_map=map_html, height_hist=330, height_map=620)
     
     if context.ui_handler:
         context.ui_handler.on_tool_complete("주요 방향 분석")

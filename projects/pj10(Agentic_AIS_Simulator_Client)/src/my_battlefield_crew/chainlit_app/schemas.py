@@ -45,19 +45,19 @@ class SimulationContext:
         self.time.end_time = end_time
         self.time.time_diff = time_diff
 
-    def attach_bokeh_map(
+    def attach_bokeh_odflow_map(
         self, key: str, html_content: str, height: int = 330
     ) -> None:
         """Bokeh HTML을 저장소에 등록하고 마크다운 삽입용 iframe 블록으로 변환해 저장"""
         map_url = save_map_html(html_content)
         self.artifacts[key] = textwrap.dedent(f"""\
 <!-- BOKEH_MAP_START -->
-<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin: 16px 0;">
-<iframe src="{map_url}" width="49%" height="{height}" style="border: 1px solid #334155; border-radius: 8px;"></iframe>
+<div style="display: flex; flex-wrap: wrap; width: 100%; justify-content: center; gap: 12px; margin: 16px 0;">
+<iframe src="{map_url}" width="78%" height="{height}" style="border: 1px solid #374A37; border-radius: 8px;"></iframe>
 </div>
 <!-- BOKEH_MAP_END -->""")
 
-    def attach_bokeh_map_grid(
+    def attach_bokeh_major_port_map_grid(
         self, key: str, html_contents: List[str], height: int = 360
     ) -> None:
         """여러 개의 Bokeh HTML을 2열(2x2 등) 그리드 형태의 단일 블록으로 저장"""
@@ -70,7 +70,7 @@ class SimulationContext:
             map_url = save_map_html(html_content)
             iframes.append(
                 f'<iframe src="{map_url}" width="49%" height="{height}" '
-                'style="border: 1px solid #334155; border-radius: 8px;"></iframe>'
+                'style="border: 1px solid #374A37; border-radius: 8px;"></iframe>'
             )
 
         self.artifacts[key] = (
@@ -81,6 +81,31 @@ class SimulationContext:
             "<!-- BOKEH_MAP_END -->"
         )
 
+    def attach_bokeh_direction_map(
+        self, key: str, html_content_hist: str, html_content_map: str, height_hist: int = 330, height_map: int = 620
+    ) -> None:
+        iframes = []
+
+        map_url_hist = save_map_html(html_content_hist)
+        iframes.append(
+            f'<iframe src="{map_url_hist}" width="100%" height="{height_hist}" '
+            'style="border: 1px solid #374A37; border-radius: 8px; margin: 12px 0;"></iframe>'
+        )
+
+        map_url_map = save_map_html(html_content_map)
+        iframes.append(
+            f'<iframe src="{map_url_map}" width="100%" height="{height_map}" '
+            'style="border: 1px solid #374A37; border-radius: 8px; margin: 12px 0;"></iframe>'
+        )
+
+        self.artifacts[key] = (
+            "<!-- BOKEH_MAP_START -->\n"
+            '<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin: 16px 0;">\n'
+            + "\n".join(iframes)
+            + "\n</div>\n"
+            "<!-- BOKEH_MAP_END -->"
+        )
+    
     def attach_table_block(
         self, key: str, html_content: str, height: int = 300
     ) -> None:
@@ -88,7 +113,7 @@ class SimulationContext:
         table_widget_url = save_map_html(html_content)
         self.artifacts[key] = textwrap.dedent(f"""\
 <!-- WIDGET_START -->
-<iframe src="{table_widget_url}" width="100%" height="{height}" style="border: 1px solid #334155; border-radius: 8px; margin: 14px 0;" scrolling="no"></iframe>
+<iframe src="{table_widget_url}" width="100%" height="{height}" style="border: 1px solid #374A37; border-radius: 8px; margin: 14px 0;" scrolling="no"></iframe>
 <!-- WIDGET_END -->""")
 
 

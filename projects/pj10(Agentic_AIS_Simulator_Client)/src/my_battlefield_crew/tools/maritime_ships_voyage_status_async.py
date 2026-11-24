@@ -77,7 +77,7 @@ def _run_ship_status_extraction(context: SimulationContext) -> str:
     html_content = generate_ship_table_widget(render_map_dict)
 
     # 내부적으로 map_store 저장 + iframe 블록 조립 완료
-    context.attach_table_block(key="ship_voyage_status", html_content=html_content)
+    context.attach_table_block(key="ship_voyage_status", html_content=html_content, height=450)
 
     final_report = {
         "ship_types": data_dict_shiptype,

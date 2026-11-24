@@ -518,12 +518,13 @@ class Window(QMainWindow):
         # Canvas / WebGL 가속 및 로컬-원격 리소스 허용 - chainlit 출력 오류 방지
         profile = QWebEngineProfile.defaultProfile()
         profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
+        profile.setHttpCacheMaximumSize(200 * 1024 * 1024)  # 디스크 캐시 200MB 할당
         
         self.ui.experiment_txt.settings().setAttribute(
             QWebEngineSettings.WebAttribute.JavascriptEnabled, True
         )
         self.ui.experiment_txt.settings().setAttribute(
-            QWebEngineSettings.WebAttribute.Accelerated2dCanvasEnabled, True
+            QWebEngineSettings.WebAttribute.Accelerated2dCanvasEnabled, False
         )
         self.ui.experiment_txt.settings().setAttribute(
             QWebEngineSettings.WebAttribute.WebGLEnabled, True

@@ -74,7 +74,7 @@ def _run_traffic_flow_analysis(context: SimulationContext) -> str:
     html_content = render_od_flow_map(context)
         
     # 내부적으로 map_store 저장 + iframe 블록 조립 완료
-    context.attach_bokeh_map(key="main_routes", html_content=html_content)
+    context.attach_bokeh_odflow_map(key="main_routes", html_content=html_content)
 
     result = {
         "main_routes": flow_summary_df.to_dict(orient="records")
