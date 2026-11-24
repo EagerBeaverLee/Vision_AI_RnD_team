@@ -1,0 +1,38 @@
+{
+  "RED_UNITS": [
+    {"name": "RED 1 CO", "type": "INF", "x": 220, "y": 180, "hp": 120, "attack": 13, "speed": 1.2, "rng": 120, "detect_prob": 0.9},
+    {"name": "RED 2 CO", "type": "INF", "x": 540, "y": 240, "hp": 100, "attack": 30, "speed": 1.2, "rng": 130, "detect_prob": 0.9},
+    {"name": "RED 3 CO (-1)", "type": "INF", "x": 610, "y": 150, "hp": 500, "attack": 15, "speed": 1.0, "rng": 300, "detect_prob": 0.9},
+    {"name": "RED 3 CO 1PLT", "type": "INF", "x": 750, "y": 280, "hp": 80, "attack": 10, "speed": 1.2, "rng": 110, "detect_prob": 0.9}
+  ],
+  "BLUE_UNITS": [
+    {"name": "BLUE 1 CO", "type": "INF", "x": 180, "y": 520, "hp": 100, "attack": 14, "speed": 0.5, "rng": 120, "detect_prob": 0},
+    {"name": "BLUE 2 CO", "type": "INF", "x": 500, "y": 520, "hp": 100, "attack": 14, "speed": 0.5, "rng": 120, "detect_prob": 0},
+    {"name": "BLUE 3 CO (-1)", "type": "INF", "x": 720, "y": 520, "hp": 80, "attack": 12, "speed": 0.5, "rng": 110, "detect_prob": 0},
+    {"name": "BLUE Tank CO", "type": "TANK", "x": 120, "y": 620, "hp": 240, "attack": 32, "speed": 0.55, "rng": 160, "detect_prob": 0},
+    {"name": "BLUE 3 CO 1PLT", "type": "INF", "x": 200, "y": 620, "hp": 80, "attack": 12, "speed": 0.5, "rng": 110, "detect_prob": 0}
+  ],
+  "WAYPOINTS": {
+    "COA1": {
+      "BLUE Tank CO": [[500, 550], [500, 250], [630, 120], [630, 70]],
+      "BLUE 2 CO": [[520, 380], [580, 220], [630, 70]],
+      "BLUE 1 CO": [[200, 380], [220, 240]],
+      "BLUE 3 CO (-1)": [[720, 420], [750, 320]],
+      "BLUE 3 CO 1PLT": [[480, 580], [500, 380]]
+    },
+    "COA2": {
+      "BLUE 3 CO (-1)": [[750, 420], [760, 280], [630, 150]],
+      "BLUE 3 CO 1PLT": [[700, 580], [740, 350], [630, 150]],
+      "BLUE Tank CO": [[500, 600], [500, 350], [630, 100]],
+      "BLUE 1 CO": [[200, 420]],
+      "BLUE 2 CO": [[500, 420]]
+    },
+    "COA3": {
+      "BLUE 1 CO": [[180, 380], [200, 200]],
+      "BLUE Tank CO": [[150, 480], [220, 220], [630, 120], [630, 70]],
+      "BLUE 2 CO": [[450, 480], [500, 320], [630, 150]],
+      "BLUE 3 CO (-1)": [[700, 480], [630, 150]],
+      "BLUE 3 CO 1PLT": [[150, 480], [220, 220], [630, 120], [630, 70]]
+    }
+  }
+}

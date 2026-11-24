@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COP Battle Simulation & COA Monte Carlo Testing</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Inter:wght@300;400;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0f19;
+      color: #e2e8f0;
+    }
+    .font-military {
+      font-family: 'Orbitron', sans-serif;
+    }
+    /* Custom Scrollbar for Tactical Log */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111827;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-slate-950 text-slate-100 select-none">
+
+  <!-- TOP HEADER / TACTICAL BAR -->
+  <header class="bg-slate-900/90 border-b border-slate-800 px-6 py-3 flex items-center justify-between shrink-0 shadow-lg backdrop-blur-md">
+    <div class="flex items-center space-x-3">
+      <div class="p-2 bg-blue-600/20 border border-blue-500/40 rounded-lg text-blue-400">
+        <i class="fa-solid me-0 fa-crosshairs text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold font-military tracking-wider text-blue-400 flex items-center gap-2">
+          COP BATTLE SIMULATOR <span class="text-xs px-2 py-0.5 rounded bg-blue-900/50 border border-blue-700/50 text-blue-300">v2.4 M&S</span>
+        </h1>
+        <p class="text-xs text-slate-400">Tactical COA Win-Rate Analyzer & Real-time Engagement Simulator</p>
+      </div>
+    </div>
+
+    <!-- GLOBAL STATS SUMMARY BANNER -->
+    <div class="hidden lg:flex items-center space-x-6 text-xs bg-slate-950/60 border border-slate-800 px-4 py-2 rounded-lg">
+      <div class="text-center">
+        <div class="text-slate-500 uppercase font-semibold">COA 1 Win Rate</div>
+        <div id="top-win-coa1" class="font-military font-bold text-amber-400 text-sm">-- %</div>
+      </div>
+      <div class="h-6 w-px bg-slate-800"></div>
+      <div class="text-center">
+        <div class="text-slate-500 uppercase font-semibold">COA 2 Win Rate</div>
+        <div id="top-win-coa2" class="font-military font-bold text-emerald-400 text-sm">-- %</div>
+      </div>
+      <div class="h-6 w-px bg-slate-800"></div>
+      <div class="text-center">
+        <div class="text-slate-500 uppercase font-semibold">COA 3 Win Rate</div>
+        <div id="top-win-coa3" class="font-military font-bold text-indigo-400 text-sm">-- %</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT LAYOUT -->
+  <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+    
+    <!-- LEFT CONTROL & ANALYTICS PANEL -->
+    <aside class="w-full md:w-80 lg:w-96 bg-slate-900/80 border-r border-slate-800 flex flex-col p-4 space-y-4 overflow-y-auto shrink-0 z-10 backdrop-blur">
+      
+      <!-- COA SELECTOR -->
+      <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2">
+        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider font-military flex items-center gap-2">
+          <i class="fa-solid fa-route text-blue-400"></i> Selected Course of Action
+        </label>
+        <div class="grid grid-cols-3 gap-2">
+          <button id="btn-coa1" onclick="setCOA(1)" class="px-2 py-2 text-xs font-semibold rounded-lg border transition-all duration-200 bg-blue-600/20 border-blue-500 text-blue-300 hover:bg-blue-600/30">
+            COA 1<br><span class="text-[10px] font-normal text-slate-400">Center</span>
+          </button>
+          <button id="btn-coa2" onclick="setCOA(2)" class="px-2 py-2 text-xs font-semibold rounded-lg border transition-all duration-200 bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-500">
+            COA 2<br><span class="text-[10px] font-normal text-slate-400">Right</span>
+          </button>
+          <button id="btn-coa3" onclick="setCOA(3)" class="px-2 py-2 text-xs font-semibold rounded-lg border transition-all duration-200 bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-500">
+            COA 3<br><span class="text-[10px] font-normal text-slate-400">Left</span>
+          </button>
+        </div>
+        <div id="coa-desc" class="text-xs text-slate-300 bg-slate-900/90 p-2.5 rounded-lg border border-slate-800/80 leading-relaxed min-h-[58px]">
+          COA 1: Center Main Attack via Highway 1. Armor leading, flank units fixing enemy forces. High speed, high risk.
+        </div>
+      </div>
+
+      <!-- EXECUTION CONTROLS -->
+      <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider font-military">Simulation Control</span>
+          <span id="sim-status" class="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold">READY</span>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="btn-play" onclick="togglePlay()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-900/30">
+            <i class="fa-solid fa-play"></i> Start Sim
+          </button>
+          <button onclick="resetSim()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg text-xs transition border border-slate-700">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+        </div>
+
+        <!-- SIMULATION SPEED -->
+        <div>
+          <div class="flex justify-between text-xs text-slate-400 mb-1">
+            <span>Playback Speed</span>
+            <span id="speed-label" class="font-bold text-blue-400 font-military">1x</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1.5">
+            <button onclick="setSpeed(1)" class="speed-btn py-1 text-xs bg-blue-600/30 border border-blue-500/50 text-blue-300 rounded font-semibold">1x</button>
+            <button onclick="setSpeed(2)" class="speed-btn py-1 text-xs bg-slate-800 border border-slate-700 text-slate-400 rounded font-semibold">2x</button>
+            <button onclick="setSpeed(5)" class="speed-btn py-1 text-xs bg-slate-800 border border-slate-700 text-slate-400 rounded font-semibold">5x</button>
+            <button onclick="setSpeed(10)" class="speed-btn py-1 text-xs bg-slate-800 border border-slate-700 text-slate-400 rounded font-semibold">10x</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MONTE CARLO BATCH ENGINE -->
+      <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider font-military">Monte Carlo Engine</span>
+          <i class="fa-solid fa-dice text-indigo-400"></i>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <input type="number" id="mc-runs" value="100" min="10" max="1000" step="10" class="w-24 bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-center font-military font-bold text-indigo-300 focus:outline-none focus:border-indigo-500">
+          <button id="btn-monte" onclick="runMonteCarlo()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-900/30">
+            <i class="fa-solid fa-bolt"></i> Run Batch Test
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400 leading-tight">Executes N stochastic combat iterations calculating probabilistic combat outcomes, terrain penalties, and weapon effectiveness variance.</p>
+      </div>
+
+      <!-- MONTE CARLO RESULTS BOX -->
+      <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2 flex-1 flex flex-col justify-between">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider font-military">COA Analytics Summary</span>
+          <span id="active-coa-tag" class="text-[10px] px-2 py-0.5 bg-blue-900/50 text-blue-300 border border-blue-700/50 rounded font-military">COA 1</span>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <!-- Win Rate Progress Bar -->
+          <div>
+            <div class="flex justify-between text-slate-300 mb-1 font-semibold">
+              <span>Victory Rate</span>
+              <span id="res-winrate" class="font-military font-bold text-blue-400">-- %</span>
+            </div>
+            <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div id="bar-winrate" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Average Blue Casualties -->
+          <div>
+            <div class="flex justify-between text-slate-300 mb-1">
+              <span class="text-slate-400">Avg Blue Losses</span>
+              <span id="res-blue-loss" class="font-military text-cyan-400">-- %</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div id="bar-blue-loss" class="h-full bg-cyan-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Average Red Casualties -->
+          <div>
+            <div class="flex justify-between text-slate-300 mb-1">
+              <span class="text-slate-400">Avg Red Losses</span>
+              <span id="res-red-loss" class="font-military text-rose-400">-- %</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div id="bar-red-loss" class="h-full bg-rose-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Avg Time -->
+          <div class="pt-1 flex justify-between border-t border-slate-800/80 text-[11px]">
+            <span class="text-slate-400">Avg Mission Time:</span>
+            <span id="res-time" class="font-military text-slate-200">-- sec</span>
+          </div>
+        </div>
+
+        <div class="text-[10px] text-slate-400 italic pt-2 text-center">
+          * Powered by Lanchester Combat Power Model
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- CENTER VISUAL CANVA BATTLEFIELD -->
+    <section class="flex-1 relative flex flex-col items-center justify-center bg-slate-950 p-2 md:p-4 overflow-hidden">
+      
+      <!-- CANVAS CONTAINER -->
+      <div class="relative w-full h-full max-w-[1000px] max-h-[700px] aspect-[4/3] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex items-center justify-center">
+        <canvas id="battleCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+        <!-- CANVAS OVERLAY BADGES -->
+        <div class="absolute top-3 left-3 bg-slate-950/80 border border-slate-800 backdrop-blur px-3 py-1.5 rounded-lg text-xs font-military font-semibold flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>COP MAP OPERATIONAL VIEW</span>
+        </div>
+
+        <div class="absolute top-3 right-3 bg-slate-950/80 border border-slate-800 backdrop-blur px-3 py-1.5 rounded-lg text-xs font-military font-semibold flex items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-xs bg-blue-500"></span>
+            <span class="text-slate-300">Blue Force</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-xs bg-rose-500"></span>
+            <span class="text-slate-300">Red Force</span>
+          </div>
+        </div>
+
+        <!-- PROGRESS BAR OVERLAY (DURING MONTE CARLO) -->
+        <div id="mc-modal" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center space-y-4 z-30">
+          <div class="p-4 bg-indigo-600/20 border border-indigo-500/40 rounded-full text-indigo-400 text-3xl animate-bounce">
+            <i class="fa-solid fa-microchip"></i>
+          </div>
+          <h3 class="text-lg font-bold font-military text-indigo-300 tracking-wider">EXECUTING MONTE CARLO SIMULATION...</h3>
+          <div class="w-72 h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+            <div id="mc-progress-bar" class="h-full bg-indigo-500 transition-all duration-100" style="width: 0%"></div>
+          </div>
+          <p id="mc-status-text" class="text-xs font-military text-slate-400">Processing Iteration 0 / 100</p>
+        </div>
+
+      </div>
+
+      <!-- BOTTOM REAL-TIME LOG & LEGEND -->
+      <div class="w-full max-w-[1000px] h-28 mt-2 bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex gap-4 overflow-hidden shadow-md">
+        <!-- LOG AREA -->
+        <div class="flex-1 flex flex-col">
+          <div class="text-[10px] font-bold font-military text-slate-400 uppercase tracking-wider mb-1 flex justify-between">
+            <span>Tactical Engagement Log</span>
+            <span class="text-slate-400">Live Telemetry</span>
+          </div>
+          <div id="combat-log" class="flex-1 overflow-y-auto space-y-1 text-xs font-mono text-slate-300 pr-2">
+            <div class="text-slate-400">[00:00] Simulation initialized. Select COA and start operational test.</div>
+          </div>
+        </div>
+
+        <!-- TERRAIN LEGEND -->
+        <div class="w-48 bg-slate-950/60 border border-slate-800/80 rounded-lg p-2 text-[11px] space-y-1 shrink-0 flex flex-col justify-center">
+          <div class="font-bold text-slate-400 font-military text-[10px] uppercase mb-0.5">Terrain Modifiers</div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="w-3 h-2 bg-amber-700/60 border border-amber-600 rounded-xs"></span>
+            <span>Ridge/Highland (+30% Def)</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="w-3 h-1 bg-slate-400"></span>
+            <span>Highway 1 (+40% Speed)</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="w-3 h-3 border border-dashed border-purple-400 rounded-xs"></span>
+            <span>Objective Zone</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- JAVASCRIPT SIMULATION ENGINE -->
+  <script>
+    // --- CONSTANTS & CONFIGURATIONS ---
+    const CANVAS = document.getElementById('battleCanvas');
+    const CTR = CANVAS.getContext('2d');
+    
+    // Internal coordinate space (1000 x 700)
+    const W = 1000;
+    const H = 700;
+    CANVAS.width = W;
+    CANVAS.height = H;
+
+    // COA Descriptions
+    const COA_DESCS = {
+      1: "COA 1: Center Main Attack via Highway 1. Tank CO & 2 CO advance directly up the center road. Fast, direct, exposed to crossfire from Obj 500 and Ridge.",
+      2: "COA 2: Right Flank Main Attack. 3 CO (-1) reinforced with 1st Platoon clears eastern hills to capture Obj 500 before main push to Objective.",
+      3: "COA 3: Left Flank Attack. 1 CO reinforced leads main effort up the Western Ridge Line to secure high ground advantages before enveloping Objective."
+    };
+
+    // State Variables
+    let currentCOA = 1;
+    let isRunning = false;
+    let simSpeed = 1;
+    let animFrameId = null;
+    let simTime = 0;
+    let units = [];
+    let bullets = [];
+    let explosions = [];
+    let simulationEnded = false;
+
+    // Global Statistics Engine Storage
+    let statsData = {
+      1: { runs: 0, wins: 0, blueLoss: 0, redLoss: 0, time: 0 },
+      2: { runs: 0, wins: 0, blueLoss: 0, redLoss: 0, time: 0 },
+      3: { runs: 0, wins: 0, blueLoss: 0, redLoss: 0, time: 0 }
+    };
+
+    // Objective Position
+    const OBJECTIVE = { x: 620, y: 70, radius: 45, title: "Objective" };
+    const HILL_500 = { x: 580, y: 160, radius: 35, title: "Obj 500" };
+
+    // --- TERRAIN DEFINITIONS ---
+    const RIDGE_LINES = [
+      // Left Ridge
+      { x1: 50, y1: 270, x2: 320, y2: 270, width: 60 },
+      // Center High Ground
+      { x1: 370, y1: 300, x2: 470, y2: 300, width: 50 },
+      // Right Ridge
+      { x1: 530, y1: 350, x2: 780, y2: 350, width: 50 }
+    ];
+
+    const ROAD_PATH = [
+      { x: 260, y: 700 },
+      { x: 380, y: 480 },
+      { x: 500, y: 220 },
+      { x: 570, y: 0 }
+    ];
+
+    // --- UNIT FACTORY & INITIALIZATION ---
+    function createUnits(coa) {
+      const u = [];
+
+      // Helper unit generator
+      const addU = (id, side, type, name, x, y, hp, atk, range, speed, targetPath) => {
+        u.push({
+          id, side, type, name,
+          x, y,
+          maxHp: hp,
+          hp: hp,
+          atk: atk,
+          range: range,
+          speed: speed,
+          path: targetPath || [],
+          pathIdx: 0,
+          target: null,
+          cooldown: 0,
+          inCover: false,
+          status: 'advancing'
+        });
+      };
+
+      // ---------------- RED FORCE (DEFENDERS) ----------------
+      // 1 CO (West Ridge)
+      addU('R1', 'red', 'infantry', 'Red 1 CO', 180, 160, 250, 18, 180, 0.4, []);
+      // 2 CO (Center Road Def)
+      addU('R2', 'red', 'infantry', 'Red 2 CO', 530, 260, 200, 16, 170, 0.4, []);
+      // 3 CO (-1) (500 Hill)
+      addU('R3', 'red', 'infantry', 'Red 3 CO(-1)', 620, 160, 220, 20, 190, 0.4, []);
+      // 3 CO 1 PLT (East Hills)
+      addU('R4', 'red', 'infantry', 'Red 3 CO 1PLT', 780, 240, 130, 14, 160, 0.4, []);
+
+      // ---------------- BLUE FORCE (ATTACKERS) ----------------
+      if (coa === 1) {
+        // COA 1: Center Highway Attack
+        // Main Effort: Tank CO & 2 CO up the road
+        addU('B_TANK', 'blue', 'armor', 'Tank CO (Main)', 260, 640, 500, 45, 230, 1.1, [
+          {x: 270, y: 620}, {x: 380, y: 480}, {x: 500, y: 280}, {x: 580, y: 160}, {x: 620, y: 70}
+        ]);
+        addU('B_2CO', 'blue', 'infantry', 'Blue 2 CO (Center)', 450, 470, 200, 16, 160, 0.8, [
+          {x: 480, y: 380}, {x: 530, y: 260}, {x: 620, y: 70}
+        ]);
+        // Supporting: 1 CO Left, 3 CO Right fixing
+        addU('B_1CO', 'blue', 'infantry', 'Blue 1 CO (Fixing)', 180, 470, 180, 15, 160, 0.7, [
+          {x: 180, y: 320}
+        ]);
+        addU('B_3CO', 'blue', 'infantry', 'Blue 3 CO (Fixing)', 750, 470, 180, 15, 160, 0.7, [
+          {x: 750, y: 340}
+        ]);
+        addU('B_RES', 'blue', 'infantry', '3 CO 1PLT (Res)', 320, 620, 120, 14, 150, 0.8, [
+          {x: 380, y: 480}, {x: 500, y: 280}, {x: 620, y: 70}
+        ]);
+      } 
+      else if (coa === 2) {
+        // COA 2: Right Flank Attack
+        // Main Effort: 3 CO (-1) + 3 CO 1PLT reinforced through East
+        addU('B_3CO', 'blue', 'infantry', 'Blue 3 CO (Main)', 750, 470, 220, 20, 170, 0.8, [
+          {x: 780, y: 320}, {x: 720, y: 200}, {x: 620, y: 160}, {x: 620, y: 70}
+        ]);
+        addU('B_RES', 'blue', 'infantry', '3 CO 1PLT (Reinforce)', 700, 520, 140, 15, 160, 0.85, [
+          {x: 760, y: 340}, {x: 650, y: 180}, {x: 620, y: 70}
+        ]);
+        // Supporting Effort: 2 CO Center, 1 CO Left
+        addU('B_2CO', 'blue', 'infantry', 'Blue 2 CO (Center)', 450, 470, 180, 15, 160, 0.7, [
+          {x: 480, y: 380}
+        ]);
+        addU('B_1CO', 'blue', 'infantry', 'Blue 1 CO (Fixing)', 180, 470, 180, 15, 160, 0.7, [
+          {x: 180, y: 320}
+        ]);
+        addU('B_TANK', 'blue', 'armor', 'Tank CO (Reserve)', 260, 640, 500, 45, 230, 0.9, [
+          {x: 270, y: 620}, {x: 380, y: 480}, {x: 520, y: 200}, {x: 620, y: 70}
+        ]);
+      } 
+      else if (coa === 3) {
+        // COA 3: Left Flank Ridge Attack
+        // Main Effort: 1 CO + Tank CO sweeping Western Ridge
+        addU('B_1CO', 'blue', 'infantry', 'Blue 1 CO (Main)', 180, 470, 220, 20, 170, 0.8, [
+          {x: 180, y: 280}, {x: 320, y: 180}, {x: 480, y: 120}, {x: 620, y: 70}
+        ]);
+        addU('B_TANK', 'blue', 'armor', 'Tank CO (Support Left)', 120, 550, 500, 45, 230, 0.8, [
+          {x: 140, y: 300}, {x: 280, y: 200}, {x: 500, y: 100}, {x: 620, y: 70}
+        ]);
+        // Supporting
+        addU('B_2CO', 'blue', 'infantry', 'Blue 2 CO (Center)', 450, 470, 180, 15, 160, 0.6, [
+          {x: 480, y: 380}
+        ]);
+        addU('B_3CO', 'blue', 'infantry', 'Blue 3 CO (Right)', 750, 470, 180, 15, 160, 0.6, [
+          {x: 750, y: 340}
+        ]);
+        addU('B_RES', 'blue', 'infantry', '3 CO 1PLT (Res)', 260, 640, 120, 14, 150, 0.75, [
+          {x: 200, y: 350}, {x: 450, y: 120}, {x: 620, y: 70}
+        ]);
+      }
+
+      return u;
+    }
+
+    // --- USER INTERFACE & CONTROLS ---
+    function setCOA(num) {
+      if (isRunning) resetSim();
+      currentCOA = num;
+      
+      // Update Tab Styles
+      [1, 2, 3].forEach(i => {
+        const btn = document.getElementById(`btn-coa${i}`);
+        if (i === num) {
+          btn.className = "px-2 py-2 text-xs font-semibold rounded-lg border transition-all duration-200 bg-blue-600/20 border-blue-500 text-blue-300 shadow-md";
+        } else {
+          btn.className = "px-2 py-2 text-xs font-semibold rounded-lg border transition-all duration-200 bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-500";
+        }
+      });
+
+      document.getElementById('coa-desc').innerText = COA_DESCS[num];
+      document.getElementById('active-coa-tag').innerText = `COA ${num}`;
+      
+      updateStatsUI();
+      resetSim();
+      logMsg(`Switched to COA ${num}. Tactical deployment updated.`);
+    }
+
+    function setSpeed(sp) {
+      simSpeed = sp;
+      document.getElementById('speed-label').innerText = `${sp}x`;
+      document.querySelectorAll('.speed-btn').forEach(btn => {
+        if (btn.innerText === `${sp}x`) {
+          btn.className = "speed-btn py-1 text-xs bg-blue-600/30 border border-blue-500/50 text-blue-300 rounded font-semibold";
+        } else {
+          btn.className = "speed-btn py-1 text-xs bg-slate-800 border border-slate-700 text-slate-400 rounded font-semibold";
+        }
+      });
+    }
+
+    function togglePlay() {
+      if (simulationEnded) resetSim();
+      isRunning = !isRunning;
+      const btn = document.getElementById('btn-play');
+      const status = document.getElementById('sim-status');
+
+      if (isRunning) {
+        btn.innerHTML = `<i class="fa-solid fa-pause"></i> Pause Sim`;
+        btn.className = "flex-1 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-900/30";
+        status.innerText = "RUNNING";
+        status.className = "text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold";
+        logMsg(`Simulation started [COA ${currentCOA}].`);
+        lastTimestamp = performance.now();
+        requestAnimationFrame(gameLoop);
+      } else {
+        btn.innerHTML = `<i class="fa-solid fa-play"></i> Resume Sim`;
+        btn.className = "flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-900/30";
+        status.innerText = "PAUSED";
+        status.className = "text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold";
+      }
+    }
+
+    function resetSim() {
+      isRunning = false;
+      simulationEnded = false;
+      simTime = 0;
+      bullets = [];
+      explosions = [];
+      units = createUnits(currentCOA);
+
+      const btn = document.getElementById('btn-play');
+      btn.innerHTML = `<i class="fa-solid fa-play"></i> Start Sim`;
+      btn.className = "flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-900/30";
+      
+      const status = document.getElementById('sim-status');
+      status.innerText = "READY";
+      status.className = "text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold";
+
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      draw();
+      logMsg(`Tactical map reset to initial state.`);
+    }
+
+    function logMsg(msg) {
+      const logBox = document.getElementById('combat-log');
+      const timeStr = `[${Math.floor(simTime / 60).toString().padStart(2, '0')}:${Math.floor(simTime % 60).toString().padStart(2, '0')}]`;
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="text-blue-400">${timeStr}</span> ${msg}`;
+      logBox.appendChild(div);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // --- TERRAIN HELPERS ---
+    function checkInRidge(x, y) {
+      for (let r of RIDGE_LINES) {
+        if (x >= r.x1 - 20 && x <= r.x2 + 20 && Math.abs(y - r.y1) <= r.width / 2) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function checkOnRoad(x, y) {
+      // Near central highway
+      const distToRoad = Math.abs((x - 260) - (y - 700) * (-0.45));
+      return (x > 220 && x < 600 && y > 150 && distToRoad < 45);
+    }
+
+    // --- SIMULATION STEP ENGINE ---
+    let lastTimestamp = 0;
+
+    function gameLoop(timestamp) {
+      if (!isRunning) return;
+
+      const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.1) * simSpeed;
+      lastTimestamp = timestamp;
+
+      update(dt);
+      draw();
+
+      if (!simulationEnded) {
+        animFrameId = requestAnimationFrame(gameLoop);
+      }
+    }
+
+    function update(dt) {
+      simTime += dt;
+
+      // 1. Move Units & Check Engagement Target
+      units.forEach(u => {
+        if (u.hp <= 0) return;
+
+        // Cover Modifier Check
+        u.inCover = checkInRidge(u.x, u.y);
+
+        // Target Acquisition (Closest alive enemy in range)
+        let closest = null;
+        let minDist = u.range;
+
+        units.forEach(enemy => {
+          if (enemy.side !== u.side && enemy.hp > 0) {
+            const d = Math.hypot(enemy.x - u.x, enemy.y - u.y);
+            if (d < minDist) {
+              minDist = d;
+              closest = enemy;
+            }
+          }
+        });
+
+        u.target = closest;
+
+        // If target found -> Engage
+        if (u.target) {
+          u.cooldown -= dt;
+          if (u.cooldown <= 0) {
+            fireWeapon(u, u.target);
+            u.cooldown = u.type === 'armor' ? 1.8 : 0.8;
+          }
+        } 
+        // Else -> Move along designated operational path
+        else if (u.path && u.pathIdx < u.path.length) {
+          const wp = u.path[u.pathIdx];
+          const distToWp = Math.hypot(wp.x - u.x, wp.y - u.y);
+
+          if (distToWp < 10) {
+            u.pathIdx++;
+          } else {
+            let speedMult = 1.0;
+            if (u.type === 'armor' && checkOnRoad(u.x, u.y)) speedMult = 1.4; // Highway Speed Bonus
+
+            const moveDist = u.speed * 40 * speedMult * dt;
+            u.x += ((wp.x - u.x) / distToWp) * moveDist;
+            u.y += ((wp.y - u.y) / distToWp) * moveDist;
+          }
+        }
+      });
+
+      // 2. Update Bullets & Projectiles
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx * dt * 400;
+        b.y += b.vy * dt * 400;
+        b.life -= dt;
+
+        // Check Hit
+        const dist = Math.hypot(b.target.x - b.x, b.target.y - b.y);
+        if (dist < 15 || b.life <= 0) {
+          if (dist < 20 && b.target.hp > 0) {
+            // Damage Calculation with Lanchester Modifiers
+            let defMod = b.target.inCover ? 0.65 : 1.0; // 35% cover reduction
+            if (b.target.side === 'red' && (Math.hypot(b.target.x - HILL_500.x, b.target.y - HILL_500.y) < HILL_500.radius)) {
+              defMod *= 0.7; // High ground bonus
+            }
+
+            const finalDmg = b.damage * defMod * (0.85 + Math.random() * 0.3);
+            b.target.hp = Math.max(0, b.target.hp - finalDmg);
+
+            // Explosions
+            explosions.push({ x: b.x, y: b.y, radius: b.isArmor ? 18 : 6, maxRadius: b.isArmor ? 22 : 8, life: 0.2 });
+
+            if (b.target.hp <= 0) {
+              logMsg(`<span class="${b.target.side === 'blue' ? 'text-rose-400' : 'text-cyan-400'}">${b.target.name} neutralized!</span>`);
+            }
+          }
+          bullets.splice(i, 1);
+        }
+      }
+
+      // 3. Update Explosions
+      for (let i = explosions.length - 1; i >= 0; i--) {
+        explosions[i].life -= dt;
+        if (explosions[i].life <= 0) explosions.splice(i, 1);
+      }
+
+      // 4. Check Win/Loss Conditions
+      checkVictoryConditions();
+    }
+
+    function fireWeapon(attacker, target) {
+      const angle = Math.atan2(target.y - attacker.y, target.x - attacker.x);
+      bullets.push({
+        x: attacker.x,
+        y: attacker.y,
+        vx: Math.cos(angle),
+        vy: Math.sin(angle),
+        target: target,
+        damage: attacker.atk,
+        isArmor: attacker.type === 'armor',
+        side: attacker.side,
+        life: 1.5
+      });
+    }
+
+    function checkVictoryConditions() {
+      const blueAlive = units.filter(u => u.side === 'blue' && u.hp > 0);
+      const redAlive = units.filter(u => u.side === 'red' && u.hp > 0);
+
+      // Check Objective Reached
+      const blueAtObj = blueAlive.some(u => Math.hypot(u.x - OBJECTIVE.x, u.y - OBJECTIVE.y) < OBJECTIVE.radius);
+
+      let result = null;
+
+      if (blueAtObj || redAlive.length === 0) {
+        result = { win: true, reason: "Blue Forces captured Objective Zone!" };
+      } else if (blueAlive.length === 0 || simTime > 180) {
+        result = { win: false, reason: "Blue Attack defeated or mission timed out." };
+      }
+
+      if (result && !simulationEnded) {
+        simulationEnded = true;
+        isRunning = false;
+
+        const status = document.getElementById('sim-status');
+        status.innerText = result.win ? "VICTORY" : "DEFEAT";
+        status.className = result.win 
+          ? "text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 font-bold"
+          : "text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold";
+
+        logMsg(`<b class="${result.win ? 'text-blue-400' : 'text-rose-400'}">${result.reason}</b>`);
+
+        // Record Stats
+        recordSingleRunResult(result.win);
+      }
+    }
+
+    // --- RENDER ENGINE ---
+    function draw() {
+      CTR.clearRect(0, 0, W, H);
+
+      // 1. Draw Background Grid
+      CTR.strokeStyle = '#1e293b';
+      CTR.lineWidth = 1;
+      for (let x = 0; x < W; x += 40) {
+        CTR.beginPath(); CTR.moveTo(x, 0); CTR.lineTo(x, H); CTR.stroke();
+      }
+      for (let y = 0; y < H; y += 40) {
+        CTR.beginPath(); CTR.moveTo(0, y); CTR.lineTo(W, y); CTR.stroke();
+      }
+
+      // 2. Draw Highway Road
+      CTR.beginPath();
+      CTR.moveTo(ROAD_PATH[0].x, ROAD_PATH[0].y);
+      for (let i = 1; i < ROAD_PATH.length; i++) {
+        CTR.lineTo(ROAD_PATH[i].x, ROAD_PATH[i].y);
+      }
+      CTR.strokeStyle = '#334155';
+      CTR.lineWidth = 28;
+      CTR.stroke();
+
+      CTR.strokeStyle = '#64748b';
+      CTR.lineWidth = 2;
+      CTR.setLineDash([10, 10]);
+      CTR.stroke();
+      CTR.setLineDash([]);
+
+      // 3. Draw Terrain: Ridge Lines & Hills
+      RIDGE_LINES.forEach(r => {
+        CTR.fillStyle = 'rgba(180, 83, 9, 0.18)';
+        CTR.strokeStyle = 'rgba(217, 119, 6, 0.4)';
+        CTR.lineWidth = 2;
+        CTR.beginPath();
+        CTR.roundRect(r.x1, r.y1 - r.width/2, r.x2 - r.x1, r.width, 10);
+        CTR.fill();
+        CTR.stroke();
+
+        // Ridge Hatching
+        CTR.fillStyle = '#d97706';
+        CTR.font = '10px Orbitron';
+        CTR.fillText('RIDGE LINE (COVER)', r.x1 + 10, r.y1 + 4);
+      });
+
+      // Objective Zone 500 Hill
+      CTR.fillStyle = 'rgba(225, 29, 72, 0.15)';
+      CTR.strokeStyle = 'rgba(225, 29, 72, 0.5)';
+      CTR.lineWidth = 2;
+      CTR.beginPath();
+      CTR.arc(HILL_500.x, HILL_500.y, HILL_500.radius, 0, Math.PI * 2);
+      CTR.fill();
+      CTR.stroke();
+      CTR.fillStyle = '#f43f5e';
+      CTR.font = '10px Orbitron';
+      CTR.fillText('500', HILL_500.x - 10, HILL_500.y + 4);
+
+      // Main Objective Zone
+      CTR.fillStyle = 'rgba(147, 51, 234, 0.2)';
+      CTR.strokeStyle = '#a855f7';
+      CTR.lineWidth = 2.5;
+      CTR.setLineDash([6, 4]);
+      CTR.beginPath();
+      CTR.arc(OBJECTIVE.x, OBJECTIVE.y, OBJECTIVE.radius, 0, Math.PI * 2);
+      CTR.fill();
+      CTR.stroke();
+      CTR.setLineDash([]);
+
+      // Star Icon at Obj
+      CTR.fillStyle = '#c084fc';
+      CTR.font = '16px FontAwesome';
+      CTR.fillText('\uf005', OBJECTIVE.x - 7, OBJECTIVE.y + 6);
+
+      // FLOT Line (Forward Line of Own Troops)
+      CTR.strokeStyle = 'rgba(59, 130, 246, 0.5)';
+      CTR.lineWidth = 2;
+      CTR.setLineDash([8, 6]);
+      CTR.beginPath();
+      CTR.moveTo(0, 380);
+      CTR.bezierCurveTo(300, 360, 600, 420, W, 380);
+      CTR.stroke();
+      CTR.setLineDash([]);
+
+      // 4. Draw COA Planned Paths
+      units.forEach(u => {
+        if (u.side === 'blue' && u.path.length > 0) {
+          CTR.strokeStyle = 'rgba(59, 130, 246, 0.3)';
+          CTR.lineWidth = u.type === 'armor' ? 3 : 1.5;
+          CTR.beginPath();
+          CTR.moveTo(u.x, u.y);
+          for (let p = u.pathIdx; p < u.path.length; p++) {
+            CTR.lineTo(u.path[p].x, u.path[p].y);
+          }
+          CTR.stroke();
+        }
+      });
+
+      // 5. Draw Bullets
+      bullets.forEach(b => {
+        CTR.fillStyle = b.isArmor ? '#f59e0b' : '#38bdf8';
+        CTR.beginPath();
+        CTR.arc(b.x, b.y, b.isArmor ? 3.5 : 2, 0, Math.PI * 2);
+        CTR.fill();
+      });
+
+      // 6. Draw Units
+      units.forEach(u => {
+        if (u.hp <= 0) {
+          // Dead marker
+          CTR.fillStyle = '#475569';
+          CTR.font = '12px FontAwesome';
+          CTR.fillText('\uf00d', u.x - 5, u.y + 5);
+          return;
+        }
+
+        const isBlue = u.side === 'blue';
+        const mainColor = isBlue ? '#3b82f6' : '#f43f5e';
+
+        // Range indicator when engaging
+        if (u.target) {
+          CTR.strokeStyle = isBlue ? 'rgba(59, 130, 246, 0.15)' : 'rgba(244, 63, 94, 0.15)';
+          CTR.lineWidth = 1;
+          CTR.beginPath();
+          CTR.arc(u.x, u.y, u.range, 0, Math.PI * 2);
+          CTR.stroke();
+        }
+
+        // Unit Base Icon
+        CTR.fillStyle = mainColor;
+        CTR.beginPath();
+        if (u.type === 'armor') {
+          CTR.roundRect(u.x - 14, u.y - 10, 28, 20, 4);
+        } else {
+          CTR.arc(u.x, u.y, 10, 0, Math.PI * 2);
+        }
+        CTR.fill();
+        CTR.strokeStyle = '#ffffff';
+        CTR.lineWidth = 1.5;
+        CTR.stroke();
+
+        // Unit Symbol/Text
+        CTR.fillStyle = '#ffffff';
+        CTR.font = '10px FontAwesome';
+        const icon = u.type === 'armor' ? '\uf1b9' : '\uf183';
+        CTR.fillText(icon, u.x - 4, u.y + 3.5);
+
+        // Name Label
+        CTR.fillStyle = '#e2e8f0';
+        CTR.font = '10px Inter';
+        CTR.fillText(u.name, u.x - 25, u.y - 16);
+
+        // Health Bar
+        const barW = 28;
+        const barH = 4;
+        const hpPct = u.hp / u.maxHp;
+        CTR.fillStyle = '#1e293b';
+        CTR.fillRect(u.x - barW / 2, u.y + 13, barW, barH);
+        CTR.fillStyle = hpPct > 0.5 ? '#10b981' : (hpPct > 0.25 ? '#f59e0b' : '#ef4444');
+        CTR.fillRect(u.x - barW / 2, u.y + 13, barW * hpPct, barH);
+      });
+
+      // 7. Draw Explosions
+      explosions.forEach(ex => {
+        CTR.fillStyle = 'rgba(245, 158, 11, 0.6)';
+        CTR.beginPath();
+        CTR.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2);
+        CTR.fill();
+      });
+    }
+
+    // --- MONTE CARLO BATCH ENGINE ---
+    function recordSingleRunResult(isWin) {
+      const cur = statsData[currentCOA];
+      cur.runs++;
+      if (isWin) cur.wins++;
+
+      const blueHpLeft = units.filter(u => u.side === 'blue').reduce((a, b) => a + (b.hp / b.maxHp), 0) / 5;
+      const redHpLeft = units.filter(u => u.side === 'red').reduce((a, b) => a + (b.hp / b.maxHp), 0) / 4;
+
+      cur.blueLoss += (1 - blueHpLeft);
+      cur.redLoss += (1 - redHpLeft);
+      cur.time += simTime;
+
+      updateStatsUI();
+    }
+
+    async function runMonteCarlo() {
+      const runs = parseInt(document.getElementById('mc-runs').value) || 100;
+      const modal = document.getElementById('mc-modal');
+      const progressBar = document.getElementById('mc-progress-bar');
+      const statusText = document.getElementById('mc-status-text');
+
+      modal.classList.remove('hidden');
+
+      // Reset Stats for current COA
+      statsData[currentCOA] = { runs: 0, wins: 0, blueLoss: 0, redLoss: 0, time: 0 };
+
+      const dt = 0.2; // Fast analytical tick step
+
+      for (let r = 1; r <= runs; r++) {
+        let testUnits = createUnits(currentCOA);
+        let time = 0;
+        let win = false;
+        let done = false;
+
+        while (!done && time < 180) {
+          time += dt;
+
+          // FAST STATISTICAL ENGAGEMENT STEP
+          testUnits.forEach(u => {
+            if (u.hp <= 0) return;
+
+            u.inCover = checkInRidge(u.x, u.y);
+
+            // Target
+            let closest = null;
+            let minDist = u.range;
+            testUnits.forEach(enemy => {
+              if (enemy.side !== u.side && enemy.hp > 0) {
+                const d = Math.hypot(enemy.x - u.x, enemy.y - u.y);
+                if (d < minDist) { minDist = d; closest = enemy; }
+              }
+            });
+
+            if (closest) {
+              // Direct Lanchester Fire calculation
+              let defMod = closest.inCover ? 0.65 : 1.0;
+              if (closest.side === 'red' && Math.hypot(closest.x - HILL_500.x, closest.y - HILL_500.y) < HILL_500.radius) {
+                defMod *= 0.7;
+              }
+              const dmg = (u.atk * (dt / 0.8)) * defMod * (0.8 + Math.random() * 0.4);
+              closest.hp = Math.max(0, closest.hp - dmg);
+            } 
+            else if (u.path && u.pathIdx < u.path.length) {
+              const wp = u.path[u.pathIdx];
+              const distToWp = Math.hypot(wp.x - u.x, wp.y - u.y);
+              if (distToWp < 12) u.pathIdx++;
+              else {
+                let speedMult = (u.type === 'armor' && checkOnRoad(u.x, u.y)) ? 1.4 : 1.0;
+                const moveDist = u.speed * 40 * speedMult * dt;
+                u.x += ((wp.x - u.x) / distToWp) * moveDist;
+                u.y += ((wp.y - u.y) / distToWp) * moveDist;
+              }
+            }
+          });
+
+          const blueAlive = testUnits.filter(u => u.side === 'blue' && u.hp > 0);
+          const redAlive = testUnits.filter(u => u.side === 'red' && u.hp > 0);
+          const blueAtObj = blueAlive.some(u => Math.hypot(u.x - OBJECTIVE.x, u.y - OBJECTIVE.y) < OBJECTIVE.radius);
+
+          if (blueAtObj || redAlive.length === 0) {
+            win = true; done = true;
+          } else if (blueAlive.length === 0) {
+            win = false; done = true;
+          }
+        }
+
+        // Record
+        const cur = statsData[currentCOA];
+        cur.runs++;
+        if (win) cur.wins++;
+        
+        const blueHpLeft = testUnits.filter(u => u.side === 'blue').reduce((a, b) => a + (b.hp / b.maxHp), 0) / 5;
+        const redHpLeft = testUnits.filter(u => u.side === 'red').reduce((a, b) => a + (b.hp / b.maxHp), 0) / 4;
+
+        cur.blueLoss += (1 - blueHpLeft);
+        cur.redLoss += (1 - redHpLeft);
+        cur.time += time;
+
+        // UI Progress Update every 10 runs
+        if (r % 10 === 0 || r === runs) {
+          const pct = Math.floor((r / runs) * 100);
+          progressBar.style.width = `${pct}%`;
+          statusText.innerText = `Processing Iteration ${r} / ${runs}`;
+          await new Promise(res => setTimeout(res, 5));
+        }
+      }
+
+      modal.classList.add('hidden');
+      updateStatsUI();
+      logMsg(`Monte Carlo completed (${runs} iterations). Summary updated.`);
+    }
+
+    function updateStatsUI() {
+      const cur = statsData[currentCOA];
+      if (!cur || cur.runs === 0) {
+        document.getElementById('res-winrate').innerText = `-- %`;
+        document.getElementById('bar-winrate').style.width = `0%`;
+        document.getElementById('res-blue-loss').innerText = `-- %`;
+        document.getElementById('bar-blue-loss').style.width = `0%`;
+        document.getElementById('res-red-loss').innerText = `-- %`;
+        document.getElementById('bar-red-loss').style.width = `0%`;
+        document.getElementById('res-time').innerText = `-- sec`;
+        return;
+      }
+
+      const winPct = Math.round((cur.wins / cur.runs) * 100);
+      const blueLossPct = Math.round((cur.blueLoss / cur.runs) * 100);
+      const redLossPct = Math.round((cur.redLoss / cur.runs) * 100);
+      const avgTime = Math.round(cur.time / cur.runs);
+
+      document.getElementById('res-winrate').innerText = `${winPct}%`;
+      document.getElementById('bar-winrate').style.width = `${winPct}%`;
+
+      document.getElementById('res-blue-loss').innerText = `${blueLossPct}%`;
+      document.getElementById('bar-blue-loss').style.width = `${blueLossPct}%`;
+
+      document.getElementById('res-red-loss').innerText = `${redLossPct}%`;
+      document.getElementById('bar-red-loss').style.width = `${redLossPct}%`;
+
+      document.getElementById('res-time').innerText = `${avgTime} sec`;
+
+      // Update Top Summary Banner
+      [1, 2, 3].forEach(i => {
+        const c = statsData[i];
+        const el = document.getElementById(`top-win-coa${i}`);
+        if (c && c.runs > 0) {
+          el.innerText = `${Math.round((c.wins / c.runs) * 100)}%`;
+        }
+      });
+    }
+
+    // --- INITIALIZATION ---
+    window.onload = () => {
+      setCOA(1);
+    };
+
+    // Responsive Canvas Resize Listener
+    window.addEventListener('resize', () => {
+      draw();
+    });
+  </script>
+</body>
+</html>

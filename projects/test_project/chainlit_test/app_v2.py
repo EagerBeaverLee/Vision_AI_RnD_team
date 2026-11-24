@@ -21,6 +21,7 @@ from bokeh.resources import INLINE, CDN
 import hvplot.pandas
 from chainlit.server import app
 from fastapi.responses import HTMLResponse
+import cartopy.crs as ccrs
 
 load_dotenv()
 
@@ -282,7 +283,7 @@ async def run_crew(message: cl.Message):
             line_color='black', line_width=1,
             cmap='YlOrRd', 
             hover_cols=['name', 'mean', 'count'], # mean_knots 대신 mean 사용
-            frame_height=330, frame_width=430, legend=False,
+            frame_height=300, frame_width=300, legend=False,
             responsive=True # 이전의 레이아웃 어긋남 방지
         )
 
@@ -531,27 +532,28 @@ async def run_crew(message: cl.Message):
     <style>
         body {{
             margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #0E1117; color: #E2E8F0; font-size: 13px;
+            background-color: #0E1117; color: #fff; font-size: 13px;
         }}
-        .header {{ font-weight: bold; font-size: 14px; margin-bottom: 10px; color: #38BDF8; }}
+        .header {{ font-weight: bold; font-size: 14px; margin-bottom: 10px; color: #B8F7B9; }}
         .controls {{ display: flex; gap: 12px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }}
-        .radio-group {{ display: flex; gap: 10px; background: #1E293B; padding: 4px 8px; border-radius: 6px; }}
-        .radio-label {{ cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 12px; }}
+        .radio-group {{ display: flex; gap: 10px; background: #0E1117; padding: 4px 8px; border-radius: 6px; border: 1px solid #374A37}}
+        .radio-group input[type="radio"] {{ accent-color: #B8F7B9; }}
+        .radio-label {{ cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 12px; color: #B8F7B9; }}
         .search-input {{
-            flex: 1; min-width: 160px; background: #1E293B; border: 1px solid #334155;
-            color: #fff; padding: 5px 8px; border-radius: 6px; font-size: 12px; outline: none;
+            flex: 1; min-width: 160px; background: #0E1117; border: 1px solid #374A37;
+            color: #B8F7B9; padding: 5px 8px; border-radius: 6px; font-size: 12px; outline: none;
         }}
-        .search-input:focus {{ border-color: #38BDF8; }}
+        .search-input:focus {{ border-color: #B8F7B9; }}
         .table-container {{
-            max-height: 180px; overflow-y: auto; border: 1px solid #334155; border-radius: 6px;
+            max-height: 180px; overflow-y: auto; border: 1px solid #374A37; border-radius: 6px;
         }}
         table {{ width: 100%; border-collapse: collapse; text-align: left; }}
-        th {{ background: #1E293B; padding: 8px; position: sticky; top: 0; font-weight: 600; color: #94A3B8; font-size: 12px; }}
-        td {{ padding: 6px 8px; border-bottom: 1px solid #1E293B; font-size: 12px; }}
-        tr:hover {{ background-color: #1E293B; }}
+        th {{ background: #374A37; padding: 8px; position: sticky; top: 0; font-weight: 600; color: #B8F7B9; font-size: 12px; }}
+        td {{ padding: 6px 8px; border-bottom: 1px solid #374A37; font-size: 12px; }}
+        tr:hover {{ background-color: #374A37; }}
         /* 스크롤바 디자인 */
         ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
-        ::-webkit-scrollbar-thumb {{ background: #475569; border-radius: 3px; }}
+        ::-webkit-scrollbar-thumb {{ background: #374A37; border-radius: 3px; }}
     </style>
     </head>
     <body>
@@ -603,7 +605,7 @@ async def run_crew(message: cl.Message):
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             if (filtered.length === 0) {{
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#64748B; padding:16px;">조회된 데이터가 없습니다.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#B8F7B9; padding:16px;">조회된 데이터가 없습니다.</td></tr>';
                 return;
             }}
 
@@ -634,6 +636,7 @@ async def run_crew(message: cl.Message):
         # 1. 맵 객체 생성 (예시: 부산 해역 중심)
         m = folium.Map(
             location=[35.05, 129.0],
+            width="49%",
             zoom_start=10,
             tiles="CartoDB positron",  # 깔끔한 테마
         )
@@ -750,6 +753,237 @@ async def run_crew(message: cl.Message):
         img_str = base64.b64encode(buf.read()).decode('utf-8')
         plt.close(fig)
         return img_str
+
+    def direction_test():
+        db_path = "../../pj7(AIS_Simulator_Client/ships.db"
+        con = duckdb.connect(database=':memory:')
+        con.execute("INSTALL spatial; LOAD spatial;")
+        con.execute("INSTALL sqlite; LOAD sqlite;")
+        
+        # 읽기 전용으로 안전하게 마운트 후 기본 DB 설정
+        con.execute(f"ATTACH '{db_path}' AS sqlite_db (TYPE sqlite, READ_ONLY);")
+        con.execute("USE sqlite_db;")
+
+        table_name = "ship_logs"
+
+        # 2. 초기 데이터 필터링 (DuckDB)
+        # CSV를 읽으면서 위경도/시간/속도를 즉시 필터링
+        min_lon, max_lon, max_lat = 125.678, 131.229, 36.001
+
+        # 쿼리 실행 (DB 내부에서 직접 필터링)
+        query = f"""
+            SELECT *, ST_AsWKB(ST_Point(longitude, latitude)) as geom_wkb, CAST(timestamp AS TIMESTAMP) as t
+            FROM {table_name}
+            WHERE longitude >= {min_lon} AND longitude <= {max_lon}
+            AND latitude <= {max_lat}
+            AND speed > 0
+            ORDER BY MMSI, t ASC  -- 이 줄이 필수입니다!
+        """
+
+        # 3. DuckDB 결과를 Pandas로 가져오기
+        df = con.execute(query).df()
+
+        # 4. WKB 컬럼을 이용해 즉시 GeoDataFrame 생성
+        # 이 방식은 points_from_xy보다 대용량 처리 시 훨씬 빠릅니다.
+        ais_gdf = gpd.GeoDataFrame(
+            df, 
+            geometry=shapely.from_wkb(df['geom_wkb'].apply(bytes)),
+            crs="EPSG:4326"
+        ).set_index('t')
+
+        tc = mpd.TrajectoryCollection(ais_gdf, traj_id_col='mmsi', t="start_time")
+        traj = tc.trajectories[0]
+
+        # 1. 히스토그램 생성
+        hist = pd.DataFrame(traj.df).hvplot.hist(
+            "course",
+            bin_range=(0, 360),
+            xlim=(0, 360),
+            title="Histogram of direction",
+            bins=90,
+            color="#B8F7B9",
+            line_color="#0E1117",
+            responsive=True,
+        )
+
+        # 2. 90, 180, 270도 세로선 + 텍스트 레이블 한 번에 생성
+        max_y = hist.range(1)[1] or 1  # y축 최댓값 자동 계산
+
+        # 2. 90도마다 세로 빨간 선 생성 (90, 180, 270)
+        vlines = hv.Overlay([
+            hv.VLine(x).opts(
+                color="#FF4B4B",      # 다크 배경에 잘 보이는 빨간색 (원하는 색상코드로 변경 가능)
+                line_width=1,       # 선 두께
+                line_dash="dashed"
+            ) * 
+            hv.Text(x + 2, max_y * 1.05, f"{x}°").opts(color="#FF4B4B", text_align="left", text_font_size="8pt")
+            for x in [90, 180, 270]   # 양 끝(0, 360)까지 포함하려면 [0, 90, 180, 270, 360]
+        ])
+
+        plot = (hist * vlines).opts(
+            bgcolor="#0E1117",   # 1. 그래프 안쪽(캔버스) 배경색
+            hooks=[lambda plot, element: (
+                setattr(plot.state, 'border_fill_color', '#0E1117'),       # 2. 바깥쪽 여백 배경색
+                setattr(plot.state, 'background_fill_color', '#0E1117'),   # 3. 안쪽 배경색 강제 적용
+                setattr(plot.state, 'outline_line_color', "#B8F7B9"),   # 차트 영역 사각 테두리
+                setattr(plot.state.title, 'text_color', "#B8F7B9"),          # 4. 제목 글자색
+                setattr(plot.state.toolbar, 'active_drag', None),    # 드래그 이동 초기 OFF
+                setattr(plot.state.toolbar, 'active_scroll', None),   # 휠 줌 초기 OFF
+
+                [
+                    setattr(ax, prop, "#B8F7B9")
+                    for ax in (plot.state.xaxis, plot.state.yaxis)
+                    for prop in (
+                        'axis_line_color',
+                        'major_tick_line_color',
+                        'minor_tick_line_color',
+                        'major_label_text_color',
+                        'axis_label_text_color',
+                    )
+                ],
+
+                setattr(plot.state.xaxis, 'axis_line_color', "#B8F7B9"),
+                setattr(plot.state.yaxis, 'axis_line_color', "#B8F7B9"),
+                setattr(plot.state.xaxis, 'major_label_text_color', "#B8F7B9"),
+                setattr(plot.state.xaxis, 'major_tick_line_color', "#B8F7B9"),
+                setattr(plot.state.xaxis, 'minor_tick_line_color', "#B8F7B9"),
+                setattr(plot.state.yaxis, 'major_label_text_color', "#B8F7B9"),
+                setattr(plot.state.yaxis, 'major_tick_line_color', "#B8F7B9"),
+                setattr(plot.state.yaxis, 'minor_tick_line_color', "#B8F7B9"),
+                setattr(plot.state.xaxis, 'axis_label_text_color', "#B8F7B9"),
+                setattr(plot.state.yaxis, 'axis_label_text_color', "#B8F7B9"),
+                
+            )]
+        )
+
+        bokeh_plot = hv.render(plot)
+
+        html_content = file_html(bokeh_plot, INLINE, "Histogram")
+        
+        # 3. 디스크 저장 없이 RAM 딕셔너리에 저장 후 엔드포인트 URL 발급
+        widget_id = str(uuid.uuid4())
+        INMEMORY_MAP_STORE[widget_id] = html_content
+        return f"/api/inmemory-map/{widget_id}"
+
+    def direction_map_test():
+        db_path = "../../pj7(AIS_Simulator_Client/ships.db"
+        con = duckdb.connect(database=':memory:')
+        con.execute("INSTALL spatial; LOAD spatial;")
+        con.execute("INSTALL sqlite; LOAD sqlite;")
+        
+        # 읽기 전용으로 안전하게 마운트 후 기본 DB 설정
+        con.execute(f"ATTACH '{db_path}' AS sqlite_db (TYPE sqlite, READ_ONLY);")
+        con.execute("USE sqlite_db;")
+
+        table_name = "ship_logs"
+
+        # 2. 초기 데이터 필터링 (DuckDB)
+        min_lon, max_lon, max_lat = 125.678, 131.229, 36.001
+
+        # 쿼리 실행 (DB 내부에서 직접 필터링)
+        query = f"""
+            SELECT *, ST_AsWKB(ST_Point(longitude, latitude)) as geom_wkb, CAST(timestamp AS TIMESTAMP) as t
+            FROM {table_name}
+            WHERE longitude >= {min_lon} AND longitude <= {max_lon}
+            AND latitude <= {max_lat}
+            AND speed > 0
+            ORDER BY MMSI, t ASC  -- 이 줄이 필수입니다!
+        """
+
+        # 3. DuckDB 결과를 Pandas로 가져오기
+        df = con.execute(query).df()
+
+        # 4. WKB 컬럼을 이용해 즉시 GeoDataFrame 생성
+        # 이 방식은 points_from_xy보다 대용량 처리 시 훨씬 빠릅니다.
+        ais_gdf = gpd.GeoDataFrame(
+            df, 
+            geometry=shapely.from_wkb(df['geom_wkb'].apply(bytes)),
+            crs="EPSG:4326"
+        ).set_index('t')
+
+        # ais_df = pd.read_csv("./data/Sample01_AIS_new_category_final.csv") 
+
+        # min_lon, max_lon = 125.678, 131.229
+        # max_lat = 36.001
+
+        # ais_df_filtered = ais_df[
+        #     (ais_df['longitude'] >= min_lon) & (ais_df['longitude'] <= max_lon) & (ais_df['latitude'] <= max_lat)
+        # ]
+
+        # ais_gdf = gpd.GeoDataFrame(
+        #     ais_df_filtered,
+        #     geometry = gpd.points_from_xy(ais_df_filtered.longitude, ais_df_filtered.latitude),
+        #     crs="EPSG:4326"
+        # )
+
+        # ais_gdf['t'] = pd.to_datetime(ais_gdf['timestamp'], format='mixed', utc=True)
+        # ais_gdf = ais_gdf.set_index('t')
+
+        # ais_gdf["dir_class"] = ((ais_gdf["course"] - 22.5)/45).round(0) # 위에서 전체 데이터 대상 GeoDataframe 만든 df 사용해야 함 
+        # ais_val = ais_gdf
+        # temp = ais_val.to_crs(epsg=3857)
+        # temp["mx"] = temp.geometry.x
+        # temp["my"] = temp.geometry.y
+        
+        ais_gdf["dir_class"] = (((ais_gdf["course"] + 45) // 90) % 4)
+        temp = ais_gdf.to_crs(epsg=3857)
+        temp["mx"] = temp.geometry.x
+        temp["my"] = temp.geometry.y
+
+        # 2. 다크 테마 적용 훅
+        def apply_dark_map(plot, element):
+            p = plot.state
+            p.border_fill_color = '#0E1117'
+            p.background_fill_color = '#0E1117'
+            p.outline_line_color = '#0E1117'
+            if p.title:
+                p.title.text_color = "#B8F7B9"
+
+        # 3. 4방위별 지도 리스트 생성
+        plots = [
+            temp[temp["dir_class"] == i].hvplot.points(
+                x="mx", y="my",
+                tiles="EsriImagery",
+                # tiles="OSM",
+                color="#B8F7B9",
+                size=2,
+                width=330,
+                height=280,
+                title=f"{int(i * 90)}° ~ {int((i + 1) * 90) - 1}°",
+            ).opts(
+                bgcolor="#0E1117",
+                xaxis=None,            # x축 전체 숨기기
+                yaxis=None,            # y축 전체 숨기기
+                active_tools=["wheel_zoom"],
+                hooks=[apply_dark_map],
+            )
+            for i in sorted(temp["dir_class"].unique())
+        ]
+
+        # 4. 2x2 격자(한 줄에 2개씩) 또는 1x4 가로 배치(.cols(4))
+        dir_layout = hv.Layout(plots).cols(2)
+
+        # 5. 메모리(StringIO)로 HTML 저장
+        buf = io.StringIO()
+        hvplot.save(dir_layout, buf, resources=INLINE)
+        html_val = buf.getvalue()
+
+        dark_css = """
+<style>
+  html, body, .bk-root {
+    background-color: #0E1117 !important;
+    margin: 0 !important;
+    padding: 4px !important;
+    overflow-x: hidden;
+  }
+</style>
+"""
+
+        map_id = str(uuid.uuid4())
+        INMEMORY_MAP_STORE[map_id] = html_val.replace("</head>", f"{dark_css}</head>")
+        return f"/api/inmemory-map/{map_id}"
+
+
     # ==========================================
     # CrewAI 구성
     # ==========================================
@@ -843,28 +1077,39 @@ async def run_crew(message: cl.Message):
 
 
     # 1. 지도 생성 후 웹 경로 획득
-    map_url = generate_maritime_map()
+    # map_url = generate_maritime_map()
     render_url = geo_render_test()
     mp_url = render_od_flow()
     ship_data = make_ship_data_dict()
     table_widget_url = generate_ship_table_widget(ship_data)
+    
+    direction_url = direction_test()
+    direction_map_url = direction_map_test()
 
     # 2. iframe 블록 생성 (스크롤 가능 높이 280px 지정)
     table_iframe_block = textwrap.dedent(f"""\
 <!-- WIDGET_START -->
-<iframe src="{table_widget_url}" width="100%" height="280px" style="border: 1px solid #334155; border-radius: 8px; margin: 14px 0;" scrolling="no"></iframe>
+<iframe src="{table_widget_url}" width="100%" height="280px" style="border: 1px solid #374A37; border-radius: 8px; margin: 14px 0;" scrolling="no"></iframe>
 <!-- WIDGET_END -->""")
 
     # 단일 인터렉티브 맵
-    map_iframe = f"""<iframe src="{map_url}" width="50%" height="450px" style="border: 1px solid #e2e8f0; border-radius: 8px; margin: 12px 0;"></iframe>"""
+    # map_iframe = f"""<iframe src="{map_url}" width="50%" height="450px" style="border: 1px solid #e2e8f0; border-radius: 8px; margin: 12px 0;"></iframe>"""
 
-    # 다중 인터렉티브 맵
-    dual_map_block = f"""<!-- DUAL_MAP_START -->
+
+    direction_hist_url = textwrap.dedent(f"""\
+<!-- BOKEH_MAP_START -->
 <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin: 16px 0;">
-    <iframe src="{map_url}" style="width: 49%; min-width: 300px; height: 400px; border: 1px solid #e2e8f0; border-radius: 8px;"></iframe>
-    <iframe src="{map_url}" style="width: 49%; min-width: 300px; height: 400px; border: 1px solid #e2e8f0; border-radius: 8px;"></iframe>
+    <iframe src="{direction_url}" width="100%" height="330" style="border: 1px solid #374A37; border-radius: 8px; margin: 12px 0;"></iframe>
 </div>
-<!-- DUAL_MAP_END -->"""
+<!-- BOKEH_MAP_END -->""")
+
+    direction_map_html = textwrap.dedent(f"""\
+<!-- BOKEH_MAP_START -->
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin: 16px 0;">
+    <iframe src="{direction_map_url}" width="100%" height="620" style="border: 1px solid #374A37; border-radius: 8px; margin: 12px 0;"></iframe>
+</div>
+<!-- BOKEH_MAP_END -->""")
+
 
     # 4. 주석으로 감싼 iframe 블록 생성 (기존 스트리밍 정규식과 완벽 호환)
     shiptype_html = f"""<!-- IMG_START -->
@@ -873,14 +1118,13 @@ async def run_crew(message: cl.Message):
 
     interactive_map = textwrap.dedent(f"""\
 <!-- BOKEH_MAP_START -->
-<iframe sandbox="allow-scripts allow-same-origin" srcdoc="{mp_url}" width="100%" height="400" style="border: 1px solid #334155; border-radius: 8px; margin: 12px 0;"></iframe>
+<iframe sandbox="allow-scripts allow-same-origin" srcdoc="{mp_url}" width="100%" height="400" style="border: 1px solid #374A37; border-radius: 8px; margin: 12px 0;"></iframe>
 <!-- BOKEH_MAP_END -->""")
 
     interactive_both = textwrap.dedent(f"""\
 <!-- BOKEH_MAP_START -->
 <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin: 16px 0;">
-    <iframe src="{mp_url}" width="49%" height="400" style="border: 1px solid #334155; border-radius: 8px; margin: 12px 0;"></iframe>
-    <iframe src="{mp_url}" width="49%" height="400" style="border: 1px solid #334155; border-radius: 8px; margin: 12px 0;"></iframe>
+    <iframe src="{mp_url}" width="49%" height="330" style="border: 1px solid #374A37; border-radius: 8px; margin: 12px 0;"></iframe>
 </div>
 <!-- BOKEH_MAP_END -->""")
 
@@ -889,35 +1133,40 @@ async def run_crew(message: cl.Message):
 - 수집된 AIS 데이터 기반 집계 결과입니다.
 {table_iframe_block}
 
+{direction_hist_url}
+
+{direction_map_html}
+"""
+    
 ### 2. [구역별 밀집 현황]
 
-| 해역명 | 총 정박 지수 | 비고 |
-|---|---|---|
-| 부산-가덕 해역 | 100.0 | 해상 교통량 및 정박 밀집도가 가장 높은 핵심 작전 구역 |
-| 여수-통영 외해 | 99.0 | 높은 밀집도를 보이는 주요 해역 |
-| 시모노세키-기타큐슈 해역 | 75.0 | 국제 통로로서의 중요성이 높은 구역 |
+# | 해역명 | 총 정박 지수 | 비고 |
+# |---|---|---|
+# | 부산-가덕 해역 | 100.0 | 해상 교통량 및 정박 밀집도가 가장 높은 핵심 작전 구역 |
+# | 여수-통영 외해 | 99.0 | 높은 밀집도를 보이는 주요 해역 |
+# | 시모노세키-기타큐슈 해역 | 75.0 | 국제 통로로서의 중요성이 높은 구역 |
 
-{interactive_both}
+# {interactive_both}
 
-### 9. [주요 선박 특이 기동 상세 분석]
-* **[FF-959 부산]**: 81회의 변침과 11회의 속도 변화 포착.
-* **[SS-078 유관순]**: 49회의 변침과 22회의 속도 변화 포착.
-* **[LST-683 향로봉]**: 29회의 변침과 17회의 속도 변화 포착.
-* **[DDG-992 율곡이이]**: 27회의 변침과 4회의 속도 변화 포착.
-* **[SS-062 이천]**: 21회의 변침과 9회의 속도 변화 포착.
+# ### 9. [주요 선박 특이 기동 상세 분석]
+# * **[FF-959 부산]**: 81회의 변침과 11회의 속도 변화 포착.
+# * **[SS-078 유관순]**: 49회의 변침과 22회의 속도 변화 포착.
+# * **[LST-683 향로봉]**: 29회의 변침과 17회의 속도 변화 포착.
+# * **[DDG-992 율곡이이]**: 27회의 변침과 4회의 속도 변화 포착.
+# * **[SS-062 이천]**: 21회의 변침과 9회의 속도 변화 포착.
 
-{shiptype_html}
+# {shiptype_html}
 
-### 10. [종합 결론]
+# ### 10. [종합 결론]
 
-현재 해상 전장 상황에 대한 종합 분석 결과입니다.
+# 현재 해상 전장 상황에 대한 종합 분석 결과입니다.
 
-1. **해역 밀집도 및 속도 현황**: 부산-가덕 해역이 정박 지수 100으로 가장 높은 밀집도를 보이고 있으며, 여수-통영 외해(99)와 시모노세키-기타큐슈 해역(75)이 그 뒤를 잇고 있습니다. 속도 측면에서는 부산-가덕 해역의 평균 속도가 1.13노트로 매우 낮게 나타나 정박 및 저속 기동이 집중되고 있음을 알 수 있으며, 반면 서남해 외해는 평균 16.16노트, 최대 23.3노트로 활발한 기동이 이루어지고 있습니다.
+# 1. **해역 밀집도 및 속도 현황**: 부산-가덕 해역이 정박 지수 100으로 가장 높은 밀집도를 보이고 있으며, 여수-통영 외해(99)와 시모노세키-기타큐슈 해역(75)이 그 뒤를 잇고 있습니다. 속도 측면에서는 부산-가덕 해역의 평균 속도가 1.13노트로 매우 낮게 나타나 정박 및 저속 기동이 집중되고 있음을 알 수 있으며, 반면 서남해 외해는 평균 16.16노트, 최대 23.3노트로 활발한 기동이 이루어지고 있습니다.
 
-2. **교통 흐름 및 이동 방향**: 주요 항로로는 부산-가덕 해역에서 거제-가덕 외해로 향하는 흐름(Weight 15)이 가장 강력하며, 거제-가덕 외해에서 여수-통영 외해로 이어지는 흐름(Weight 9)이 관찰됩니다. 선박들의 주요 이동 방향은 남서진(15척, 평균 10.3노트)이 가장 빈번하며, 서진(9척, 평균 8.1노트) 순으로 나타나 전반적인 흐름이 서남향을 향하고 있습니다.
+# 2. **교통 흐름 및 이동 방향**: 주요 항로로는 부산-가덕 해역에서 거제-가덕 외해로 향하는 흐름(Weight 15)이 가장 강력하며, 거제-가덕 외해에서 여수-통영 외해로 이어지는 흐름(Weight 9)이 관찰됩니다. 선박들의 주요 이동 방향은 남서진(15척, 평균 10.3노트)이 가장 빈번하며, 서진(9척, 평균 8.1노트) 순으로 나타나 전반적인 흐름이 서남향을 향하고 있습니다.
 
-3. **항만 및 선박 운항 상태**: 부산항(BUSAN HANG)은 4척이 정박 중이며, LST-681 고준봉 등 다수의 상륙함과 함정들이 입출항을 반복하고 있습니다. 광양-여수 인근 항만(GWANGYANG HANG 등)에서는 독도함(LPH-6111)이 정박 중인 것이 확인됩니다. 현재 이동 중인 선박은 AGS-신천지, AOE-59 화천 등 13척이며, 정박/대기 중인 선박은 DDH-981 최영, FF-959 부산 등 15척입니다. 또한 LST-676 위봉 등 3척은 저속 운항 중입니다.
-"""
+# 3. **항만 및 선박 운항 상태**: 부산항(BUSAN HANG)은 4척이 정박 중이며, LST-681 고준봉 등 다수의 상륙함과 함정들이 입출항을 반복하고 있습니다. 광양-여수 인근 항만(GWANGYANG HANG 등)에서는 독도함(LPH-6111)이 정박 중인 것이 확인됩니다. 현재 이동 중인 선박은 AGS-신천지, AOE-59 화천 등 13척이며, 정박/대기 중인 선박은 DDH-981 최영, FF-959 부산 등 15척입니다. 또한 LST-676 위봉 등 3척은 저속 운항 중입니다.
+# """
 
     # final_msg = cl.Message(content="", elements=[image_element])
     # await final_msg.send()
@@ -962,9 +1211,5 @@ async def run_crew(message: cl.Message):
                 if word:
                     await final_msg.stream_token(word + " ")
                     await asyncio.sleep(0.005)
-
-    # for char in final_output:
-    #     await final_msg.stream_token(char)
-    #     await asyncio.sleep(0.002)
 
     await final_msg.update()

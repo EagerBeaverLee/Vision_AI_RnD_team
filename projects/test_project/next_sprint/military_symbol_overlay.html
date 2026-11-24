@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>MIL-STD-2525D Military Tactical Overlay</title>
+    <!-- MIL-STD-2525D / APP-6 표준 기호 라이브러리 CDN -->
+    <script src="https://unpkg.com/milsymbol@2.2.0/dist/milsymbol.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #map-container {
+            flex: 1;
+            position: relative;
+            background-color: #e1ebe1;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #ui-panel {
+            width: 280px;
+            background-color: #2a2a2a;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+        }
+        h2 {
+            font-size: 18px;
+            margin-top: 0;
+            color: #f1c40f;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+        .btn {
+            padding: 12px;
+            background-color: #3f3f3f;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn:hover {
+            background-color: #555;
+        }
+        .btn.active {
+            background-color: #f1c40f;
+            color: #000;
+            border-color: #f1c40f;
+        }
+        .toggle-btn {
+            background-color: #27ae60;
+        }
+        .toggle-btn:hover {
+            background-color: #2ecc71;
+        }
+        #info-box {
+            font-size: 12px;
+            color: #ccc;
+            line-height: 1.5;
+            background-color: #1e1e1e;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map-container">
+        <canvas id="overlayCanvas" width="1100" height="750"></canvas>
+    </div>
+
+    <div id="ui-panel">
+        <h2>MIL-STD-2525D Control</h2>
+        
+        <button class="btn active" id="btn-coa1" onclick="switchCOA('COA1')">COA 1 (Center)</button>
+        <button class="btn" id="btn-coa2" onclick="switchCOA('COA2')">COA 2 (Right)</button>
+        <button class="btn" id="btn-coa3" onclick="switchCOA('COA3')">COA 3 (Left)</button>
+        
+        <button class="btn toggle-btn" onclick="toggleRanges()">Toggle Range Circles</button>
+
+        <div id="info-box">
+            <b>표준 군사 기호(SIDC) 정보:</b><br>
+            • <span style="color:#3498db;">파란색 사각형</span>: 아군(Friend)<br>
+            • <span style="color:#e74c3c;">붉은색 다이아몬드</span>: 적군(Hostile)<br>
+            • <b>보병 (Infantry)</b>: X 자 표지<br>
+            • <b>전차 (Armor)</b>: 타원형 표지<br>
+            • <b>점선 화살표</b>: 기동 축선(COA)
+        </div>
+    </div>
+
+    <script>
+        // 시나리오 데이터 (JSON 구조와 동일)
+        const scenarioData = {
+            RED_UNITS: [
+                { name: "RED 1 CO", sidc: "SFGPUCI----****", x: 220, y: 180, attack: 13, detect: 0.9, rng: 120 },
+                { name: "RED 2 CO", sidc: "SFGPUCI----****", x: 540, y: 240, attack: 30, detect: 0.9, rng: 130 },
+                { name: "RED 3 CO (-1)", sidc: "SFGPUCI----****", x: 610, y: 150, attack: 15, detect: 0.9, rng: 130 },
+                { name: "RED 3 CO 1PLT", sidc: "SFGPUCI----****", x: 750, y: 280, attack: 10, detect: 0.9, rng: 110 }
+            ],
+            BLUE_UNITS: [
+                { name: "BLUE 1 CO", sidc: "SFGPUFI----****", x: 180, y: 520, speed: 0.05, detect: 0 },
+                { name: "BLUE 2 CO", sidc: "SFGPUFI----****", x: 500, y: 520, speed: 0.05, detect: 0 },
+                { name: "BLUE 3 CO (-1)", sidc: "SFGPUFI----****", x: 720, y: 520, speed: 0.05, detect: 0 },
+                { name: "BLUE Tank CO", sidc: "SFGPUCA----****", x: 120, y: 620, speed: 0.1, detect: 0 }, // Armor Symbol
+                { name: "BLUE 3 CO 1PLT", sidc: "SFGPUFI----****", x: 200, y: 620, speed: 0.05, detect: 0 }
+            ],
+            WAYPOINTS: {
+                "COA1": {
+                    "BLUE Tank CO": [[500, 550], [500, 250], [630, 120], [630, 70]],
+                    "BLUE 2 CO": [[520, 380], [580, 220], [630, 70]],
+                    "BLUE 1 CO": [[200, 380], [220, 240]],
+                    "BLUE 3 CO (-1)": [[720, 420], [750, 320]],
+                    "BLUE 3 CO 1PLT": [[480, 580], [500, 380]]
+                },
+                "COA2": {
+                    "BLUE 3 CO (-1)": [[750, 420], [760, 280], [630, 150]],
+                    "BLUE 3 CO 1PLT": [[700, 580], [740, 350], [630, 150]],
+                    "BLUE Tank CO": [[500, 600], [500, 350], [630, 100]],
+                    "BLUE 1 CO": [[200, 420]],
+                    "BLUE 2 CO": [[500, 420]]
+                },
+                "COA3": {
+                    "BLUE 1 CO": [[180, 380], [200, 200]],
+                    "BLUE Tank CO": [[150, 480], [220, 220]],
+                    "BLUE 2 CO": [[450, 480], [500, 320]],
+                    "BLUE 3 CO (-1)": [[700, 480]],
+                    "BLUE 3 CO 1PLT": [[400, 520]]
+                }
+            }
+        };
+
+        const canvas = document.getElementById('overlayCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentCOA = 'COA1';
+        let showRanges = true;
+
+        // 지형 및 지도 배경 그리기
+        function drawMapBase() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 도로
+            ctx.fillStyle = '#787878';
+            ctx.fillRect(480, 0, 50, 750);
+
+            // 능선 (Ridge Lines)
+            ctx.fillStyle = '#b48c64';
+            ctx.fillRect(80, 240, 300, 35);
+            ctx.fillRect(420, 280, 160, 35);
+            ctx.fillRect(650, 320, 180, 35);
+
+            // 500 고지 & OBJ
+            ctx.beginPath();
+            ctx.arc(610, 150, 40, 0, 2 * Math.PI);
+            ctx.fillStyle = '#c8a078';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(630, 70, 28, 0, 2 * Math.PI);
+            ctx.fillStyle = '#7828a0';
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('OBJ', 618, 74);
+
+            // FLOT (접적선)
+            ctx.beginPath();
+            ctx.setLineDash([8, 6]);
+            ctx.strokeStyle = '#2864dc';
+            ctx.lineWidth = 2;
+            ctx.moveTo(30, 420);
+            ctx.lineTo(810, 420);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // milsymbol.js를 사용하여 기호 생성 및 캔버스 렌더링
+        function renderOverlay() {
+            drawMapBase();
+
+            // 1. 적군 (RED) 렌더링
+            scenarioData.RED_UNITS.forEach(unit => {
+                // 사거리 반경 표출
+                if (showRanges) {
+                    ctx.beginPath();
+                    ctx.arc(unit.x, unit.y, unit.rng, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'rgba(231, 76, 60, 0.15)';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(231, 76, 60, 0.4)';
+                    ctx.stroke();
+                }
+
+                // milsymbol 심볼 객체 생성
+                // SIDC 코드 해석: SFGPUCI----**** -> Hostile(적), Ground, Unit, Infantry(보병)
+                let symbol = new ms.Symbol(unit.sidc, {
+                    size: 25,
+                    uniqueDesignation: unit.name,
+                    additionalInformation: `ATK:${unit.attack}`
+                });
+
+                // Canvas에 MIL-STD 기호 직접 그리기
+                let symbolCanvas = symbol.asCanvas();
+                ctx.drawImage(symbolCanvas, unit.x - symbol.getAnchor().x, unit.y - symbol.getAnchor().y);
+            });
+
+            // 2. 아군 (BLUE) 및 COA 기동 경로 렌더링
+            const coaWaypoints = scenarioData.WAYPOINTS[currentCOA];
+
+            scenarioData.BLUE_UNITS.forEach(unit => {
+                // milsymbol 심볼 객체 생성
+                // SIDC 코드 해석: SFGPUFI----**** (보병), SFGPUCA----**** (기갑/전차)
+                let symbol = new ms.Symbol(unit.sidc, {
+                    size: 25,
+                    uniqueDesignation: unit.name
+                });
+
+                let symbolCanvas = symbol.asCanvas();
+                ctx.drawImage(symbolCanvas, unit.x - symbol.getAnchor().x, unit.y - symbol.getAnchor().y);
+
+                // COA 기동 경로 화살표 그리기
+                if (coaWaypoints[unit.name]) {
+                    const pts = [[unit.x, unit.y], ...coaWaypoints[unit.name]];
+
+                    ctx.beginPath();
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeStyle = '#0055ff';
+                    ctx.lineWidth = 2;
+                    ctx.moveTo(pts[0][0], pts[0][1]);
+
+                    for (let i = 1; i < pts.length; i++) {
+                        ctx.lineTo(pts[i][0], pts[i][1]);
+                    }
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // 최종 목적지에 작은 원 표출
+                    const lastPt = pts[pts.length - 1];
+                    ctx.beginPath();
+                    ctx.arc(lastPt[0], lastPt[1], 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#0055ff';
+                    ctx.fill();
+                }
+            });
+        }
+
+        // COA 전환 이벤트 처리
+        function switchCOA(coa) {
+            currentCOA = coa;
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${coa.toLowerCase()}`).classList.add('active');
+            renderOverlay();
+        }
+
+        // 사거리 토글 이벤트 처리
+        function toggleRanges() {
+            showRanges = !showRanges;
+            renderOverlay();
+        }
+
+        // 최초 렌더링
+        window.onload = () => {
+            renderOverlay();
+        };
+    </script>
+</body>
+</html>
