@@ -86,7 +86,7 @@ def _run_direction_analysis(context: SimulationContext) -> str:
 
     map_html = generate_direction_map_widget(context=context)
 
-    context.attach_bokeh_direction_map(key="main_directions", html_content_hist=hist_html, html_content_map=map_html, height_hist=330, height_map=620)
+    context.attach_bokeh_direction_map(key="main_directions", html_content_hist=hist_html, html_content_map=map_html, height_hist=330, height_map=580)
     
     if context.ui_handler:
         context.ui_handler.on_tool_complete("주요 방향 분석")
@@ -96,7 +96,9 @@ def _run_direction_analysis(context: SimulationContext) -> str:
 
 
 def get_direction_analysis(context: SimulationContext):
-    @tool("Maritime Traffic Direction Analyzer")
+    TOOL_NAME = "Maritime Traffic Direction Analyzer"
+
+    @tool(TOOL_NAME)
     async def _get_direction_analysis() -> str:
         """
         미리 분석되어 저장된 해상 주요 선박 향(Direction) 데이터를 로드하고
@@ -106,7 +108,12 @@ def get_direction_analysis(context: SimulationContext):
             context.ui_handler.on_tool_start("주요 방향 분석", "관심 해역에서 선박들의 주요 이동향 정보를 반환합니다")
         # 동기식 파이썬 연산을 쓰레드풀로 넘겨 비동기 이벤트 루프 멈춤 현상 방지
         output_json = await asyncio.to_thread(_run_direction_analysis, context=context)
+
+        if context.ui_handler:
+            context.mark_tool_done(TOOL_NAME)
+
         return output_json
+    
     return _get_direction_analysis
 
 

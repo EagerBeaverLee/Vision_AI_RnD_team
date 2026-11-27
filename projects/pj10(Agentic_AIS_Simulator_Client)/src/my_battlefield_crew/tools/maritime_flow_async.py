@@ -86,7 +86,9 @@ def _run_traffic_flow_analysis(context: SimulationContext) -> str:
 
 
 def analyze_traffic_flow(context: SimulationContext):
-    @tool("Maritime Traffic Flow Analyzer")
+    TOOL_NAME = "Maritime Traffic Flow Analyzer"
+
+    @tool(TOOL_NAME)
     async def _analyze_traffic_flow() -> str:
         """
         미리 분석되어 저장된 해상 주요 선박 흐름(Flow) 데이터를 로드하고
@@ -97,7 +99,12 @@ def analyze_traffic_flow(context: SimulationContext):
             context.ui_handler.on_tool_start("주요 교통 흐름", "구역간 주요 교통 흐름 정보를 반환합니다")
         # 무거운 공간 조인 연산을 별도 쓰레드로 분리하여 비동기 실행
         output_json = await asyncio.to_thread(_run_traffic_flow_analysis, context=context)
+
+        if context.ui_handler:
+            context.mark_tool_done(TOOL_NAME)
+
         return output_json
+    
     return _analyze_traffic_flow
 
 

@@ -93,7 +93,9 @@ def _run_ship_status_extraction(context: SimulationContext) -> str:
 
 
 def ship_status_extraction(context: SimulationContext):
-    @tool('Maritime Ships Voyage Status Analyzer')
+    TOOL_NAME = "Maritime Ships Voyage Status Analyzer"
+
+    @tool(TOOL_NAME)
     async def _ship_status_extraction() -> str:
         """
         현재 시점 기준 선박들의 상태를 추출 하여 이동/통과, 저속 운항, 정박/대기 카테고리로 분류하여 분석합니다.
@@ -103,5 +105,10 @@ def ship_status_extraction(context: SimulationContext):
             context.ui_handler.on_tool_start("기동 상태별 현황", "선박들의 상태를 추출 하여 이동/통과, 저속 운항, 정박/대기 카테고리로 분류한 정보를 반환합니다")
         # 데이터 처리 및 필터링 연산을 백그라운드 쓰레드에서 비동기 실행
         output_json = await asyncio.to_thread(_run_ship_status_extraction, context=context)
+
+        if context.ui_handler:
+            context.mark_tool_done(TOOL_NAME)
+
         return output_json
+    
     return _ship_status_extraction

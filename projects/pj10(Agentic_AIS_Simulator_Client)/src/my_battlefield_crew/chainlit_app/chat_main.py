@@ -164,6 +164,11 @@ async def main(message: cl.Message):
     async with cl.Step(name="🚀 질문 분석 및 에이전트 구동 중...", type="run", default_open=False, auto_collapse=True) as step:
         handler = ChainlitCrewHandler(step=step)
 
+        context = SimulationContext(
+            user_question=message.content,
+            ui_handler=handler,
+        )
+
         processing_list = None
         db_path = get_db_path()
         start_time = get_start_simulation_time()
@@ -171,6 +176,14 @@ async def main(message: cl.Message):
         print(f">>> [Chainlit] 리포트 db경로 출력: {db_path}")
         print(f">>> [Chainlit] 리포트 시작 시각 캡처: {start_time}")
         print(f">>> [Chainlit] 리포트 기준 시각 캡처: {curr_time}")
+
+        context.realtime_db_path=db_path
+        context.time = SimTime(
+            start_time=start_time,
+            curr_time=curr_time
+        )
+        context.report_time_adjustment()
+        context.rag_pipe = CURRENT_RAG_PIPELINE
 
         async with cl.Step(name="🛰️ 전술 상황 사전 분석 및 데이터 전처리", type="tool") as prep_step:
             prep_step.output = f"기준 시각 [{curr_time}] 기준 데이터셋 추출 중..."
@@ -184,30 +197,7 @@ async def main(message: cl.Message):
             )
             if processing_list:
                 prep_step.output = f"전처리 완료: {processing_list})"
-            else:
-                prep_step.output = "오류로 인해 전처리가 정상적으로 완료되지 않았습니다."
-                return
-
-        if not processing_list:
-            handler.update_step_status(
-                name = "❌​ 전처리가 이루어지지 않아 답변을 생성할 수 없습니다",
-                output = "상세 실행 로그가 존재하지 않습니다."
-            )
-            return
-
-        context = SimulationContext(
-            user_question=message.content,
-            processing_list=processing_list,
-            realtime_db_path=db_path,
-            time = SimTime(
-                start_time=start_time,
-                curr_time=curr_time,
-            ),
-            ui_handler=handler,
-            rag_pipe = CURRENT_RAG_PIPELINE
-        )
-
-        context.report_time_adjustment()
+                context.processing_list=processing_list
 
         mainsystemflow = MainSystemFlow(
             context=context
@@ -215,6 +205,9 @@ async def main(message: cl.Message):
 
         result = await mainsystemflow.kickoff_async()
 
+        if result == "오류":
+            return
+        
         handler.finish_main_step()
 
     # 4. 전체 태스크 이력 아코디언 출력 및 최종 답변 타이핑 스트리밍    

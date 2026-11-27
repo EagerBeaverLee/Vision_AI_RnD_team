@@ -83,7 +83,9 @@ def _run_mean_speed_analysis(context: SimulationContext) -> str:
 
 
 def analyze_mean_speed(context: SimulationContext):
-    @tool("Maritime Zone Mean Speed Analyzer")
+    TOOL_NAME = "Maritime Zone Mean Speed Analyzer"
+
+    @tool(TOOL_NAME)
     async def _analyze_mean_speed() -> str:
         """해상 작전 통제 구역(Zone)별 선박들의 평균 속도, 최고 속도 및 트래픽 수를 분석합니다. 
         구역별 속도 통계나 속도 요약 관련 질문이 들어왔을 때 반드시 이 도구를 사용해야 합니다."""
@@ -91,7 +93,12 @@ def analyze_mean_speed(context: SimulationContext):
             context.ui_handler.on_tool_start("구역별 속도", "해상 작전 통제 구역(Zone)별 선박들의 평균 속도, 최고 속도 및 트래픽 수에 대한 정보를 반환합니다")
         # 공간 조인 및 속도 통계 연산을 백그라운드 쓰레드에서 비동기 실행
         output_json = await asyncio.to_thread(_run_mean_speed_analysis, context=context)
+
+        if context.ui_handler:
+            context.mark_tool_done(TOOL_NAME)
+
         return output_json
+    
     return _analyze_mean_speed
 
 

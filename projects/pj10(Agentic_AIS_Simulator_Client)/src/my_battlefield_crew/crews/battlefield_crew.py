@@ -110,6 +110,10 @@ class BattlefieldCrew:
 
         print(f"[분석 도구 식별] 해상 분석관에게 배정된 활성 툴 목록: {[t.name for t in active_tools]}")
 
+        # 활성 툴 목록이 확정된 직후 트래커 초기화 (단독 테스트 시 self.context가 None일 수 있으므로 방어 처리)
+        if self.context is not None:
+            self.context.init_tool_tracker(active_tools)
+
         return Agent(
             config=self.agents_config['maritime_situation_analyst'],
             tools=active_tools,

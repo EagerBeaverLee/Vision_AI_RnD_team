@@ -458,8 +458,16 @@ def generate_ship_table_widget(ship_data_dict: dict[str, pd.DataFrame]) -> str:
         display: flex; flex-direction: column; /* 세로 배치 */
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         background-color: #0E1117; color: #E2E8F0; font-size: 13px;
+        overflow: hidden;
     }}
-    .header {{ font-weight: bold; font-size: 14px; margin-bottom: 10px; color: #38BDF8; }}
+    .header {{
+        display: flex; justify-content: space-between; align-items: center;
+        font-weight: bold; font-size: 14px; margin-bottom: 10px; color: #38BDF8;
+    }}
+    .total-badge {{
+        background: #1E293B; color: #94A3B8; font-size: 11px;
+        padding: 2px 8px; border-radius: 10px; font-weight: normal;
+    }}
     .controls {{ display: flex; gap: 12px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }}
     .radio-group {{ display: flex; gap: 10px; background: #1E293B; padding: 4px 8px; border-radius: 6px; }}
     .radio-label {{ cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 12px; }}
@@ -481,7 +489,10 @@ def generate_ship_table_widget(ship_data_dict: dict[str, pd.DataFrame]) -> str:
 </style>
 </head>
 <body>
-    <div class="header">📋 함정 상세 목록</div>
+    <div class="header">
+        <span>📋 함정 상세 목록</span>
+        <span class="total-badge" id="countBadge">총 0척</span>
+    </div>
     <div class="controls">
         <div class="radio-group">
             <label class="radio-label"><input type="radio" name="status" value="순항" checked onchange="updateTable()"> 순항</label>
@@ -507,14 +518,17 @@ def generate_ship_table_widget(ship_data_dict: dict[str, pd.DataFrame]) -> str:
         const query = document.getElementById('searchInput').value.trim().toLowerCase();
         const records = rawData[status] || [];
 
-        // 1. 검색어 필터링 (ShipName or MMSI)
+        // 검색어 필터링 (ShipName or MMSI)
         const filtered = records.filter(row => {{
             const name = String(row.ShipName || '').toLowerCase();
             const mmsi = String(row.mmsi || '').toLowerCase();
             return name.includes(query) || mmsi.includes(query);
         }});
 
-        // 2. 헤더 구성
+        // 상단 카운트 뱃지 업데이트 (현재 선택된 기동 상태 탭 기준)
+        document.getElementById('countBadge').textContent = `표시 ${{filtered.length}}척 / 전체 ${{records.length}}척`;
+
+        // 헤더 구성
         const headerTr = document.getElementById('tableHeader');
         headerTr.innerHTML = '';
         if (records.length > 0) {{
@@ -525,7 +539,7 @@ def generate_ship_table_widget(ship_data_dict: dict[str, pd.DataFrame]) -> str:
             }});
         }}
 
-        // 3. 본문 렌더링
+        // 본문 렌더링
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         if (filtered.length === 0) {{
@@ -574,7 +588,7 @@ def render_major_ports_map(i, port_name, plot_port_gdf, p_anchored, p_departures
             tiles='EsriImagery',
             xlim=p_xlim,
             ylim=p_ylim, 
-            frame_width=300,
+            frame_width=320,
             frame_height=300,
             title=f"{port_name}"
         ))
@@ -622,6 +636,9 @@ def render_major_ports_map(i, port_name, plot_port_gdf, p_anchored, p_departures
         yaxis=None, 
         show_legend=False,
         bgcolor='#0E1117',
+        default_tools=[],  # 드래그·휠 줌 기능 자체를 완전히 비활성화
+        active_tools=[],
+        toolbar=None,       # 툴바 탭(UI) 숨김
         # 에러가 났던 border_fill_color 대신 hooks를 사용하여 Bokeh 모델을 직접 수정
         hooks=[lambda plot, element: (
             setattr(plot.state, 'border_fill_color', '#0E1117'),
@@ -752,7 +769,7 @@ def render_od_flow_map(context: SimulationContext):
             line_color='black', line_width=1,
             cmap='YlOrRd', 
             hover_cols=['name', 'mean', 'count'], # mean_knots 대신 mean 사용
-            frame_height=300, frame_width=500, legend=False,
+            frame_height=300, frame_width=520, legend=False,
             responsive=True # 이전의 레이아웃 어긋남 방지
         )
 
@@ -760,11 +777,13 @@ def render_od_flow_map(context: SimulationContext):
         flow_cluster_map = (zones_speed * flows.hvplot(geo=True, hover_cols=['weight'], line_width='weight', alpha=0.5, color='#00FFFF') * clusters.hvplot(geo=True, color='red', size='n')
         ).opts(
             # title='Integrated Analysis: OD Flows, Avg Speed & Clusters',
-            active_tools=['wheel_zoom'],
             xaxis=None,            # x축 전체 숨기기
             yaxis=None,            # y축 전체 숨기기
             show_legend=False,     # 범례 숨기기
             bgcolor='#0E1117',
+            default_tools=[],  # 드래그·휠 줌 기능 자체를 완전히 비활성화
+            active_tools=[],
+            toolbar=None,       # 툴바 탭(UI) 숨김
             # 에러가 났던 border_fill_color 대신 hooks를 사용하여 Bokeh 모델을 직접 수정
             hooks=[lambda plot, element: (
                 setattr(plot.state, 'border_fill_color', '#0E1117'),
@@ -813,14 +832,14 @@ def generate_direction_hist_widget(context: SimulationContext):
 
     plot = (hist * vlines).opts(
         bgcolor="#0E1117",   # 1. 그래프 안쪽(캔버스) 배경색
+        default_tools=[],  # 드래그·휠 줌 기능 자체를 완전히 비활성화
+        toolbar=None,       # 툴바 탭(UI) 숨김
+        active_tools=[],
         hooks=[lambda plot, element: (
             setattr(plot.state, 'border_fill_color', '#0E1117'),       # 2. 바깥쪽 여백 배경색
             setattr(plot.state, 'background_fill_color', '#0E1117'),   # 3. 안쪽 배경색 강제 적용
             setattr(plot.state, 'outline_line_color', "#B8F7B9"),   # 차트 영역 사각 테두리
             setattr(plot.state.title, 'text_color', "#B8F7B9"),          # 4. 제목 글자색
-            setattr(plot.state.toolbar, 'active_drag', None),    # 드래그 이동 초기 OFF
-            setattr(plot.state.toolbar, 'active_scroll', None),   # 휠 줌 초기 OFF
-
             [
                 setattr(ax, prop, "#B8F7B9")
                 for ax in (plot.state.xaxis, plot.state.yaxis)
@@ -868,6 +887,7 @@ def generate_direction_map_widget(context: SimulationContext):
         p.outline_line_color = '#0E1117'
         if p.title:
             p.title.text_color = "#B8F7B9"
+        # p.toolbar_location = None
 
     # 3. 4방위별 지도 리스트 생성
     plots = [
@@ -877,25 +897,29 @@ def generate_direction_map_widget(context: SimulationContext):
             # tiles="OSM",
             color="#B8F7B9",
             size=2,
-            width=330,
+            width=340,
             height=280,
             title=f"{int(i * 90)}° ~ {int((i + 1) * 90) - 1}°",
         ).opts(
             bgcolor="#0E1117",
             xaxis=None,            # x축 전체 숨기기
             yaxis=None,            # y축 전체 숨기기
-            active_tools=["wheel_zoom"],
             hooks=[apply_dark_map],
         )
         for i in sorted(temp["dir_class"].unique())
     ]
 
     # 4. 2x2 격자(한 줄에 2개씩) 또는 1x4 가로 배치(.cols(4))
-    dir_layout = hv.Layout(plots).cols(2)
+    dir_layout = hv.Layout(plots).cols(2).opts(
+        hv.opts.Tiles(default_tools=[], active_tools=[]),
+        hv.opts.Points(default_tools=[], active_tools=[]),
+        hv.opts.Overlay(default_tools=[], active_tools=[]),
+        hv.opts.Layout(merge_tools=False),
+    )
 
     # 5. 메모리(StringIO)로 HTML 저장
     buf = io.StringIO()
-    hvplot.save(dir_layout, buf, resources=INLINE)
+    hvplot.save(dir_layout, buf, resources=INLINE, toolbar=False)
     html_val = buf.getvalue()
 
     dark_css = """

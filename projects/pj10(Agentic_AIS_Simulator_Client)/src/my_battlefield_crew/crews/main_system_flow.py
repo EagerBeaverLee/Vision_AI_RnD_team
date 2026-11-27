@@ -87,6 +87,18 @@ class MainSystemFlow(Flow[MainSystemState]):
     async def run_battlefield(self):
         response = None
         print("Battlefield Path 실행 시작")
+
+        if not self.context.processing_list:
+            self.context.ui_handler.stop_timer()
+            self.context.ui_handler.update_step_status(
+                name = "❌​ 전처리가 이루어지지 않아 답변을 생성할 수 없습니다",
+                output = "상세 실행 로그가 존재하지 않습니다.",
+                delay=0,
+                force_title=True,
+            )
+            await asyncio.sleep(0.05)
+            return "오류"
+
         self.context.ui_handler.on_agent_start(agent_name="전술 라우터 에이전트", agent_role="전장 질문 카테고리 분류")
         self.context.ui_handler.on_agent_progress(agent_name="전술 라우터 에이전트", status_desc="전장 질문 카테고리 분류")
         self.context.ui_handler.on_task_start(task_name="route_question_task", task_desc="사용자의 전술 질문을 분석하여 카테고리 목록을 결정해야 합니다.")
@@ -135,6 +147,17 @@ class MainSystemFlow(Flow[MainSystemState]):
         self.context.ui_handler.on_agent_progress(agent_name="교리교범을 검색 에이전트", status_desc="VectorDB를 바탕으로 질문에 답변")
         self.context.ui_handler.on_task_start(task_name="document_researching_task", task_desc="VectorDB에서 관련 문서를 검색하여 사용자의 질의에 정확하게 답변합니다.")
         self.context.ui_handler.on_task_progress(task_name="document_researching_task", status_desc="VectorDB에서 관련 문서를 검색하여 사용자의 질의에 정확하게 답변합니다.", delay=2)
+
+        if not self.context.rag_pipe.retriever:
+            self.context.ui_handler.stop_timer()
+            self.context.ui_handler.update_step_status(
+                name = "❌​ retriever가 생성되지 않아 답변을 생성할 수 없습니다",
+                output = "상세 실행 로그가 존재하지 않습니다.",
+                delay=0,
+                force_title=True,
+            )
+            await asyncio.sleep(0.05)
+            return "오류"
         
         rag_crew = RAGCrew(
             context=self.context

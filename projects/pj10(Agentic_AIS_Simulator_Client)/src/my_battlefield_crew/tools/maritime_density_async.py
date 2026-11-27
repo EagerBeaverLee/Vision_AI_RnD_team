@@ -54,7 +54,9 @@ def _run_maritime_density_analysis(context: SimulationContext) -> str:
     return json.dumps(result, ensure_ascii=False, indent=4)
 
 def analyze_maritime_density(context: SimulationContext):
-    @tool("Maritime Zone Density Analyzer")
+    TOOL_NAME = "Maritime Zone Density Analyzer"
+
+    @tool(TOOL_NAME)
     async def _analyze_maritime_density() -> str:
         """
         미리 분석되어 저장된 해상 클러스터(Cluster) 데이터를 로드하고
@@ -67,7 +69,12 @@ def analyze_maritime_density(context: SimulationContext):
         output_json = await asyncio.to_thread(_run_maritime_density_analysis, context=context)
         
         print(output_json)
+
+        if context.ui_handler:
+            context.mark_tool_done(TOOL_NAME)
+
         return output_json
+    
     return _analyze_maritime_density
 
 

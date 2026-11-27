@@ -25,7 +25,6 @@ class RAGPipeline:
     def __init__(self, rag_config: Optional[RAGConfig] = None, llm_config: Optional[LLMConfig] = None):
         self.llm_config: LLMConfig = llm_config or LLMConfig()
         self.rag_config: RAGConfig = rag_config or RAGConfig()
-        self.vector_store: Optional[FAISS] = None
         self.retriever = None
         self.post_processor: Optional[DocumentPostProcessor] = None
         
@@ -210,9 +209,7 @@ class RAGPipeline:
             # DefaultRetriever에 구현된 메서드를 통해 DB와 Retriever 추출
             self.retriever = retriever_class.copy_retriever()
             self.post_processor = DocumentPostProcessor(retriever=self.retriever)
-            if hasattr(self.retriever, "vector_store"):
-                self.vector_store = retriever_class.copy_vectorstore()
-            print("[RAGPipeline] FAISS VectorStore 및 Retriever 인스턴스 저장 완료")
+            print("[RAGPipeline] FAISS Retriever 인스턴스 저장 완료")
             yield "COMPLETE\n"
         else:
             print(f"[RAGPipeline] 작업이 정상 완료되지 않음: {last_signal}")

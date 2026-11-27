@@ -132,7 +132,9 @@ def _run_major_ports_status_analysis(context: SimulationContext) -> str:
 
 
 def get_major_ports_status(context: SimulationContext):
-    @tool("Maritime Major Ports Status")
+    TOOL_NAME = "Maritime Major Ports Status"
+
+    @tool(TOOL_NAME)
     async def _get_major_ports_status() -> str:
         """현재 기동 중인 선박들의 주요 항구별 입출항(출발/도착) 및 정박 현황을 분석합니다.
         항만 현황, 입출항 선박 수, 정박 대기 관련 질문이 들어올 때 이 도구를 사용하세요"""
@@ -140,7 +142,12 @@ def get_major_ports_status(context: SimulationContext):
             context.ui_handler.on_tool_start("주요 항만별 입출항", "기동 중인 선박들의 주요 항구별 입출항(출발/도착) 및 정박 현황 정보를 반환합니다")
         # MovingPandas Trajectory 분할 및 항구 공간 연산을 백그라운드 쓰레드에서 실행
         output_json = await asyncio.to_thread(_run_major_ports_status_analysis, context=context)
+
+        if context.ui_handler:
+            context.mark_tool_done(TOOL_NAME)
+
         return output_json
+    
     return _get_major_ports_status
 
 

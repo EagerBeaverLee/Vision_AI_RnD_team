@@ -29,7 +29,7 @@ class DefaultRetriever:
             chunk_size=2000,
             chunk_overlap=250
         )
-        self.retriever = None
+        self.vectorstore = None
 
     def get_loader(self, filename):
         loader_classes = {
@@ -58,7 +58,7 @@ class DefaultRetriever:
         
     def run(self, cancel_flag: threading.Event):
         try:
-            flag = 1    #0:생성, 1:로드
+            flag = 0    #0:생성, 1:로드
             files = []
             input_path = None
 
@@ -109,10 +109,10 @@ class DefaultRetriever:
                     chunks = self.text_splitter.split_documents(loader.load())
 
                     if flag == 0:
-                        if self.retriever:
-                            self.retriever.add_documents(chunks)
+                        if self.vectorstore:
+                            self.vectorstore.add_documents(chunks)
                         else:
-                            self.retriever = FAISS.from_documents(chunks, self.embedding_model)
+                            self.vectorstore = FAISS.from_documents(chunks, self.embedding_model)
                     
                     curr_progress = (i + 1) * progress_step
                     yield f"{curr_progress}\n"
@@ -121,10 +121,10 @@ class DefaultRetriever:
                     print(f"[default_retriever]: {file} 파일 임베딩 중 오류 발생: {e}")
 
             if flag == 0:
-                self.retriever.save_local(save_vector)
+                self.vectorstore.save_local(save_vector)
                 print("FAISS 벡터스토어 생성 및 저장 완료")
             else:
-                self.retriever = FAISS.load_local(save_vector, self.embedding_model, allow_dangerous_deserialization=True)
+                self.vectorstore = FAISS.load_local(save_vector, self.embedding_model, allow_dangerous_deserialization=True)
                 print("FAISS 벡터스토어 로드 완료")
 
             yield "COMPLETE\n"
@@ -133,22 +133,10 @@ class DefaultRetriever:
             print(f"오류: {e}")
             yield "CANCELLED\n"
 
-    def copy_vectorstore(self):
-        if self.retriever is None:
-            print("vectorDB가 없습니다")
-            return
-        return self.retriever
-        
-    
     def copy_retriever(self):
-        if self.retriever is None:
-            print("vectorDB가 없습니다")
-            return
-        retriever = self.retriever.as_retriever(search_kwargs={"k": 4})
-        return retriever
-        
+        return self.vectorstore.as_retriever(search_kwargs={"k": 4})
 
     def query(self, question: str) -> str:
-        retriever = self.retriever.as_retriever(search_kwargs={"k": 4})
+        retriever = self.vectorstore.as_retriever(search_kwargs={"k": 4})
         query_res = retriever.invoke(question)
         return query_res

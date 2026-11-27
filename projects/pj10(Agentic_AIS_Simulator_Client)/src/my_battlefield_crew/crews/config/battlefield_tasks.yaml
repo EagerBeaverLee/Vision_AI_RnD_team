@@ -21,13 +21,13 @@ analyze_maritime_situation_task:
     도구 실행 결과로 획득한 원시 데이터를 최종 Pydantic 객체의 해당 필드에 바인딩하십시오.
     원시데이터는 누락되지 않도록 해당 필드에 모두 바인딩하세요. 
     (데이터가 없는 나머지 필드는 안전하게 비워둡니다.)
-    1. 'Maritime Zone Density Analyzer' 작동 시 -> 'top_dense_zones', 'top_dense_zones_analysis' 기입
-    2. 'Maritime Zone Mean Speed Analyzer' 작동 시 -> 'zone_speeds', 'zone_speeds_analysis' 기입
-    3. 'Maritime Traffic Flow Analyzer' 작동 시 -> 'main_routes', 'main_routes_analysis' 기입
-    4. 'Maritime Traffic Direction Analyzer' 작동 시 -> 'main_directions', 'main_directions_analysis' 기입
-    5. 'Maritime Major Ports Status' 작동 시 -> 'port_activities', 'port_activities_analysis' 기입
-    6. 'Maritime Ships Voyage Status Analyzer' 작동 시 -> 'ship_voyage_status', 'ship_voyage_status_analysis' 기입
-    7. 'Maritime Unusual Ships Detector' 작동 시 -> 'unusual_ships', 'unusual_ships_analysis' 기입
+    1. 'Maritime Zone Density Analyzer' 작동 시 -> 'top_dense_zones' 기입
+    2. 'Maritime Zone Mean Speed Analyzer' 작동 시 -> 'zone_speeds' 기입
+    3. 'Maritime Traffic Flow Analyzer' 작동 시 -> 'main_routes' 기입
+    4. 'Maritime Traffic Direction Analyzer' 작동 시 -> 'main_directions' 기입
+    5. 'Maritime Major Ports Status' 작동 시 -> 'port_activities' 기입
+    6. 'Maritime Ships Voyage Status Analyzer' 작동 시 -> 'ship_voyage_status' 기입
+    7. 'Maritime Unusual Ships Detector' 작동 시 -> 'unusual_ships' 기입
 
     [최종 전술 브리핑 작성 지침]
     데이터 매핑이 모두 완료되면, 다음 필드를 한글로 성의 있고 전문성 있게 작성하십시오:

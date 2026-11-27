@@ -68,8 +68,10 @@ def _run_unusual_ships_detection(context: SimulationContext) -> str:
     return json.dumps(unusual_ships_json, ensure_ascii=False, indent=4)
 
 def unusual_ships_detector(context: SimulationContext):
+    TOOL_NAME = "Maritime Unusual Ships Detector"
+
     # 2. CrewAI Tool을 async def로 작성하고 백그라운드 쓰레드로 실행
-    @tool('Maritime Unusual Ships Detector')
+    @tool(TOOL_NAME)
     async def _unusual_ships_detector() -> str:
         """
         기능:
@@ -84,7 +86,12 @@ def unusual_ships_detector(context: SimulationContext):
             context.ui_handler.on_tool_start("특이 기동 선박 현황", "특이/이상 기동 선박에 대한 정보를 반환합니다")
         # 이상 기동 분석 및 집계 연산을 백그라운드 쓰레드에서 비동기 실행
         output_json = await asyncio.to_thread(_run_unusual_ships_detection, context=context)
+
+        if context.ui_handler:
+            context.mark_tool_done(TOOL_NAME)
+
         return output_json
+    
     return _unusual_ships_detector
 
 

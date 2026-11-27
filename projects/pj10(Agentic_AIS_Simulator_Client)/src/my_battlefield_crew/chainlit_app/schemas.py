@@ -1,9 +1,11 @@
 import pandas as pd
 import textwrap
-from datetime import timedelta
+import threading
+import time
+from datetime import timedelta, datetime
 from dataclasses import dataclass, field
-from typing import Callable, Optional, Dict, List, TYPE_CHECKING
-from langchain_community.vectorstores import FAISS
+from pydantic import BaseModel
+from typing import Dict, List, Any, Set
 from my_battlefield_crew.engine.rag_pipeline import RAGPipeline
 from my_battlefield_crew.chainlit_app.map_store import save_map_html
 
@@ -25,6 +27,14 @@ class SimulationContext:
     rag_pipe: RAGPipeline = field(default_factory=RAGPipeline)
     ui_handler: any = None
     artifacts: Dict[str, str] = field(default_factory=dict)
+    raw_outputs: Dict[str, Any] = field(default_factory=dict)
+
+    # Pydantic 검증/직렬화에서 제외되는 내부 동기화 상태
+    # --- 생성자(init) 인자에서 제외되는 내부 동기화용 변수들 ---
+    _expected_tools: Set[str] = field(default_factory=set, init=False, repr=False)
+    _completed_tools: Set[str] = field(default_factory=set, init=False, repr=False)
+    _answer_step_started: bool = field(default=False, init=False, repr=False)
+    _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
 
     def report_time_adjustment(self):
         origin_start_time = self.time.start_time[:19]
@@ -116,7 +126,6 @@ class SimulationContext:
 <iframe src="{table_widget_url}" width="100%" height="{height}" style="border: 1px solid #374A37; border-radius: 8px; margin: 14px 0;" scrolling="no"></iframe>
 <!-- WIDGET_END -->""")
 
-
     def attach_base64_image(
         self, key: str, base64_str: str, height: int = 380
     ) -> None:
@@ -125,3 +134,31 @@ class SimulationContext:
 <!-- IMG_START -->
 <iframe srcdoc='<body style="margin:0;display:flex;justify-content:center;"><img src="data:image/png;base64,{base64_str}" style="max-width:100%; border-radius:8px;"></body>' width="100%" height="{height}px" style="border:none;" scrolling="no"></iframe>
 <!-- IMG_END -->""")
+
+    ########## 도구 호출 이후 답변 생성중 메세지를 띄우기 위한 함수들 ############
+    def init_tool_tracker(self, equipped_tools: list) -> None:
+        """Crew 실행 직전에 호출하여 장착된 도구 목록 세팅"""
+        with self._lock:
+            self._expected_tools = {t.name for t in (equipped_tools or [])}
+            self._completed_tools.clear()
+            self._answer_step_started = False
+
+    def _check_should_trigger(self, tool_name: str) -> bool:
+        """락 내부에서 마지막 도구 완료 여부 1회 판별"""
+        with self._lock:
+            if tool_name in self._expected_tools:
+                self._completed_tools.add(tool_name)
+                
+            if (
+                len(self._completed_tools) >= len(self._expected_tools)
+                and not self._answer_step_started
+            ):
+                self._answer_step_started = True
+                return True
+            return False
+
+    def mark_tool_done(self, tool_name: str) -> None:
+        """도구 실행이 끝나는 직후 호출 (동기/비동기 도구 공통 사용 가능)"""
+        if self._check_should_trigger(tool_name) and self.ui_handler is not None:
+            self.ui_handler.start_final_answer_phase()
+    ###########################################################################

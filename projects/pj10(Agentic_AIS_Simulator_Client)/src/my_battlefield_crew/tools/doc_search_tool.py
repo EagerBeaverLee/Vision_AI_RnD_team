@@ -35,7 +35,6 @@ def _run_document_search(context: SimulationContext) -> str:
         key = context.rag_pipe.rag_config.question_transform
         selected_key = key.value if hasattr(key, "value") else str(key)
         
-        context.rag_pipe.retriever
         if context.ui_handler:
             context.ui_handler.on_tool_progress("VectorDB 검색", "사내 문서/데이터베이스에서 질문에 필요한 내용을 검색합니다.")
 

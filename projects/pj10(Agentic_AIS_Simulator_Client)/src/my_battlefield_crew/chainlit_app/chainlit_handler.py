@@ -2,23 +2,168 @@ import asyncio
 import json
 import time
 import re
-from typing import Any, List
+import threading
+import contextvars
+from typing import Any, List, Optional
 import chainlit as cl
 from my_battlefield_crew.chainlit_app.schemas import SimulationContext
-from my_battlefield_crew.crews.battlefield_models import MaritimeSituationReport
 
 try:
     from langchain_core.agents import AgentAction, AgentFinish
 except ImportError:
     AgentAction = AgentFinish = None
-##########
+
+class TimestampedLogList(list):
+    """append 호출 시 핸들러 생성(질문 입력) 시점 기준 [MM:SS.ms] 경과 시간을 자동 부착하는 리스트"""
+
+    def __init__(self, start_perf: float):
+        super().__init__()
+        self.start_perf = start_perf
+
+    def get_elapsed_tag(self) -> str:
+        elapsed = max(0.0, time.perf_counter() - self.start_perf)
+        total_centiseconds = int(elapsed * 100)
+
+        minutes, rem_cs = divmod(total_centiseconds, 6000)
+        seconds, ms_two_digits = divmod(rem_cs, 100)
+
+        if minutes > 0:
+            return f"[{minutes}m {seconds}s {ms_two_digits:02d}ms]"
+        return f"[{seconds}s {ms_two_digits:02d}ms]"
+
+    def append(self, message: str) -> None:
+        tag = self.get_elapsed_tag()
+        msg_str = str(message)
+
+        # 1. 앞쪽 구분선('\n---\n') 분리
+        prefix = ""
+        body = msg_str
+        if body.startswith("\n---\n"):
+            prefix = "\n---\n"
+            body = body[len("\n---\n"):]
+
+        # 2. 본문이 마크다운 헤딩('#'으로 시작)인 경우 '#' 기호 바로 뒤에 타임스탬프 배치
+        heading_match = re.match(r"^(#{1,6}\s+)(.*)", body, flags=re.DOTALL)
+        if heading_match:
+            hashes, rest = heading_match.groups()
+            formatted = f"{prefix}{hashes}`{tag}` {rest}"
+        else:
+            formatted = f"{prefix}`{tag}` {body}"
+
+        super().append(formatted)
+
 class ChainlitCrewHandler:
     """CrewAI 실행 진행 상황을 단일 cl.Step 내부에 집약하여 제어하는 핸들러"""
 
     def __init__(self, step: cl.step):
         self.step = step
-        self.logs_history: List[str] = []
+        self.start_perf = time.perf_counter()
+        self.logs_history: List[str] = TimestampedLogList(self.start_perf)
 
+        # 초기 step.name에 이미 [0s] 등이 붙어있더라도 중복되지 않게 순수 제목만 추출
+        raw_name = step.name or "🚀 질문 분석 및 에이전트 구동 중..."
+        self._base_step_name: str = re.sub(r"^\[(?:\d+m\s*)?\d+s\]\s*", "", raw_name)
+
+        self.is_final_phase = False      # 최종 답변 생성 구간 진입 여부 잠금 플래그
+        self.is_finished = False         # 타이머 종료 여부
+        self._is_failed = False          # 에러/조기 중단 확정 여부 (finish 덮어쓰기 방지)
+        self._ui_lock = threading.Lock()
+        self._stop_event = threading.Event()
+
+        # 생성 시점의 메인 이벤트 루프와 Chainlit 세션 컨텍스트를 캡처
+        try:
+            self._main_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._main_loop = None
+        self._cl_context = contextvars.copy_context()
+
+        # 0초([0s]) 상태 즉시 1회 반영
+        self.update_step_status(delay=0)
+
+        # 타이머 스레드가 self._cl_context를 점유하지 않도록 target에 직접 함수 연결
+        self._timer_thread = threading.Thread(
+            target=self._live_timer_worker,
+            daemon=True,
+        )
+        self._timer_thread.start()
+
+    def _format_live_seconds(self) -> str:
+        """밀리초를 제외한 실시간 경과 시간 포맷 ([3s], [57s], [1m 23s])"""
+        total_sec = int(max(0.0, time.perf_counter() - self.start_perf))
+        minutes, seconds = divmod(total_sec, 60)
+        if minutes > 0:
+            return f"[{minutes}m {seconds}s]"
+        return f"[{seconds}s]"
+    
+    def _build_step_name(self) -> str:
+        """실시간 시간 헤더 + 현재 상태 제목 결합"""
+        if self.is_finished:
+            return self._base_step_name
+        return f"{self._format_live_seconds()} {self._base_step_name}"
+
+    def _live_timer_worker(self):
+        """별도 OS 스레드에서 1.0초 간격으로 끊김 없이 update_step_status 호출"""
+        while not self._stop_event.wait(timeout=1.0):
+            if self.is_finished:
+                break
+            try:
+                self.update_step_status(delay=0)
+            except Exception as e:
+                print(f"[Timer Update Warning] {e}")
+
+    def _dispatch_step_update(self):
+        """어느 스레드에서 호출되든 캡처된 Chainlit 컨텍스트(_cl_context)로 안전하게 step.update() 실행"""
+        if self._main_loop is not None and self._main_loop.is_running():
+            def _schedule_task():
+                task = self._main_loop.create_task(self.step.update())
+                task.add_done_callback(
+                    lambda t: print(f"[Step Update Error] {t.exception()}")
+                    if not t.cancelled() and t.exception()
+                    else None
+                )
+            try:
+                running_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                running_loop = None
+
+            if running_loop == self._main_loop:
+                _schedule_task()
+            else:
+                # 워커 스레드 컨텍스트가 비어있어도 항상 _cl_context 안에서 태스크 생성 보장
+                self._main_loop.call_soon_threadsafe(
+                    _schedule_task, context=self._cl_context.copy()
+                )
+        else:
+            self._cl_context.run(lambda: cl.run_sync(self.step.update()))
+
+    def get_elapsed_str(self) -> str:
+        """현재까지 경과 시간을 [MM:SS.ms] 문자열로 반환 (필요 시 외부에서도 직접 호출 가능)"""
+        return self.logs_history.get_elapsed_tag()
+
+    def start_final_answer_phase(self):
+        """모든 도구 실행이 끝난 직후 단 1회 호출되어 '답변 생성중' 상태로 고정"""
+        self.is_final_phase = True
+        self.logs_history.append("✍️ 모든 데이터 추출 완료. 최종 전술 브리핑을 작성 중입니다...")
+        self.update_step_status(
+            type_str="llm",
+            icon="brain-circuit",
+            name="[Task 진행 중] 모든 도구 실행 결과를 종합하여 답변 생성중...",
+            delay=0,
+            force_title=True,
+        )
+
+    def stop_timer(self):
+        """데드락 없이 타이머 플래그를 즉시 내리고 스레드 정지"""
+        self.is_finished = True
+        self._stop_event.set()
+
+        if (
+            hasattr(self, "_timer_thread")
+            and self._timer_thread.is_alive()
+            and threading.current_thread() is not self._timer_thread
+        ):
+            # 락 밖에서 짧게 대기하여 데드락 원천 차단
+            self._timer_thread.join(timeout=0.3)
     
     # =========================================================================
     # 💡 Crew에서 호출할 의미 기반(Semantic) 메서드
@@ -95,7 +240,7 @@ class ChainlitCrewHandler:
         log_message = f"\n---\n#### 🛠️ 도구 호출: `{tool_name}`\n" + f"* **목적**: {tool_desc if tool_desc else '지정 작업 수행'}\n"
 
         if formatted_input:
-            log_message += f"```json\n# Input Data\n{formatted_input}\n"
+            log_message += f"```json\n# Input Data\n{formatted_input}\n```\n"
             
         self.logs_history.append(
             log_message
@@ -121,23 +266,45 @@ class ChainlitCrewHandler:
         self.logs_history.append(f"\n---\n"+ f"📦 "+ label + "\n")
         self.update_step_status(icon="check-check", type_str="tool", name=label, delay=delay)
 
-    def update_step_status(self, type_str: str = None, icon: str = None, name: str = None, output: str = None, delay: float = 1.0):
+    def update_step_status(
+        self, type_str: str = None,
+        icon: str = None,
+        name: str = None,
+        output: str = None,
+        delay: float = 1.0,
+        force_title: bool = False,
+        _is_timer_tick: bool = False,
+    ):
         """Chainlit Step UI 상태(아이콘, 타입, 제목)를 실시간 업데이트"""
-        if type_str is not None:
-            self.step.type = type_str
-        if icon is not None:
-            self.step.icon = icon
-        if name is not None:
-            self.step.name = name
-        if output is not None:
-            self.step.output = output
+        with self._ui_lock:
+            # 1) 이미 에러 중단(_is_failed)된 경우 그 이후의 모든 덮어쓰기 차단
+            if self._is_failed:
+                return
 
-        if self.logs_history:
-            self.step.output = "\n\n".join(self.logs_history)
+            # 2) 타이머가 종료된 뒤 뒤늦게 들어온 타이머 틱 차단 (명시적 마감 업데이트는 허용!)
+            if self.is_finished and _is_timer_tick:
+                return
+            
+            if force_title or not self.is_final_phase or self.is_finished:
+                if type_str is not None:
+                    self.step.type = type_str
+                if icon is not None:
+                    self.step.icon = icon
+                if name is not None:
+                    self._base_step_name = name
 
-        cl.run_sync(self.step.update())
+            # 제목이 바뀌었든 안 바뀌었든 현재 경과 시간 헤더를 붙여 최신 상태 반영
+            self.step.name = self._build_step_name()
 
-        if delay is not None and delay > 0:
+            if output is not None:
+                self.step.output = output
+            elif self.logs_history:
+                self.step.output = "\n\n".join(self.logs_history)
+
+            self._dispatch_step_update()
+
+        is_main_thread = threading.current_thread() is threading.main_thread()
+        if not is_main_thread and delay is not None and delay > 0:
             time.sleep(delay)
 
     def agent_step_callback(self, agent_output: Any):
@@ -153,7 +320,6 @@ class ChainlitCrewHandler:
         # -------------------------------------------------------------
         is_finish = False
         type_name = type(agent_output).__name__
-        output_data = None
 
         # (1) 클래스명에 'AgentFinish'가 포함된 경우 (모든 라이브러리 변종 대응)
         if "AgentFinish" in type_name:
@@ -335,33 +501,6 @@ class ChainlitCrewHandler:
                 quote_block = val.strip().replace("\n", f"\n{indent}  > ")
                 lines.append(f"{indent}* {display_name}:\n{indent}  > {quote_block}")
 
-            # # A. 중첩 딕셔너리 (하위 객체)
-            # if isinstance(val, dict):
-            #     lines.append(f"{indent}* {display_name}:")
-            #     sub_content = self._format_dict_to_markdown(val, depth + 1)
-            #     lines.append(sub_content)
-
-            # # B. 리스트 형태
-            # elif isinstance(val, list):
-            #     # B-1. 문자열/숫자 등 단순 값 목록인 경우
-            #     if all(not isinstance(item, (dict, list)) for item in val):
-            #         lines.append(f"{indent}* {display_name}: [{items_str}]")
-            #         items_str = ", ".join(f"`{item}`" if isinstance(item, str) else str(item) for item in val)
-            #     # B-2. 리스트 안에 딕셔너리(객체)가 들어있는 경우 (예: 관측된 선박 목록 등)
-            #     else:
-            #         lines.append(f"{indent}* {display_name} (총 {len(val)}건):")
-            #         for idx, item in enumerate(val, 1):
-            #             if isinstance(item, dict):
-            #                 sub_items = [f"`{k}`: {v}" for k, v in item.items() if not self._is_empty(v)]
-            #                 lines.append(f"{indent}  * [{idx}] " + " | ".join(sub_items))
-            #             else:
-            #                 lines.append(f"{indent}  * [{idx}] {item}")
-
-            # # C. 여러 줄로 된 긴 텍스트 (final_answer 등)
-            # elif isinstance(val, str) and ("\n" in val or len(val) > 70):
-            #     quote_block = val.strip().replace("\n", f"\n{indent}  > ")
-            #     lines.append(f"{indent}* {display_name}:\n{indent}  > {quote_block}")
-
             # # D. 일반 단일 값 (단문, 정수, 실수, 불리언)
             else:
                 lines.append(f"{indent}* {display_name}: {val}")
@@ -370,10 +509,37 @@ class ChainlitCrewHandler:
 
     def finish_main_step(self):
         """Crew 종료 후 메인 Step의 이름을 마감하고, 누적된 전체 로그를 output(드롭다운)에 연결"""
+        # 정상 완료 시: 이미 fail_main_step으로 중단된 경우에는 덮어쓰지 않음
+        if self._is_failed:
+            return
+        
+        self.stop_timer()
+        total_tag = self.get_elapsed_str()
         self.update_step_status(
-            name = "✅ [Workflow 완료] 에이전트 상세 작업 내역 보기 (클릭)",
-            output = "\n\n".join(self.logs_history) if self.logs_history else "상세 실행 로그가 존재하지 않습니다."
+            icon="sparkles",
+            name=f"✅ [Workflow 완료] 에이전트 상세 작업 내역 보기 ({total_tag[1:-5]} 동안 작업)",
+            output="\n\n".join(self.logs_history),
+            delay=0,
+            force_title=True,
         )
+
+    def fail_main_step(
+        self,
+        error_title: str = "❌ 전처리가 이루어지지 않아 답변을 생성할 수 없습니다",
+        error_output: str = "상세 실행 로그가 존재하지 않습니다.",
+    ):
+        """에러/조기 중단 시 타이머를 끄고 단일 파이프라인(update_step_status)으로 마감"""
+        self.stop_timer()
+        self.update_step_status(
+            type_str="run",
+            icon="alert-circle",
+            name=error_title,
+            output=error_output,
+            delay=0,
+            force_title=True,
+        )
+        with self._ui_lock:
+            self._is_failed = True
 
     # @staticmethod
     # async def stream_final_response(full_markdown: str, context: SimulationContext):

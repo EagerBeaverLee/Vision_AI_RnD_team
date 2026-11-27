@@ -37,16 +37,6 @@ class DocumentPostProcessor:
             # 다음 검색에 영향이 가지 않도록 원래 설정으로 복원
             self.retriever.search_type = orig_search_type
             self.retriever.search_kwargs = orig_search_kwargs
-    
-    def get_threshold_retriver(self, score_threshold: float):
-        """score_threshold 기반 문서 필터링"""
-        retriever = self.retriever
-        if not score_threshold:
-            retriever = self.vectorstore.as_retriever(
-                search_type = "similarity_score_threshold",
-                search_kwargs = {"score_threshold": score_threshold}
-            )
-        return retriever
 
     # def _filter_by_keywords(self, docs, required_keywords: Set[str]):
     #     print("docs========")
